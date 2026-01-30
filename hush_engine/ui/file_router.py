@@ -79,10 +79,28 @@ class FileRouter:
 
     @property
     def pdf_processor(self):
-        """Lazy-load PDF processor"""
+        """Lazy-load PDF processor (400 DPI for accurate OCR detection)"""
         if self._pdf_processor is None:
-            self._pdf_processor = PDFProcessor(dpi=300)
+            self._pdf_processor = PDFProcessor(dpi=400)  # Use 400 DPI for accurate OCR detection
         return self._pdf_processor
+    
+
+    
+    @property
+    def preview_pdf_processor(self):
+        """Lazy-load PDF processor for preview images (150 DPI, JPG format for speed)"""
+        if not hasattr(self, '_preview_pdf_processor'):
+            self._preview_pdf_processor = PDFProcessor(dpi=150)
+        return self._preview_pdf_processor
+
+
+
+    @property
+    def output_pdf_processor(self):
+        """Lazy-load PDF processor for final output (400 DPI for print quality)"""
+        if not hasattr(self, '_output_pdf_processor'):
+            self._output_pdf_processor = PDFProcessor(dpi=400)
+        return self._output_pdf_processor
 
     def detect_file_type(self, file_path: str) -> str:
         """
@@ -238,17 +256,17 @@ class FileRouter:
     
     def get_pdf_page_image(self, input_path: str, page_number: int) -> Dict[str, str]:
         """
-        Get a specific page from a PDF as a PNG image
+        Get a specific page from a PDF as a JPG image (optimized for preview)
         
         Args:
             input_path: Path to PDF file
             page_number: Page number (1-indexed)
             
         Returns:
-            Dictionary with 'image_path' pointing to temporary PNG file
+            Dictionary with 'image_path' pointing to temporary JPG file
         """
-        # Convert just the requested page
-        page_images = self.pdf_processor.pdf_to_images(input_path, first_page=page_number, last_page=page_number)
+        # Convert just the requested page using preview processor (150 DPI for speed)
+        page_images = self.preview_pdf_processor.pdf_to_images(input_path, first_page=page_number, last_page=page_number)
         
         if not page_images:
             raise ValueError(f"Could not extract page {page_number} from PDF")
@@ -257,11 +275,11 @@ class FileRouter:
         
         # Save to temporary file
         import tempfile
-        temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
         temp_path = temp_file.name
         temp_file.close()
         
-        page_image.save(temp_path)
+        page_image.save(temp_path, 'JPEG', quality=85)
         
         return {'image_path': temp_path}
 
@@ -311,7 +329,7 @@ class FileRouter:
             selected_indices: Indices of items to scrub
         """
         # Convert PDF to images
-        page_images = self.pdf_processor.pdf_to_images(input_path)
+        page_images = self.preview_pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
         
         print(f"Processing {total_pages} page(s) for redaction", file=sys.stderr)
@@ -337,7 +355,7 @@ class FileRouter:
             
             if page_bboxes:
                 # Save to temp file for processing
-                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
                     temp_path = tmp_file.name
                     page_image.save(temp_path)
                 
@@ -355,7 +373,7 @@ class FileRouter:
                 print(f"Page {page_num}: No redactions", file=sys.stderr)
         
         # Convert scrubbed images to PDF
-        self.pdf_processor.images_to_pdf(scrubbed_pages, output_path)
+        self.output_pdf_processor.images_to_pdf(scrubbed_pages, output_path)
         print(f"Saved scrubbed PDF to: {output_path}")
 
     def scrub_image(self, input_path: str) -> Dict[str, Any]:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.0.0"
+version = "1.0.2"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
 readme = "README_ENGINE.md"
 license = {text = "MIT"}

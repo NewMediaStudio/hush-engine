@@ -27,12 +27,12 @@ class PDFProcessor:
     Uses rasterization approach for secure redaction - destroys text layer.
     """
 
-    def __init__(self, dpi: int = 300):
+    def __init__(self, dpi: int = 400):
         """
         Initialize PDF processor
 
         Args:
-            dpi: Resolution for rasterization (300 is print quality)
+            dpi: Resolution for rasterization (400 for OCR accuracy)
                  Higher = better quality but larger files
         """
         self.dpi = dpi

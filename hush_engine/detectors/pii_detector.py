@@ -54,11 +54,28 @@ class PIIDetector:
         self.denylist = {
             "email", "phone", "name", "address", "date", "subject", "to", "from", "cc", "bcc",
             "first name", "last name", "middle name", "street", "city", "province", "state", "zip", "postal",
-            "country", "mobile", "fax", "tel", "website", "url"
+            "country", "mobile", "fax", "tel", "website", "url",
+            "apartment", "unit", "suite", "floor", "level", "building", "po box"
         }
 
     def _add_location_recognizers(self):
         """Add pattern recognizers for address formats (e.g. Canadian place, province, postal code)."""
+        # International street type designators
+        # North American street types (US/Canada)
+        na_street_types = r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Boulevard|Blvd\.?|Drive|Dr\.?|Lane|Ln\.?|Court|Ct\.?|Circle|Cir\.?|Way|Place|Pl\.?|Terrace|Ter\.?|Parkway|Pkwy\.?|Highway|Hwy\.?|Crescent|Cres\.?|Trail)"
+        
+        # UK/Irish street types
+        uk_street_types = r"(?:Road|Street|Lane|Avenue|Drive|Close|Gardens|Square|Crescent|Terrace|Grove|Place|Mews|Court|Row|Walk|Green|Park|Rise|Hill|Way|View)"
+        
+        # Australian/NZ street types (includes NA + UK plus specific types)
+        au_street_types = r"(?:Parade|Esplanade|Promenade|Circuit)"
+        
+        # Combined English-speaking street types
+        en_street_types = rf"(?:{na_street_types}|{uk_street_types}|{au_street_types})"
+        
+        # European street prefixes
+        eu_street_prefixes = r"(?:Rue|Via|Calle|Avenida|Rua|Straße|Strasse|Platz|Allee|Plein)"
+        
         # Canadian province abbreviations
         provinces = r"(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)"
         # Canadian postal code: A1A 1A1 or A1A1A1
@@ -116,10 +133,85 @@ class PIIDetector:
             ],
         )
 
+        # International street address recognizers
+        
+        # 5. Basic street address with number: "12 Crane Ave", "221B Baker Street"
+        street_address_with_number = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="street_address_numbered",
+                    # Matches: number (with optional letter) + street name (1-4 words) + street type
+                    # Supports directional prefixes: N, S, E, W, North, South, etc.
+                    regex=rf"\b\d{{1,6}}[A-Z]?\s+(?:(?:North|South|East|West|N\.?|S\.?|E\.?|W\.?)\s+)?[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){{0,4}}\s+{en_street_types}\b",
+                    score=0.85,
+                )
+            ],
+        )
+        
+        # 6. Street name with type (no number): "Crane Avenue", "Baker Street"
+        street_address_no_number = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="street_name_only",
+                    # Matches: street name (1-3 words) + street type
+                    # Lower confidence to avoid false positives
+                    regex=rf"\b[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){{0,3}}\s+{en_street_types}\b",
+                    score=0.70,
+                )
+            ],
+        )
+        
+        # 7. European street formats: "Rue de la Paix", "Via Roma", "Calle Mayor"
+        european_street_address = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="european_street",
+                    # Matches: European prefix + optional "de/la/del/des" + street name
+                    regex=rf"\b{eu_street_prefixes}\s+(?:de\s+(?:la\s+|l')?|del\s+|des\s+)?[A-Z][a-zA-Z\s'-]{{2,40}}\b",
+                    score=0.80,
+                )
+            ],
+        )
+        
+        # 8. PO Box addresses: "PO Box 123", "P.O. Box 456"
+        po_box_address = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="po_box",
+                    # Matches: P.O. Box or PO Box (with various punctuation) + number
+                    regex=r"\b(?:P\.?\s*O\.?\s+)?Box\s+\d{1,6}\b",
+                    score=0.90,
+                )
+            ],
+        )
+        
+        # 9. Unit/Apartment addresses: "Unit 5, 12 Crane Ave", "Apt 3B, 100 Main Street"
+        unit_street_address = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="unit_apartment",
+                    # Matches: Unit/Apt/Suite + number/letter + comma + street address
+                    regex=rf"\b(?:Unit|Apt\.?|Apartment|Suite|Ste\.?)\s+[0-9A-Z]+,\s+\d{{1,6}}[A-Z]?\s+[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){{0,4}}\s+{en_street_types}\b",
+                    score=0.85,
+                )
+            ],
+        )
+        
+        # Register all recognizers
         self.analyzer.registry.add_recognizer(canadian_address_full)
         self.analyzer.registry.add_recognizer(canadian_address_prov_postal)
         self.analyzer.registry.add_recognizer(canadian_city_prov)
         self.analyzer.registry.add_recognizer(canadian_postal_only)
+        self.analyzer.registry.add_recognizer(street_address_with_number)
+        self.analyzer.registry.add_recognizer(street_address_no_number)
+        self.analyzer.registry.add_recognizer(european_street_address)
+        self.analyzer.registry.add_recognizer(po_box_address)
+        self.analyzer.registry.add_recognizer(unit_street_address)
 
     def _add_currency_recognizers(self):
         """Add pattern recognizers for currency amounts."""
