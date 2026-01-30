@@ -213,9 +213,10 @@ class FileRouter:
         # Process each page
         for page_num, page_image in enumerate(page_images, start=1):
             # Save page image temporarily for OCR processing
+            # CRITICAL: Must preserve DPI metadata for accurate OCR
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
                 temp_path = tmp_file.name
-                page_image.save(temp_path)
+                page_image.save(temp_path, dpi=(self.pdf_processor.dpi, self.pdf_processor.dpi))
             
             try:
                 # Extract text from this page
@@ -328,8 +329,8 @@ class FileRouter:
             detections: All detected PII items (with 'page' field)
             selected_indices: Indices of items to scrub
         """
-        # Convert PDF to images
-        page_images = self.preview_pdf_processor.pdf_to_images(input_path)
+        # Convert PDF to images at same DPI as detection (400) to ensure bbox coordinates align
+        page_images = self.pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
         
         print(f"Processing {total_pages} page(s) for redaction", file=sys.stderr)
