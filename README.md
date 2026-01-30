@@ -241,7 +241,6 @@ For security issues, please email security@newmediastudio.com instead of using t
 ## Roadmap
 
 - [ ] Windows/Linux support (alternative OCR engines)
-- [ ] Cloud deployment guides
 - [ ] Pre-trained custom models for specific domains
 - [ ] Batch processing optimizations
 - [ ] Video frame processing
