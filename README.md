@@ -242,6 +242,7 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 - [ ] Windows/Linux support (alternative OCR engines)
 - [ ] Pre-trained custom models for specific domains
+- [ ] Custom local model training
 - [ ] Batch processing optimizations
 - [ ] Video frame processing
 
