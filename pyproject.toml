@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hush-engine"
+version = "1.0.0"
+description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
+readme = "README_ENGINE.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Valentine Makhouleen", email = "valentine@newmediastudio.com"}
+]
+requires-python = ">=3.10"
+keywords = ["pii", "privacy", "detection", "ocr", "presidio", "anonymization", "data-security"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: MacOS :: MacOS X",
+]
+
+dependencies = [
+    "presidio-analyzer>=2.2.0",
+    "presidio-anonymizer>=2.2.0",
+    "Pillow>=10.0.0",
+    "pdf2image>=1.17.0",
+    "img2pdf>=0.6.3",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "spacy>=3.7.0",
+    "faker>=20.0.0",
+    "pyobjc-framework-Vision>=9.0",
+    "pyobjc-framework-Cocoa>=9.0",
+    "watchdog>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/NewMediaStudio/hush-engine"
+Repository = "https://github.com/NewMediaStudio/hush-engine"
+Issues = "https://github.com/NewMediaStudio/hush-engine/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hush_engine*"]
+
+[tool.setuptools.package-data]
+hush_engine = ["*.json", "*.txt"]
