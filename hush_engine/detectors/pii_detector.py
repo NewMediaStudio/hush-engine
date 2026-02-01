@@ -185,6 +185,76 @@ class PIIDetector:
             ],
         )
 
+        # US state abbreviations (all 50 states + DC + territories)
+        us_states = r"(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|PR|VI|GU|AS|MP)"
+
+        # US ZIP code: 5 digits, optionally followed by -4 digits
+        us_zip = r"\d{5}(?:-\d{4})?"
+
+        # 5. US City, State ZIP: "Portland, OR 97201" or "New York, NY 10001-1234"
+        us_address_full = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="us_city_state_zip",
+                    regex=rf"\b[A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*,?\s+{us_states}\s+{us_zip}\b",
+                    score=0.9,
+                )
+            ],
+        )
+
+        # 6. US City, State: "Portland, OR" or "New York, NY"
+        us_city_state = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="us_city_state",
+                    regex=rf"\b[A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*,?\s+{us_states}\b",
+                    score=0.6,
+                )
+            ],
+        )
+
+        # 7. US State + ZIP: "OR 97201" or "NY 10001-1234"
+        us_state_zip = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="us_state_zip",
+                    regex=rf"\b{us_states}\s+{us_zip}\b",
+                    score=0.85,
+                )
+            ],
+        )
+
+        # 8. US ZIP code only: "97201" or "10001-1234"
+        # Lower confidence since 5-digit numbers are common
+        us_zip_only = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="us_zip_only",
+                    regex=rf"\b{us_zip}\b",
+                    score=0.5,
+                )
+            ],
+            context=["zip", "postal", "code", "address", "city", "state"]
+        )
+
+        # 9. US State abbreviation only (standalone)
+        # Very low confidence - only use when in context of other location data
+        us_state_only = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="us_state_abbrev",
+                    regex=rf"\b{us_states}\b",
+                    score=0.45,
+                )
+            ],
+            context=["state", "city", "address", "location", "zip", "postal", "from", "to", "ship", "mail"]
+        )
+
         # International street address recognizers
         
         # 5. Basic street address with number: "12 Crane Ave", "221B Baker Street"
@@ -259,6 +329,11 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(canadian_address_prov_postal)
         self.analyzer.registry.add_recognizer(canadian_city_prov)
         self.analyzer.registry.add_recognizer(canadian_postal_only)
+        self.analyzer.registry.add_recognizer(us_address_full)
+        self.analyzer.registry.add_recognizer(us_city_state)
+        self.analyzer.registry.add_recognizer(us_state_zip)
+        self.analyzer.registry.add_recognizer(us_zip_only)
+        self.analyzer.registry.add_recognizer(us_state_only)
         self.analyzer.registry.add_recognizer(street_address_with_number)
         self.analyzer.registry.add_recognizer(street_address_no_number)
         self.analyzer.registry.add_recognizer(european_street_address)
