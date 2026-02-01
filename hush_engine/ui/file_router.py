@@ -208,12 +208,13 @@ class FileRouter:
         sys.stderr.write("FileRouter: warmup done\n")
         sys.stderr.flush()
 
-    def detect_pii_image(self, input_path: str) -> Dict[str, Any]:
+    def detect_pii_image(self, input_path: str, detect_faces: bool = True) -> Dict[str, Any]:
         """
         Detect PII in an image without saving
 
         Args:
             input_path: Path to image
+            detect_faces: Whether to detect faces (default True)
 
         Returns:
             Dictionary with 'detections' (PII) and 'all_text_blocks' (all OCR results)
@@ -227,11 +228,11 @@ class FileRouter:
             'bbox': detection.bbox
         } for detection in ocr_detections]
 
-        # Detect PII
+        # Detect PII in text
         pii_detections = []
         for detection in ocr_detections:
             entities = self.detector.analyze_text(detection.text)
-            
+
             for entity in entities:
                 pii_detections.append({
                     'entity_type': entity.entity_type,
@@ -240,17 +241,37 @@ class FileRouter:
                     'bbox': detection.bbox
                 })
 
+        # Detect faces if enabled
+        if detect_faces:
+            try:
+                from PIL import Image
+                img = Image.open(input_path)
+                face_detections = self.face_detector.detect_faces(img)
+                for face in face_detections:
+                    # Convert bbox tuple to dict format expected by frontend
+                    x, y, w, h = face.bbox
+                    pii_detections.append({
+                        'entity_type': 'FACE',
+                        'text': '[Face]',
+                        'confidence': face.confidence,
+                        'bbox': {'x': x, 'y': y, 'width': w, 'height': h}
+                    })
+                print(f"Detected {len(face_detections)} face(s)", file=sys.stderr)
+            except Exception as e:
+                print(f"Face detection error: {e}", file=sys.stderr)
+
         return {
             'detections': pii_detections,
             'all_text_blocks': all_text_blocks
         }
 
-    def detect_pii_pdf(self, input_path: str) -> Dict[str, Any]:
+    def detect_pii_pdf(self, input_path: str, detect_faces: bool = True) -> Dict[str, Any]:
         """
         Detect PII in a PDF without saving
 
         Args:
             input_path: Path to PDF file
+            detect_faces: Whether to detect faces (default True)
 
         Returns:
             Dictionary with 'detections' (PII with page numbers), 'all_text_blocks', and 'total_pages'
@@ -258,12 +279,12 @@ class FileRouter:
         # Convert PDF to images
         page_images = self.pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
-        
+
         print(f"Processing {total_pages} page(s) from PDF", file=sys.stderr)
-        
+
         all_detections = []
         all_text_blocks = []
-        
+
         # Process each page
         for page_num, page_image in enumerate(page_images, start=1):
             # Save page image temporarily for OCR processing
@@ -271,11 +292,11 @@ class FileRouter:
             # SECURITY: Use secure temp file with restrictive permissions
             temp_path = create_secure_temp_file(suffix='.png')
             page_image.save(temp_path, dpi=(self.pdf_processor.dpi, self.pdf_processor.dpi))
-            
+
             try:
                 # Extract text from this page
                 ocr_detections = self.ocr.extract_text(temp_path)
-                
+
                 # Convert OCR detections to text blocks with page number
                 for detection in ocr_detections:
                     all_text_blocks.append({
@@ -283,11 +304,11 @@ class FileRouter:
                         'bbox': detection.bbox,
                         'page': page_num
                     })
-                
+
                 # Detect PII in this page
                 for detection in ocr_detections:
                     entities = self.detector.analyze_text(detection.text)
-                    
+
                     for entity in entities:
                         all_detections.append({
                             'entity_type': entity.entity_type,
@@ -296,13 +317,31 @@ class FileRouter:
                             'bbox': detection.bbox,
                             'page': page_num
                         })
-                
-                print(f"Page {page_num}: Found {len([d for d in all_detections if d['page'] == page_num])} PII detections", file=sys.stderr)
-                
+
+                # Detect faces in this page if enabled
+                if detect_faces:
+                    try:
+                        face_detections = self.face_detector.detect_faces(page_image)
+                        for face in face_detections:
+                            x, y, w, h = face.bbox
+                            all_detections.append({
+                                'entity_type': 'FACE',
+                                'text': '[Face]',
+                                'confidence': face.confidence,
+                                'bbox': {'x': x, 'y': y, 'width': w, 'height': h},
+                                'page': page_num
+                            })
+                        if face_detections:
+                            print(f"Page {page_num}: Detected {len(face_detections)} face(s)", file=sys.stderr)
+                    except Exception as e:
+                        print(f"Page {page_num}: Face detection error: {e}", file=sys.stderr)
+
+                print(f"Page {page_num}: Found {len([d for d in all_detections if d['page'] == page_num])} total detections", file=sys.stderr)
+
             finally:
                 # Clean up temporary file
                 os.unlink(temp_path)
-        
+
         return {
             'detections': all_detections,
             'all_text_blocks': all_text_blocks,
