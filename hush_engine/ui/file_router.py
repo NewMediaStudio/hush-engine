@@ -248,13 +248,13 @@ class FileRouter:
                 img = Image.open(input_path)
                 face_detections = self.face_detector.detect_faces(img)
                 for face in face_detections:
-                    # Convert bbox tuple to dict format expected by frontend
+                    # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
                     x, y, w, h = face.bbox
                     pii_detections.append({
                         'entity_type': 'FACE',
                         'text': '[Face]',
                         'confidence': face.confidence,
-                        'bbox': {'x': x, 'y': y, 'width': w, 'height': h}
+                        'bbox': [float(x), float(y), float(x + w), float(y + h)]
                     })
                 print(f"Detected {len(face_detections)} face(s)", file=sys.stderr)
             except Exception as e:
@@ -323,12 +323,13 @@ class FileRouter:
                     try:
                         face_detections = self.face_detector.detect_faces(page_image)
                         for face in face_detections:
+                            # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
                             x, y, w, h = face.bbox
                             all_detections.append({
                                 'entity_type': 'FACE',
                                 'text': '[Face]',
                                 'confidence': face.confidence,
-                                'bbox': {'x': x, 'y': y, 'width': w, 'height': h},
+                                'bbox': [float(x), float(y), float(x + w), float(y + h)],
                                 'page': page_num
                             })
                         if face_detections:
