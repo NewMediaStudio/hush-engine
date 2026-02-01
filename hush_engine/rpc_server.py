@@ -287,6 +287,7 @@ class RPCServer:
         destination = params.get('destination')
         detections = params.get('detections')
         selected_indices = params.get('selectedIndices')
+        optimize = params.get('optimize', False)  # Optional image optimization
 
         if not all([source, destination, detections is not None, selected_indices is not None]):
             raise ValueError("Missing required parameters")
@@ -302,14 +303,14 @@ class RPCServer:
 
         # SECURITY: Log operation (filenames only, never detection contents)
         num_redactions = len(selected_indices) if selected_indices else 0
-        audit_log.info(f"SAVE | type={file_type} | src={validated_source.name} | dst={validated_dest.name} | redactions={num_redactions}")
+        audit_log.info(f"SAVE | type={file_type} | src={validated_source.name} | dst={validated_dest.name} | redactions={num_redactions} | optimize={optimize}")
 
         if file_type == 'image':
-            self.router.save_scrubbed_image(source_str, dest_str, detections, selected_indices)
+            self.router.save_scrubbed_image(source_str, dest_str, detections, selected_indices, optimize=optimize)
         elif file_type == 'spreadsheet':
             self.router.save_scrubbed_spreadsheet(source_str, dest_str, detections, selected_indices)
         elif file_type == 'pdf':
-            self.router.save_scrubbed_pdf(source_str, dest_str, detections, selected_indices)
+            self.router.save_scrubbed_pdf(source_str, dest_str, detections, selected_indices, optimize=optimize)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
 
@@ -319,6 +320,7 @@ class RPCServer:
         """Handle getPDFPage request"""
         file_path = params.get('filePath')
         page_num = params.get('pageNumber')
+        optimize = params.get('optimize', False)  # Optional image optimization
 
         if page_num is None:
             raise ValueError("Missing required parameter: pageNumber")
@@ -330,7 +332,7 @@ class RPCServer:
         if not isinstance(page_num, int) or page_num < 1 or page_num > 10000:
             raise ValueError("Page number must be an integer between 1 and 10000")
 
-        return self.router.get_pdf_page_image(str(validated_path), page_num)
+        return self.router.get_pdf_page_image(str(validated_path), page_num, optimize=optimize)
     
     def handle_get_config(self, params):
         """Handle getConfig request"""
@@ -339,10 +341,13 @@ class RPCServer:
     def handle_save_config(self, params):
         """Handle saveConfig request"""
         thresholds = params.get('thresholds')
-        if thresholds is None:
-            raise ValueError("Missing required parameter: thresholds")
-        
-        detection_config.save_config(thresholds)
+        enabled_entities = params.get('enabled_entities')
+
+        if thresholds is None and enabled_entities is None:
+            raise ValueError("At least one of thresholds or enabled_entities must be provided")
+
+        config = detection_config.get_config()
+        config.update_all(thresholds=thresholds, enabled_entities=enabled_entities)
         return {"success": True}
     
     def handle_reset_config(self, params):

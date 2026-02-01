@@ -17,6 +17,7 @@ from ocr import VisionOCR
 from detectors import PIIDetector
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
+from image_optimizer import optimize_image
 from PIL import Image
 import pandas as pd
 import tempfile
@@ -299,29 +300,34 @@ class FileRouter:
             'total_pages': total_pages
         }
     
-    def get_pdf_page_image(self, input_path: str, page_number: int) -> Dict[str, str]:
+    def get_pdf_page_image(self, input_path: str, page_number: int, optimize: bool = False) -> Dict[str, str]:
         """
         Get a specific page from a PDF as a JPG image (optimized for preview)
-        
+
         Args:
             input_path: Path to PDF file
             page_number: Page number (1-indexed)
-            
+            optimize: If True, compress output using MozJPEG
+
         Returns:
             Dictionary with 'image_path' pointing to temporary JPG file
         """
         # Convert just the requested page using preview processor (150 DPI for speed)
         page_images = self.preview_pdf_processor.pdf_to_images(input_path, first_page=page_number, last_page=page_number)
-        
+
         if not page_images:
             raise ValueError(f"Could not extract page {page_number} from PDF")
-        
+
         page_image = page_images[0]
 
         # SECURITY: Save to secure temporary file with restrictive permissions
         temp_path = create_secure_temp_file(suffix='.jpg')
         page_image.save(temp_path, 'JPEG', quality=85)
-        
+
+        # Optionally optimize the preview image
+        if optimize:
+            optimize_image(temp_path)
+
         return {'image_path': temp_path}
 
     def save_scrubbed_image(
@@ -329,7 +335,8 @@ class FileRouter:
         input_path: str,
         output_path: str,
         detections: List[Dict[str, Any]],
-        selected_indices: List[int]
+        selected_indices: List[int],
+        optimize: bool = False
     ):
         """
         Save scrubbed image with only selected detections redacted
@@ -339,6 +346,7 @@ class FileRouter:
             output_path: Output image path
             detections: All detected PII items
             selected_indices: Indices of items to scrub
+            optimize: If True, compress output using Zopfli/MozJPEG
         """
         # Get bboxes for selected items only
         selected_bboxes = [detections[i]['bbox'] for i in selected_indices]
@@ -351,14 +359,19 @@ class FileRouter:
             scrubbed = img
 
         scrubbed.save(output_path)
-        print(f"Saved scrubbed image to: {output_path}")
+        print(f"Saved scrubbed image to: {output_path}", file=sys.stderr)
+
+        # Optionally optimize the output image
+        if optimize:
+            optimize_image(output_path)
 
     def save_scrubbed_pdf(
         self,
         input_path: str,
         output_path: str,
         detections: List[Dict[str, Any]],
-        selected_indices: List[int]
+        selected_indices: List[int],
+        optimize: bool = False
     ):
         """
         Save scrubbed PDF with only selected detections redacted
@@ -368,6 +381,7 @@ class FileRouter:
             output_path: Output PDF path
             detections: All detected PII items (with 'page' field)
             selected_indices: Indices of items to scrub
+            optimize: If True, compress page images before combining into PDF
         """
         # Convert PDF to images at same DPI as detection (400) to ensure bbox coordinates align
         page_images = self.pdf_processor.pdf_to_images(input_path)
@@ -390,31 +404,47 @@ class FileRouter:
         scrubbed_pages = []
         for page_num in range(1, total_pages + 1):
             page_image = page_images[page_num - 1]  # 0-indexed
-            
+
             # Get bboxes for this page
             page_bboxes = selected_by_page.get(page_num, [])
-            
+
             if page_bboxes:
                 # SECURITY: Save to secure temp file for processing
                 temp_path = create_secure_temp_file(suffix='.jpg')
                 page_image.save(temp_path)
-                
+
                 try:
                     # Load and redact
                     img = Image.open(temp_path)
                     scrubbed = self.image_anonymizer.redact_regions(img, page_bboxes)
+
+                    # Optionally optimize the page image
+                    if optimize:
+                        opt_temp = create_secure_temp_file(suffix='.jpg')
+                        scrubbed.save(opt_temp, 'JPEG', quality=85)
+                        optimize_image(opt_temp)
+                        scrubbed = Image.open(opt_temp)
+                        os.unlink(opt_temp)
+
                     scrubbed_pages.append(scrubbed)
                     print(f"Page {page_num}: Redacted {len(page_bboxes)} region(s)", file=sys.stderr)
                 finally:
                     os.unlink(temp_path)
             else:
-                # No redactions on this page
+                # No redactions on this page, but still optimize if requested
+                if optimize:
+                    opt_temp = create_secure_temp_file(suffix='.jpg')
+                    page_image.save(opt_temp, 'JPEG', quality=85)
+                    optimize_image(opt_temp)
+                    page_image = Image.open(opt_temp)
+                    os.unlink(opt_temp)
+
                 scrubbed_pages.append(page_image)
                 print(f"Page {page_num}: No redactions", file=sys.stderr)
-        
+
         # Convert scrubbed images to PDF
         self.output_pdf_processor.images_to_pdf(scrubbed_pages, output_path)
-        print(f"Saved scrubbed PDF to: {output_path}")
+        print(f"Saved scrubbed PDF to: {output_path}", file=sys.stderr)
 
     def scrub_image(self, input_path: str) -> Dict[str, Any]:
         """

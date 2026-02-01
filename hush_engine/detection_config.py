@@ -24,8 +24,9 @@ DEFAULT_THRESHOLDS = {
     "ORGANIZATION": 0.5,
     "URL": 0.5,
     "IP_ADDRESS": 0.5,
-    "CURRENCY": 0.5,
+    "FINANCIAL": 0.5,
     "COMPANY": 0.5,
+    "GENDER": 0.5,
 }
 
 # Minimum threshold (don't go below this even with auto-adjustment)
@@ -54,6 +55,7 @@ class DetectionConfig:
 
         self.config: Dict[str, Any] = {
             "thresholds": DEFAULT_THRESHOLDS.copy(),
+            "enabled_entities": {k: True for k in DEFAULT_THRESHOLDS.keys()},  # All enabled by default
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "adjustment_history": []
@@ -69,6 +71,9 @@ class DetectionConfig:
                     saved = json.load(f)
                     # Merge with defaults (in case new entity types were added)
                     self.config["thresholds"] = {**DEFAULT_THRESHOLDS, **saved.get("thresholds", {})}
+                    # Merge enabled_entities with defaults (all enabled by default)
+                    default_enabled = {k: True for k in DEFAULT_THRESHOLDS.keys()}
+                    self.config["enabled_entities"] = {**default_enabled, **saved.get("enabled_entities", {})}
                     self.config["created_at"] = saved.get("created_at", self.config["created_at"])
                     self.config["updated_at"] = saved.get("updated_at", self.config["updated_at"])
                     self.config["adjustment_history"] = saved.get("adjustment_history", [])
@@ -126,6 +131,35 @@ class DetectionConfig:
     def get_all_thresholds(self) -> Dict[str, float]:
         """Get all thresholds"""
         return self.config["thresholds"].copy()
+
+    def get_enabled_entities(self) -> Dict[str, bool]:
+        """Get all enabled entity settings"""
+        return self.config["enabled_entities"].copy()
+
+    def set_enabled_entity(self, entity_type: str, enabled: bool):
+        """Set whether an entity type is enabled"""
+        self.config["enabled_entities"][entity_type] = enabled
+        self.save()
+
+    def update_all(self, thresholds: Dict[str, float] = None, enabled_entities: Dict[str, bool] = None):
+        """
+        Update thresholds and/or enabled entities in bulk.
+
+        Args:
+            thresholds: Dict of entity_type -> threshold value
+            enabled_entities: Dict of entity_type -> enabled boolean
+        """
+        if thresholds:
+            for entity_type, threshold in thresholds.items():
+                # Clamp to valid range
+                threshold = max(MIN_THRESHOLD, min(MAX_THRESHOLD, threshold))
+                self.config["thresholds"][entity_type] = threshold
+
+        if enabled_entities:
+            for entity_type, enabled in enabled_entities.items():
+                self.config["enabled_entities"][entity_type] = enabled
+
+        self.save()
 
     def adjust_from_feedback(self, false_positive_rates: Dict[str, float], min_samples: int = 5):
         """
@@ -218,7 +252,8 @@ class DetectionConfig:
             "total_removed_bars": total_removed_bars,
             "created_at": self.config["created_at"],
             "updated_at": self.config["updated_at"],
-            "thresholds": self.get_all_thresholds()
+            "thresholds": self.get_all_thresholds(),
+            "enabled_entities": self.get_enabled_entities()
         }
 
 

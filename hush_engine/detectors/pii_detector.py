@@ -92,10 +92,12 @@ class PIIDetector:
         self._add_credit_card_recognizers()
         # Add location recognizers (e.g. Canadian address format)
         self._add_location_recognizers()
-        # Add currency recognizers
-        self._add_currency_recognizers()
+        # Add financial recognizers (currency, SWIFT codes, etc.)
+        self._add_financial_recognizers()
         # Add company recognizers
         self._add_company_recognizers()
+        # Add gender identity recognizers
+        self._add_gender_recognizers()
         # Add phone number recognizers with NA area code validation
         self._add_phone_recognizers()
         
@@ -263,17 +265,28 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(po_box_address)
         self.analyzer.registry.add_recognizer(unit_street_address)
 
-    def _add_currency_recognizers(self):
-        """Add pattern recognizers for currency amounts."""
+    def _add_financial_recognizers(self):
+        """Add pattern recognizers for financial data (currency, SWIFT codes, etc.)."""
         # Generic currency regex: symbol followed by numbers with commas and decimals
         # Supports $, £, €, ¥, ₹, ₽, 元 and handles optional space
         currency_regex = r"(\$|£|€|¥|₹|₽|元)\s?\d{1,3}(,\d{3})*(\.\d{2})?\b"
-        
+
         # Word-based currency regex: USD, CAD, EUR, etc. followed by numbers
         word_currency_regex = r"\b(USD|CAD|EUR|GBP|JPY|AUD|CNY)\s?\d{1,3}(,\d{3})*(\.\d{2})?\b"
 
+        # SWIFT/BIC code regex: 8 or 11 characters
+        # Format: AAAA BB CC DDD (bank code + country + location + optional branch)
+        # Examples: HASEHKHHXXX, DEUTDEFF, CHASUS33
+        swift_regex = r"\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b"
+
+        # Bank code regex: "Bank code: 7214" or "Bank Code: 1234567"
+        bank_code_regex = r"\b[Bb]ank\s+[Cc]ode[:\s]+\d{3,10}\b"
+
+        # Branch code regex: "Branch code: 001" or "Branch Code: 12345"
+        branch_code_regex = r"\b[Bb]ranch\s+[Cc]ode[:\s]+\d{3,10}\b"
+
         currency_recognizer = PatternRecognizer(
-            supported_entity="CURRENCY",
+            supported_entity="FINANCIAL",
             patterns=[
                 Pattern(
                     name="currency_symbol",
@@ -284,8 +297,24 @@ class PIIDetector:
                     name="currency_code",
                     regex=word_currency_regex,
                     score=0.8,
+                ),
+                Pattern(
+                    name="swift_bic_code",
+                    regex=swift_regex,
+                    score=0.85,
+                ),
+                Pattern(
+                    name="bank_code",
+                    regex=bank_code_regex,
+                    score=0.85,
+                ),
+                Pattern(
+                    name="branch_code",
+                    regex=branch_code_regex,
+                    score=0.85,
                 )
             ],
+            context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch"]
         )
 
         self.analyzer.registry.add_recognizer(currency_recognizer)
@@ -322,6 +351,76 @@ class PIIDetector:
         )
 
         self.analyzer.registry.add_recognizer(company_recognizer)
+
+    def _add_gender_recognizers(self):
+        """
+        Add pattern recognizers for gender identities and biological sex designations.
+
+        This recognizer detects various gender identity terms including:
+        - Binary identities (male, female, man, woman)
+        - Transgender terms (trans, MTF, FTM, transgender)
+        - Non-binary identities (non-binary, genderqueer, genderfluid, agender, etc.)
+        - Medical sex designations (AFAB, AMAB, intersex)
+        - Cultural identities (Two-Spirit, Third Gender)
+        """
+        # Core binary gender terms with word boundaries
+        # Note: These are common words, so we require context to detect them
+        binary_terms = [
+            r"[Mm]ale", r"[Ff]emale",
+            r"[Mm]an", r"[Ww]oman",
+            r"[Bb]oy", r"[Gg]irl",
+        ]
+
+        # Transgender terms
+        trans_terms = [
+            r"[Tt]ransgender", r"[Tt]rans[- ]?[Ww]oman", r"[Tt]rans[- ]?[Mm]an",
+            r"[Tt]rans[- ]?[Mm]ale", r"[Tt]rans[- ]?[Ff]emale",
+            r"[Tt]rans[- ]?[Mm]asc(?:uline)?", r"[Tt]rans[- ]?[Ff]em(?:inine)?",
+            r"MTF", r"FTM", r"M2F", r"F2M",
+        ]
+
+        # Non-binary and other gender identity terms
+        nonbinary_terms = [
+            r"[Nn]on[- ]?[Bb]inary", r"[Ee]nby", r"NB",
+            r"[Gg]enderqueer", r"[Gg]ender[- ]?[Ff]luid",
+            r"[Aa]gender", r"[Bb]igender", r"[Tt]rigender",
+            r"[Pp]angender", r"[Pp]olygender", r"[Mm]ultigender",
+            r"[Dd]emigender", r"[Dd]emigirl", r"[Dd]emiboy",
+            r"[Aa]ndrogyn(?:e|ous)", r"[Nn]eutrois",
+            r"[Gg]ender[- ]?[Nn]eutral", r"[Gg]ender[- ]?[Ee]xpansive",
+            r"[Gg]ender[- ]?[Nn]on[- ]?[Cc]onforming", r"GNC",
+            r"[Ii]ntergender", r"[Xx]enogender",
+            r"[Oo]mnigender", r"[Aa]pogender",
+        ]
+
+        # Cultural and medical terms
+        cultural_medical_terms = [
+            r"[Tt]wo[- ]?[Ss]pirit", r"[Tt]hird[- ]?[Gg]ender",
+            r"[Hh]ijra", r"[Mm]uxe", r"[Ff]a'afafine",
+            r"[Cc]isgender", r"[Cc]is[- ]?[Mm]an", r"[Cc]is[- ]?[Ww]oman",
+            r"AFAB", r"AMAB", r"DFAB", r"DMAB",
+            r"[Aa]ssigned\s+(?:[Mm]ale|[Ff]emale)\s+[Aa]t\s+[Bb]irth",
+            r"[Ii]ntersex", r"[Hh]ermaphrodite",
+            r"[Ss]ex\s+[Aa]t\s+[Bb]irth",
+        ]
+
+        # Combine all terms
+        all_terms = binary_terms + trans_terms + nonbinary_terms + cultural_medical_terms
+        gender_pattern = r"\b(?:" + "|".join(all_terms) + r")\b"
+
+        gender_recognizer = PatternRecognizer(
+            supported_entity="GENDER",
+            patterns=[
+                Pattern(
+                    name="gender_identity",
+                    regex=gender_pattern,
+                    score=0.75,
+                )
+            ],
+            context=["gender", "sex", "identity", "identifies", "pronoun", "assigned", "birth"]
+        )
+
+        self.analyzer.registry.add_recognizer(gender_recognizer)
 
     def _add_phone_recognizers(self):
         """
