@@ -57,6 +57,44 @@ class FaceDetector:
         if self.profile_cascade.empty():
             sys.stderr.write("[FaceDetector] Warning: Could not load profile face cascade\n")
 
+    def _expand_bbox_for_head_shoulders(
+        self,
+        bbox: tuple,
+        img_width: int,
+        img_height: int,
+        top_expand: float = 0.4,
+        side_expand: float = 0.4,
+        bottom_expand: float = 1.0
+    ) -> tuple:
+        """
+        Expand a face bounding box to include full head and shoulders.
+
+        Args:
+            bbox: (x, y, w, h) of detected face
+            img_width: Image width for clamping
+            img_height: Image height for clamping
+            top_expand: Fraction to expand upward (for hair/forehead)
+            side_expand: Fraction to expand sideways (for ears)
+            bottom_expand: Fraction to expand downward (for neck/shoulders)
+
+        Returns:
+            Expanded (x, y, w, h) tuple clamped to image boundaries
+        """
+        x, y, w, h = bbox
+
+        # Calculate expansion amounts
+        top_pad = int(h * top_expand)
+        side_pad = int(w * side_expand)
+        bottom_pad = int(h * bottom_expand)
+
+        # Expand the box
+        new_x = max(0, x - side_pad)
+        new_y = max(0, y - top_pad)
+        new_w = min(img_width - new_x, w + 2 * side_pad)
+        new_h = min(img_height - new_y, h + top_pad + bottom_pad)
+
+        return (new_x, new_y, new_w, new_h)
+
     def detect_faces(
         self,
         image: Image.Image,
@@ -98,6 +136,9 @@ class FaceDetector:
         # confidence 0.8 -> minNeighbors 8
         min_neighbors = max(3, int(self.min_confidence * 10))
 
+        # Get image dimensions for bbox clamping
+        img_height, img_width = gray.shape[:2]
+
         detections = []
         seen_bboxes = set()
 
@@ -112,8 +153,13 @@ class FaceDetector:
             )
 
             for (x, y, w, h) in faces:
-                bbox = (int(x), int(y), int(w), int(h))
-                bbox_key = f"{x},{y},{w},{h}"
+                # Expand bbox to include head and shoulders
+                expanded_bbox = self._expand_bbox_for_head_shoulders(
+                    (int(x), int(y), int(w), int(h)),
+                    img_width, img_height
+                )
+                bbox = expanded_bbox
+                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
                 if bbox_key not in seen_bboxes:
                     seen_bboxes.add(bbox_key)
                     # Confidence is approximated - Haar cascades don't provide exact confidence
@@ -134,8 +180,13 @@ class FaceDetector:
             )
 
             for (x, y, w, h) in profiles:
-                bbox = (int(x), int(y), int(w), int(h))
-                bbox_key = f"{x},{y},{w},{h}"
+                # Expand bbox to include head and shoulders
+                expanded_bbox = self._expand_bbox_for_head_shoulders(
+                    (int(x), int(y), int(w), int(h)),
+                    img_width, img_height
+                )
+                bbox = expanded_bbox
+                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
                 # Avoid duplicates (frontal might overlap with profile)
                 if bbox_key not in seen_bboxes and not self._is_overlapping(bbox, seen_bboxes):
                     seen_bboxes.add(bbox_key)
@@ -154,12 +205,16 @@ class FaceDetector:
                 flags=cv2.CASCADE_SCALE_IMAGE
             )
 
-            img_width = gray.shape[1]
             for (x, y, w, h) in profiles_flipped:
                 # Flip x coordinate back
                 x_orig = img_width - x - w
-                bbox = (int(x_orig), int(y), int(w), int(h))
-                bbox_key = f"{x_orig},{y},{w},{h}"
+                # Expand bbox to include head and shoulders
+                expanded_bbox = self._expand_bbox_for_head_shoulders(
+                    (int(x_orig), int(y), int(w), int(h)),
+                    img_width, img_height
+                )
+                bbox = expanded_bbox
+                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
                 if bbox_key not in seen_bboxes and not self._is_overlapping(bbox, seen_bboxes):
                     seen_bboxes.add(bbox_key)
                     detections.append(FaceDetection(
