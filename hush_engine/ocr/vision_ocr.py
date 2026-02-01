@@ -3,8 +3,8 @@ Apple Vision Framework wrapper for OCR
 Uses hardware-accelerated text recognition on Apple Silicon
 """
 
-from dataclasses import dataclass
-from typing import List, Tuple
+from dataclasses import dataclass, field
+from typing import List, Tuple, Optional
 from PIL import Image
 import os
 
@@ -24,6 +24,7 @@ class TextDetection:
     text: str
     confidence: float
     bbox: Tuple[float, float, float, float]  # (x1, y1, x2, y2) in PIL coordinates
+    char_boxes: Optional[List[Tuple[float, float, float, float]]] = None  # Per-character bounding boxes (optional)
 
 
 class VisionOCR:
@@ -117,7 +118,7 @@ class VisionOCR:
             text = str(candidate.string())
             confidence = float(candidate.confidence())
 
-            # Get bounding box
+            # Get bounding box for the entire text block
             bbox = observation.boundingBox()
 
             # Vision bounding box is (x, y, width, height) normalized (0-1)
@@ -136,10 +137,38 @@ class VisionOCR:
                 image_width
             )
 
+            # Extract character-level bounding boxes for precise entity localization
+            char_boxes = []
+            try:
+                for i in range(len(text)):
+                    # Get bounding box for each character
+                    char_range = (i, 1)  # (location, length)
+                    char_bbox = observation.boundingBoxForRange_error_(char_range, None)[0]
+                    if char_bbox:
+                        char_vision_box = (
+                            char_bbox.origin.x,
+                            char_bbox.origin.y,
+                            char_bbox.size.width,
+                            char_bbox.size.height
+                        )
+                        char_pil_bbox = self.vision_to_pil_coords(
+                            char_vision_box,
+                            image_height,
+                            image_width
+                        )
+                        char_boxes.append(char_pil_bbox)
+                    else:
+                        # If character bbox is not available, use None
+                        char_boxes.append(None)
+            except Exception:
+                # If character-level boxes are not available, leave as empty list
+                char_boxes = []
+
             detections.append(TextDetection(
                 text=text,
                 confidence=confidence,
-                bbox=pil_bbox
+                bbox=pil_bbox,
+                char_boxes=char_boxes if char_boxes else None
             ))
 
         return detections
@@ -180,3 +209,91 @@ class VisionOCR:
             x_pixel + width_pixel,
             y_pixel + height_pixel
         )
+
+    @staticmethod
+    def calculate_substring_bbox(
+        text: str,
+        char_boxes: Optional[List[Optional[Tuple[float, float, float, float]]]],
+        start: int,
+        end: int,
+        fallback_bbox: Tuple[float, float, float, float]
+    ) -> Tuple[float, float, float, float]:
+        """
+        Calculate precise bounding box for a substring based on character positions.
+
+        Args:
+            text: The full text string
+            char_boxes: List of character-level bounding boxes (x1, y1, x2, y2)
+            start: Start index of substring in text
+            end: End index of substring in text
+            fallback_bbox: Full text bounding box to use as fallback
+
+        Returns:
+            (x1, y1, x2, y2) bounding box for the substring
+        """
+        # Validate indices
+        if start < 0 or end > len(text) or start >= end:
+            return fallback_bbox
+
+        # If no character boxes available, estimate proportionally
+        if not char_boxes or len(char_boxes) != len(text):
+            return VisionOCR._estimate_substring_bbox(
+                text, start, end, fallback_bbox
+            )
+
+        # Collect valid character boxes for the substring
+        substring_boxes = []
+        for i in range(start, end):
+            if i < len(char_boxes) and char_boxes[i] is not None:
+                substring_boxes.append(char_boxes[i])
+
+        # If we have valid character boxes, compute their union
+        if substring_boxes:
+            x1 = min(box[0] for box in substring_boxes)
+            y1 = min(box[1] for box in substring_boxes)
+            x2 = max(box[2] for box in substring_boxes)
+            y2 = max(box[3] for box in substring_boxes)
+            return (x1, y1, x2, y2)
+
+        # Fallback to estimation if character boxes are incomplete
+        return VisionOCR._estimate_substring_bbox(
+            text, start, end, fallback_bbox
+        )
+
+    @staticmethod
+    def _estimate_substring_bbox(
+        text: str,
+        start: int,
+        end: int,
+        full_bbox: Tuple[float, float, float, float]
+    ) -> Tuple[float, float, float, float]:
+        """
+        Estimate substring bounding box using proportional division.
+        
+        Assumes uniform character spacing (less accurate but works as fallback).
+
+        Args:
+            text: The full text string
+            start: Start index of substring
+            end: End index of substring
+            full_bbox: Bounding box for the full text (x1, y1, x2, y2)
+
+        Returns:
+            Estimated (x1, y1, x2, y2) for the substring
+        """
+        if not text or start >= end:
+            return full_bbox
+
+        x1, y1, x2, y2 = full_bbox
+        text_width = x2 - x1
+        text_len = len(text)
+
+        # Calculate proportional positions (simple linear interpolation)
+        char_width = text_width / text_len if text_len > 0 else 0
+        
+        # Estimate x coordinates based on character positions
+        sub_x1 = x1 + (start * char_width)
+        sub_x2 = x1 + (end * char_width)
+
+        # Y coordinates stay the same (same line)
+        return (sub_x1, y1, sub_x2, y2)
