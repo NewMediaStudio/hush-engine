@@ -440,10 +440,11 @@ class PIIDetector:
         """
         # Core binary gender terms with word boundaries
         # Note: These are common words, so we require context to detect them
+        # Include uppercase variants (MALE, FEMALE) for form fields
         binary_terms = [
-            r"[Mm]ale", r"[Ff]emale",
-            r"[Mm]an", r"[Ww]oman",
-            r"[Bb]oy", r"[Gg]irl",
+            r"[Mm][Aa][Ll][Ee]", r"[Ff][Ee][Mm][Aa][Ll][Ee]",
+            r"[Mm][Aa][Nn]", r"[Ww][Oo][Mm][Aa][Nn]",
+            r"[Bb][Oo][Yy]", r"[Gg][Ii][Rr][Ll]",
         ]
 
         # Transgender terms
