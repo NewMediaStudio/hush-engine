@@ -41,6 +41,8 @@ dependencies = [
     # Image optimization (commercial-friendly licenses)
     "zopfli>=0.2.0",  # Apache 2.0 - PNG compression
     "mozjpeg-lossless-optimization>=1.0.0",  # BSD-3 - JPEG optimization
+    # Face detection (Apache 2.0 license)
+    "opencv-python>=4.8.0",  # Haar cascade face detection
 ]
 
 [project.urls]

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ocr import VisionOCR
 from detectors import PIIDetector
+from detectors.face_detector import FaceDetector
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
 from image_optimizer import optimize_image
@@ -85,6 +86,7 @@ class FileRouter:
         # Initialize engines (lazy loading for performance)
         self._ocr = None
         self._detector = None
+        self._face_detector = None
         self._image_anonymizer = None
         self._spreadsheet_anonymizer = None
         self._pdf_processor = None
@@ -107,6 +109,13 @@ class FileRouter:
         if self._detector is None:
             self._detector = PIIDetector()
         return self._detector
+
+    @property
+    def face_detector(self):
+        """Lazy-load face detector"""
+        if self._face_detector is None:
+            self._face_detector = FaceDetector()
+        return self._face_detector
 
     @property
     def image_anonymizer(self):

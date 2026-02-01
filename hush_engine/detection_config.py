@@ -27,6 +27,7 @@ DEFAULT_THRESHOLDS = {
     "FINANCIAL": 0.5,
     "COMPANY": 0.5,
     "GENDER": 0.5,
+    "FACE": 0.5,
 }
 
 # Minimum threshold (don't go below this even with auto-adjustment)
