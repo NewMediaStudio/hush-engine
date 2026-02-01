@@ -11,7 +11,12 @@ Protocol:
 import sys
 import json
 import traceback
+import logging
+import os
+import stat
 from pathlib import Path
+from collections import deque
+from time import time
 import builtins
 
 # Save the original stdout for JSON-RPC communication
@@ -38,38 +43,241 @@ import detection_config
 from analyze_feedback import FeedbackAnalyzer
 
 
+# =============================================================================
+# SECURITY: Audit Logging
+# =============================================================================
+
+def setup_audit_logger():
+    """Configure audit logger for file operations."""
+    hush_dir = Path.home() / ".hush"
+    hush_dir.mkdir(parents=True, exist_ok=True)
+
+    audit_log = logging.getLogger("hush.audit")
+    audit_log.setLevel(logging.INFO)
+
+    # Avoid duplicate handlers
+    if not audit_log.handlers:
+        log_file = hush_dir / "audit.log"
+        handler = logging.FileHandler(log_file)
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        ))
+        audit_log.addHandler(handler)
+
+        # Set restrictive permissions on audit log
+        try:
+            os.chmod(log_file, stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+        except OSError:
+            pass  # May fail if file doesn't exist yet
+
+    return audit_log
+
+
+# Initialize audit logger
+audit_log = setup_audit_logger()
+
+
+# =============================================================================
+# SECURITY: Rate Limiting
+# =============================================================================
+
+class RateLimiter:
+    """Simple rate limiter to prevent DoS attacks."""
+
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self.requests = deque()
+
+    def check(self) -> bool:
+        """Check if request is allowed. Returns False if rate limit exceeded."""
+        now = time()
+        # Remove old requests outside the window
+        while self.requests and self.requests[0] < now - self.window:
+            self.requests.popleft()
+        if len(self.requests) >= self.max_requests:
+            return False
+        self.requests.append(now)
+        return True
+
+
+# =============================================================================
+# SECURITY: Path Validation
+# =============================================================================
+
+# Allowed RPC methods (whitelist)
+ALLOWED_METHODS = {
+    'detectPII',
+    'saveScrubbed',
+    'getPDFPage',
+    'getConfig',
+    'saveConfig',
+    'resetConfig',
+    'ingestTrainingFeedback',
+}
+
+# Protected locations that should never be written to
+PROTECTED_PATHS = [
+    '.ssh',
+    '.gnupg',
+    '.aws',
+    '.credentials',
+    'Library/Keychains',
+    'Library/Cookies',
+    '.password-store',
+]
+
+
+def validate_input_path(file_path: str) -> Path:
+    """
+    Validate an input file path for security.
+
+    Raises ValueError if path is unsafe.
+
+    NOTE: Audit logs only contain filenames (not full paths) to avoid
+    exposing directory structure or potentially sensitive path components.
+    """
+    if not file_path:
+        raise ValueError("File path cannot be empty")
+
+    path = Path(file_path)
+
+    # Resolve to absolute path (handles .. and symlinks)
+    try:
+        resolved = path.resolve(strict=True)  # strict=True requires file to exist
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {file_path}")
+    except OSError as e:
+        raise ValueError(f"Invalid path: {e}")
+
+    # Check for symlink (after resolving, check original)
+    if path.is_symlink():
+        # SECURITY: Log only that symlink was blocked, not the path
+        audit_log.warning("BLOCKED: symlink access attempt")
+        raise ValueError("Symlinks are not allowed for security reasons")
+
+    # Verify it's a regular file
+    if not resolved.is_file():
+        raise ValueError("Path must be a regular file")
+
+    return resolved
+
+
+def validate_output_path(file_path: str) -> Path:
+    """
+    Validate an output file path for security.
+
+    Only allows writes to user's home directory (excluding protected locations)
+    or system temp directories.
+
+    NOTE: Audit logs only contain filenames (not full paths) to avoid
+    exposing directory structure or potentially sensitive path components.
+    """
+    if not file_path:
+        raise ValueError("Output path cannot be empty")
+
+    path = Path(file_path)
+
+    # Resolve parent directory (file may not exist yet)
+    try:
+        parent = path.parent.resolve(strict=True)
+    except FileNotFoundError:
+        raise ValueError(f"Output directory does not exist: {path.parent}")
+
+    resolved = parent / path.name
+    home = Path.home().resolve()
+
+    # Allow writes to:
+    # 1. User's home directory (but not protected locations)
+    # 2. System temp directories
+    allowed_prefixes = [
+        str(home),
+        '/tmp',
+        '/var/folders',  # macOS temp
+    ]
+
+    resolved_str = str(resolved)
+    if not any(resolved_str.startswith(prefix) for prefix in allowed_prefixes):
+        # SECURITY: Log only that write was blocked, not the actual path
+        audit_log.warning("BLOCKED: write attempt outside allowed locations")
+        raise ValueError("Output must be in user's home directory or temp folder")
+
+    # Check protected locations
+    for protected in PROTECTED_PATHS:
+        if protected in resolved_str:
+            # SECURITY: Log only that protected location was blocked
+            audit_log.warning(f"BLOCKED: write attempt to protected location ({protected})")
+            raise ValueError(f"Cannot write to protected location containing: {protected}")
+
+    return resolved
+
+
+def validate_request(request: dict) -> None:
+    """
+    Validate JSON-RPC request structure.
+
+    Raises ValueError if request is malformed.
+    """
+    if not isinstance(request, dict):
+        raise ValueError("Request must be a JSON object")
+
+    # Validate ID
+    req_id = request.get('id')
+    if req_id is not None and not isinstance(req_id, (int, str)):
+        raise ValueError("Request ID must be an integer or string")
+
+    # Validate method
+    method = request.get('method')
+    if not isinstance(method, str):
+        raise ValueError("Method must be a string")
+    if method not in ALLOWED_METHODS:
+        raise ValueError(f"Unknown method: {method}")
+
+    # Validate params
+    params = request.get('params')
+    if params is not None and not isinstance(params, dict):
+        raise ValueError("Params must be a dictionary")
+
+
 class RPCServer:
     """JSON-RPC server for Hush backend operations"""
-    
+
     def __init__(self):
         """Initialize the RPC server and warm up components"""
         sys.stderr.write("[RPCServer] Initializing...\n")
         sys.stderr.flush()
-        
+
         self.router = FileRouter()
-        
+        self.rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+
         # Warmup detector on init
         sys.stderr.write("[RPCServer] Warming up PII detector...\n")
         sys.stderr.flush()
         self.router.warmup()
-        
+
+        audit_log.info("RPC server initialized")
         sys.stderr.write("[RPCServer] Ready to accept requests\n")
         sys.stderr.flush()
     
     def handle_detect_pii(self, params):
         """Handle detectPII request"""
         file_path = params.get('filePath')
-        if not file_path:
-            raise ValueError("Missing required parameter: filePath")
-        
-        file_type = self.router.detect_file_type(file_path)
-        
+
+        # SECURITY: Validate input path
+        validated_path = validate_input_path(file_path)
+        file_path_str = str(validated_path)
+
+        file_type = self.router.detect_file_type(file_path_str)
+
+        # SECURITY: Log operation (path only, never contents/results)
+        audit_log.info(f"DETECT | type={file_type} | file={validated_path.name}")
+
         if file_type == 'image':
-            return self.router.detect_pii_image(file_path)
+            return self.router.detect_pii_image(file_path_str)
         elif file_type == 'spreadsheet':
-            return self.router.detect_pii_spreadsheet(file_path)
+            return self.router.detect_pii_spreadsheet(file_path_str)
         elif file_type == 'pdf':
-            return self.router.detect_pii_pdf(file_path)
+            return self.router.detect_pii_pdf(file_path_str)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
     
@@ -79,32 +287,50 @@ class RPCServer:
         destination = params.get('destination')
         detections = params.get('detections')
         selected_indices = params.get('selectedIndices')
-        
+
         if not all([source, destination, detections is not None, selected_indices is not None]):
             raise ValueError("Missing required parameters")
-        
-        file_type = self.router.detect_file_type(source)
-        
+
+        # SECURITY: Validate input and output paths
+        validated_source = validate_input_path(source)
+        validated_dest = validate_output_path(destination)
+
+        source_str = str(validated_source)
+        dest_str = str(validated_dest)
+
+        file_type = self.router.detect_file_type(source_str)
+
+        # SECURITY: Log operation (filenames only, never detection contents)
+        num_redactions = len(selected_indices) if selected_indices else 0
+        audit_log.info(f"SAVE | type={file_type} | src={validated_source.name} | dst={validated_dest.name} | redactions={num_redactions}")
+
         if file_type == 'image':
-            self.router.save_scrubbed_image(source, destination, detections, selected_indices)
+            self.router.save_scrubbed_image(source_str, dest_str, detections, selected_indices)
         elif file_type == 'spreadsheet':
-            self.router.save_scrubbed_spreadsheet(source, destination, detections, selected_indices)
+            self.router.save_scrubbed_spreadsheet(source_str, dest_str, detections, selected_indices)
         elif file_type == 'pdf':
-            self.router.save_scrubbed_pdf(source, destination, detections, selected_indices)
+            self.router.save_scrubbed_pdf(source_str, dest_str, detections, selected_indices)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
-        
+
         return {"success": True}
     
     def handle_get_pdf_page(self, params):
         """Handle getPDFPage request"""
         file_path = params.get('filePath')
         page_num = params.get('pageNumber')
-        
-        if not file_path or page_num is None:
-            raise ValueError("Missing required parameters: filePath and pageNumber")
-        
-        return self.router.get_pdf_page_image(file_path, page_num)
+
+        if page_num is None:
+            raise ValueError("Missing required parameter: pageNumber")
+
+        # SECURITY: Validate input path
+        validated_path = validate_input_path(file_path)
+
+        # SECURITY: Validate page number is reasonable
+        if not isinstance(page_num, int) or page_num < 1 or page_num > 10000:
+            raise ValueError("Page number must be an integer between 1 and 10000")
+
+        return self.router.get_pdf_page_image(str(validated_path), page_num)
     
     def handle_get_config(self, params):
         """Handle getConfig request"""
@@ -136,13 +362,28 @@ class RPCServer:
     def handle_request(self, request):
         """Handle a single JSON-RPC request"""
         req_id = request.get('id')
-        method = request.get('method')
-        params = request.get('params', {})
-        
-        sys.stderr.write(f"[RPCServer] Request {req_id}: {method}\n")
-        sys.stderr.flush()
-        
+
         try:
+            # SECURITY: Validate request structure
+            validate_request(request)
+
+            # SECURITY: Check rate limit
+            if not self.rate_limiter.check():
+                audit_log.warning(f"RATE_LIMIT exceeded for request {req_id}")
+                return {
+                    "id": req_id,
+                    "error": {
+                        "code": -429,
+                        "message": "Rate limit exceeded. Please slow down."
+                    }
+                }
+
+            method = request.get('method')
+            params = request.get('params', {})
+
+            sys.stderr.write(f"[RPCServer] Request {req_id}: {method}\n")
+            sys.stderr.flush()
+
             # Dispatch to method handler
             if method == 'detectPII':
                 result = self.handle_detect_pii(params)
@@ -160,17 +401,21 @@ class RPCServer:
                 result = self.handle_get_pdf_page(params)
             else:
                 raise ValueError(f"Unknown method: {method}")
-            
+
             sys.stderr.write(f"[RPCServer] Request {req_id} completed successfully\n")
             sys.stderr.flush()
-            
+
             return {"id": req_id, "result": result}
-            
+
         except Exception as e:
+            # SECURITY: Log errors without exposing sensitive details
+            error_type = type(e).__name__
+            audit_log.warning(f"ERROR | id={req_id} | type={error_type}")
+
             sys.stderr.write(f"[RPCServer] Request {req_id} failed: {e}\n")
             sys.stderr.write(traceback.format_exc())
             sys.stderr.flush()
-            
+
             return {
                 "id": req_id,
                 "error": {

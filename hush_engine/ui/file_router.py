@@ -21,6 +21,50 @@ from PIL import Image
 import pandas as pd
 import tempfile
 import os
+import stat
+
+
+# =============================================================================
+# SECURITY: Secure Temp File Handling
+# =============================================================================
+
+def get_secure_temp_dir() -> Path:
+    """
+    Get or create a secure temp directory for Hush.
+
+    Uses ~/.hush/tmp with restrictive permissions (0o700).
+    This prevents other users from reading sensitive image data during processing.
+    """
+    temp_dir = Path.home() / ".hush" / "tmp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    # Set restrictive permissions (owner only)
+    try:
+        os.chmod(temp_dir, stat.S_IRWXU)  # 0o700
+    except OSError:
+        pass  # May fail if directory was just created by another process
+
+    return temp_dir
+
+
+def create_secure_temp_file(suffix: str = '.png') -> str:
+    """
+    Create a secure temporary file with restrictive permissions.
+
+    Args:
+        suffix: File extension (e.g., '.png', '.jpg')
+
+    Returns:
+        Path to the temporary file
+    """
+    temp_dir = get_secure_temp_dir()
+    fd, temp_path = tempfile.mkstemp(suffix=suffix, dir=temp_dir)
+
+    # Set restrictive permissions (owner only)
+    os.chmod(temp_path, stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+    os.close(fd)
+
+    return temp_path
 
 
 class FileRouter:
@@ -214,9 +258,9 @@ class FileRouter:
         for page_num, page_image in enumerate(page_images, start=1):
             # Save page image temporarily for OCR processing
             # CRITICAL: Must preserve DPI metadata for accurate OCR
-            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-                temp_path = tmp_file.name
-                page_image.save(temp_path, dpi=(self.pdf_processor.dpi, self.pdf_processor.dpi))
+            # SECURITY: Use secure temp file with restrictive permissions
+            temp_path = create_secure_temp_file(suffix='.png')
+            page_image.save(temp_path, dpi=(self.pdf_processor.dpi, self.pdf_processor.dpi))
             
             try:
                 # Extract text from this page
@@ -273,13 +317,9 @@ class FileRouter:
             raise ValueError(f"Could not extract page {page_number} from PDF")
         
         page_image = page_images[0]
-        
-        # Save to temporary file
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
-        temp_path = temp_file.name
-        temp_file.close()
-        
+
+        # SECURITY: Save to secure temporary file with restrictive permissions
+        temp_path = create_secure_temp_file(suffix='.jpg')
         page_image.save(temp_path, 'JPEG', quality=85)
         
         return {'image_path': temp_path}
@@ -355,10 +395,9 @@ class FileRouter:
             page_bboxes = selected_by_page.get(page_num, [])
             
             if page_bboxes:
-                # Save to temp file for processing
-                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
-                    temp_path = tmp_file.name
-                    page_image.save(temp_path)
+                # SECURITY: Save to secure temp file for processing
+                temp_path = create_secure_temp_file(suffix='.jpg')
+                page_image.save(temp_path)
                 
                 try:
                     # Load and redact
