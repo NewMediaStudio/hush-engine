@@ -55,8 +55,7 @@ test_outputs/
 *.log
 
 # Test data (large files, downloaded separately)
-tests/data/*.xlsx
-tests/data/*.pdf
+tests/data/
 tests/results/
 
 # Spacy models (downloaded separately)

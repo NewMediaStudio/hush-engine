@@ -141,10 +141,16 @@ class PIIDetector:
         # Denylist of common words that should not be detected as PII
         # These are often document headers (e.g. "Email:", "Phone:")
         self.denylist = {
+            # Form labels
             "email", "phone", "name", "address", "date", "subject", "to", "from", "cc", "bcc",
             "first name", "last name", "middle name", "street", "city", "province", "state", "zip", "postal",
             "country", "mobile", "fax", "tel", "website", "url",
-            "apartment", "unit", "suite", "floor", "level", "building", "po box"
+            "apartment", "unit", "suite", "floor", "level", "building", "po box",
+            # UI/business terms (prevent SWIFT false positives like CUSTOMER -> CUST+OM+ER)
+            "customer", "customers", "customer hub", "customer agent", "customer request", "customer requests",
+            "overview", "dashboard", "portal", "service", "services", "support", "agent", "agents",
+            "business", "request", "requests", "menu", "navigation", "header", "footer", "new customer",
+            "help your business", "financial"
         }
 
     def _add_location_recognizers(self):
@@ -2095,6 +2101,16 @@ class PIIDetector:
                     continue
                 # Skip if it's a company suffix appearing alone
                 if entity_text.lower() in ('inc', 'inc.', 'llc', 'ltd', 'ltd.', 'corp', 'corp.', 's.a.', 'plc', 'pjsc'):
+                    continue
+                # Skip common English words that accidentally match SWIFT pattern (CUST+OM+ER = CUSTOMER)
+                swift_false_positives = {
+                    'customer', 'customers', 'overview', 'services', 'business', 'register',
+                    'chapters', 'chapters', 'pictures', 'features', 'measures', 'treasur',
+                    'pleasure', 'captures', 'ventures', 'lectures', 'cultures', 'textures',
+                    'mixtures', 'fixtures', 'dentures', 'gestures', 'pastures', 'postures',
+                    'ruptures', 'sutures', 'natures', 'futures', 'tortures', 'fractures'
+                }
+                if entity_text.lower() in swift_false_positives:
                     continue
 
             # Filter MEDICAL false positives

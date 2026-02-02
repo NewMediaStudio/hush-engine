@@ -32,8 +32,8 @@ This classification draws from authoritative sources:
 | Identifier | Standard Format / Regex Pattern | Key Regulations | Hush Engine Support |
 |------------|--------------------------------|-----------------|---------------------|
 | **Social Security Number (SSN)** | `\b\d{3}-\d{2}-\d{4}\b` or `\b\d{9}\b` | HIPAA, CCPA, NIST | ✅ `US_SSN` |
-| **Social Insurance Number (SIN)** | `\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b` | PIPEDA (Canada) | ⚠️ Partial |
-| **National ID Number** | Varies by country | GDPR, Local laws | ⚠️ Partial |
+| **Social Insurance Number (SIN)** | `\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b` | PIPEDA (Canada) | ✅ `NATIONAL_ID` |
+| **National ID Number** | Varies by country | GDPR, Local laws | ✅ `NATIONAL_ID` (35+ countries via python-stdnum) |
 | **Passport Number** | `\b[A-Z]{1,2}\d{6,9}\b` | HIPAA, GDPR, CCPA | ✅ `PASSPORT` |
 | **Driver's License Number** | Varies by state/province | HIPAA, CCPA | ✅ `DRIVERS_LICENSE` |
 | **Biometric Data (Fingerprints)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ❌ N/A (binary) |
@@ -41,7 +41,7 @@ This classification draws from authoritative sources:
 | **Biometric Data (Facial Recognition)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ❌ N/A (binary) |
 | **Genetic Data** | Various sequence formats | GDPR Art.9, GINA, HIPAA | ❌ Planned |
 | **Bank Account + Routing Number** | `\b\d{9,17}\b` with context | CCPA, PCI-DSS | ⚠️ Partial |
-| **Credit Card + CVV** | `\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b` | PCI-DSS, CCPA | ✅ `CREDIT_CARD` |
+| **Credit Card + CVV** | `\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b` | PCI-DSS, CCPA | ✅ `CREDIT_CARD` (Luhn validated) |
 | **Login Credentials (Username + Password)** | Context-dependent | CCPA, GDPR | ❌ Planned |
 | **AWS Access Key** | `(AKIA\|ASIA)[A-Z0-9]{16}` | Best Practice | ✅ `AWS_ACCESS_KEY` |
 | **Stripe Secret Key** | `sk_live_[0-9a-zA-Z]{24,}` | Best Practice | ✅ `STRIPE_KEY` |
@@ -67,9 +67,9 @@ This classification draws from authoritative sources:
 | **Political Opinions** | Party affiliation, views | GDPR Art.9 | ❌ Planned |
 | **Trade Union Membership** | Union names | GDPR Art.9 | ❌ Planned |
 | **Criminal History** | Contextual | GDPR Art.10, FCRA | ❌ Planned |
-| **IBAN** | `\b[A-Z]{2}\d{2}[A-Z0-9]{4,}\b` | GDPR, PSD2 | ✅ `IBAN_CODE` |
+| **IBAN** | `\b[A-Z]{2}\d{2}[A-Z0-9]{4,}\b` | GDPR, PSD2 | ✅ `IBAN_CODE` (116 countries, Mod-97 validated) |
 | **SWIFT/BIC Code** | `\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?\b` | GDPR, PSD2 | ✅ `FINANCIAL` |
-| **Full Face Photo** | Image detection | HIPAA, GDPR | ✅ `FACE` (via OCR) |
+| **Full Face Photo** | Image detection | HIPAA, GDPR | ✅ `FACE` (OpenCV Haar cascade) |
 | **Vehicle ID (VIN)** | `\b[A-HJ-NPR-Z0-9]{17}\b` | HIPAA, CCPA | ✅ `VEHICLE_ID` |
 | **Device Identifier (IMEI, MAC)** | `\b\d{15}\b` / `([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}` | HIPAA, CCPA | ✅ `DEVICE_ID` |
 | **Immigration/Citizenship Status** | Contextual | CCPA (as of 2024) | ❌ Planned |
@@ -80,7 +80,7 @@ This classification draws from authoritative sources:
 |------------|--------------------------------|-----------------|---------------------|
 | **Full Name** | `\b[A-Z][a-z]+\s+[A-Z][a-z]+\b` | HIPAA, GDPR, CCPA | ✅ `PERSON` (NLP-based) |
 | **Email Address** | `\b[\w.-]+@[\w.-]+\.\w+\b` | GDPR, CCPA | ✅ `EMAIL_ADDRESS` |
-| **Phone Number** | `\b\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b` | HIPAA, GDPR, CCPA | ✅ `PHONE_NUMBER` |
+| **Phone Number** | `\b\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b` | HIPAA, GDPR, CCPA | ✅ `PHONE_NUMBER` (150+ countries via phonenumbers) |
 | **Physical Address** | Street + City + State/Province + Postal | HIPAA, GDPR, CCPA | ✅ `LOCATION` |
 | **Street Address** | `\b\d+\s+[A-Z][a-z]+\s+(St\|Ave\|Rd\|Blvd)\.?\b` | HIPAA, GDPR | ✅ `LOCATION` |
 | **City, State/Province** | `\b[A-Z][a-z]+,?\s+[A-Z]{2}\b` | HIPAA, GDPR | ✅ `LOCATION` |
@@ -227,5 +227,5 @@ These patterns may cause false positives and should be validated:
 
 ---
 
-*Last updated: 2026-02-01*
-*Document version: 1.1 - Added PASSPORT, DRIVERS_LICENSE, VEHICLE_ID, DEVICE_ID support*
+*Last updated: 2026-02-02*
+*Document version: 1.2 - Added international validation (116 IBAN countries, 150+ phone patterns, 35+ national IDs)*
