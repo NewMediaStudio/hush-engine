@@ -5,6 +5,46 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-02
+
+### Added
+- **Multi-name company pattern** - Detects "Name, Name and Name" format (e.g., "Nguyen, Turner and Mcgee")
+  - Covers 41% of company names in training data that use this pattern
+  - Score: 0.85 (high confidence)
+
+### Changed
+- **LOCATION filtering improvements**
+  - Added minimum 4-character length requirement to filter short false positives ("in", "as", "WY")
+  - Increased confidence threshold from 0.60 to 0.65
+  - Added blocklist for common short phrases ("claimed as", "delay in", "lakhs in")
+
+- **COMPANY filtering improvements**
+  - Reduced hyphenated company pattern score from 0.65 to 0.55 to reduce false positives
+  - Added blocklist for hyphenated adjectives ("cross-verified", "high-value", "tax-related")
+  - Added maximum length check and phrase filtering
+  - Allows dual PERSON/COMPANY detection for ambiguous patterns like "Jackson-Guzman"
+
+- **PERSON filtering improvements**
+  - Added US cities commonly confused with names (Austin, Jackson, Madison, Houston, etc.)
+  - Added last names that appear in company names (Hill, Coleman, Phillips, etc.)
+  - Added credit card brand names (Visa, Mastercard, Maestro) to blocklist
+  - Preserved detection of hyphenated surnames (can be both person and company)
+
+- **DATE_TIME filtering**
+  - Added filtering for fiscal year phrases ("fiscal year ending", "year ended")
+  - Added filtering for standalone month names
+  - Increased confidence threshold to 0.75
+
+- **FINANCIAL filtering**
+  - Added filtering for plain currency amounts ($125,000, INR 2 Lakhs)
+  - Added filtering for amounts with currency codes (USD 100, EUR 500)
+
+### Performance
+- Text-based detection F1 improved from 62.7% to 76.8%
+- Precision improved from 49.0% to 65.8% (+16.8%)
+- Recall improved from 87.2% to 92.2% (+5.0%)
+- False positives reduced by 48% (233 → 120)
+
 ## [1.1.0] - 2026-02-02
 
 ### Added
