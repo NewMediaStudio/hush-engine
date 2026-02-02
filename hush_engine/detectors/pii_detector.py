@@ -141,6 +141,8 @@ class PIIDetector:
         self._add_ssn_recognizers()
         # Add international national ID recognizers
         self._add_international_id_recognizers()
+        # Add person name recognizers (title + name patterns)
+        self._add_person_recognizers()
 
         # Denylist of common words that should not be detected as PII
         # These are often document headers (e.g. "Email:", "Phone:")
@@ -709,6 +711,40 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(currency_recognizer)
         self.analyzer.registry.add_recognizer(iban_recognizer)
 
+    def _add_person_recognizers(self):
+        """Add pattern recognizers for person names with titles."""
+        # Titles that indicate a person name follows
+        # Handles: Dr. Smith, dr. DARYL, Mr. Jones, Prof. Williams, etc.
+        titles = r"(?:Dr|DR|dr|Mr|MR|mr|Mrs|MRS|mrs|Ms|MS|ms|Miss|MISS|Prof|PROF|prof|Professor|Rev|REV|rev|Reverend|Sr|JR|Jr|Esq|Hon|Capt|Col|Gen|Lt|Maj|Sgt)"
+
+        # Name pattern: Title + optional period + name(s)
+        # Handles mixed case like "dr. DARYL" or "Dr. John Smith"
+        title_name_patterns = [
+            # Title. Name (e.g., "Dr. Smith", "dr. DARYL")
+            rf"\b{titles}\.?\s+[A-Za-z][A-Za-z]+(?:\s+[A-Za-z][A-Za-z]+)?\b",
+            # Title Name Name (e.g., "Dr John Smith", "Professor Jane Doe")
+            rf"\b{titles}\s+[A-Z][a-z]+\s+[A-Z][a-z]+\b",
+        ]
+
+        person_recognizer = PatternRecognizer(
+            supported_entity="PERSON",
+            patterns=[
+                Pattern(
+                    name="title_name",
+                    regex=title_name_patterns[0],
+                    score=0.85,
+                ),
+                Pattern(
+                    name="title_full_name",
+                    regex=title_name_patterns[1],
+                    score=0.9,
+                ),
+            ],
+            context=["name", "person", "patient", "doctor", "contact", "recipient", "sender"]
+        )
+
+        self.analyzer.registry.add_recognizer(person_recognizer)
+
     def _add_company_recognizers(self):
         """Add pattern recognizers for company names and legal designations."""
         # Legal designations for companies
@@ -1043,6 +1079,22 @@ class PIIDetector:
             r"\b(?i)gout\b",
         ]
 
+        # Body parts and organs (can be sensitive in medical contexts)
+        # Note: Using case variations instead of (?i) flag to avoid deprecation warning
+        body_part_patterns = [
+            # Major organs (case-insensitive via alternation)
+            r"(?i)\b(?:heart|liver|kidney|lung|brain|spleen|pancreas|gallbladder|bladder|stomach|intestine|colon)\b",
+            r"(?i)\b(?:eyes?|ears?|nose|throat|tongue|teeth|gums|tonsils)\b",
+            r"(?i)\b(?:skin|bone|muscle|tendon|ligament|cartilage|joint)\b",
+            r"(?i)\b(?:artery|arteries|vein|veins|blood\s+vessel)\b",
+            r"(?i)\b(?:thyroid|adrenal|pituitary|prostate|ovary|ovaries|uterus|testes|testicle)\b",
+            # Body regions
+            r"(?i)\b(?:chest|abdomen|pelvis|groin|spine|vertebra|vertebrae)\b",
+            r"(?i)\b(?:skull|rib|ribs|femur|tibia|fibula|humerus|radius|ulna)\b",
+            # Systems
+            r"(?i)\b(?:nervous\s+system|cardiovascular|respiratory|digestive|urinary|reproductive)\b",
+        ]
+
         # ICD-10 code patterns (letter followed by digits, optionally with decimal)
         icd_patterns = [
             r"\b[A-TV-Z]\d{2}(?:\.\d{1,4})?\b",  # ICD-10-CM format
@@ -1073,6 +1125,7 @@ class PIIDetector:
             medication_suffixes +
             [common_drugs_pattern] +
             condition_patterns +
+            body_part_patterns +
             icd_patterns +
             lab_vital_patterns
         )
@@ -1115,9 +1168,19 @@ class PIIDetector:
             context=["lab", "test", "result", "value", "level", "reading", "vital", "signs"]
         )
 
+        # Body parts recognizer (organs, body regions)
+        body_part_recognizer = PatternRecognizer(
+            supported_entity="MEDICAL",
+            patterns=[Pattern(name=f"body_part_{i}", regex=p, score=0.70)
+                      for i, p in enumerate(body_part_patterns)],
+            context=["patient", "examination", "pain", "surgery", "transplant", "organ",
+                     "injury", "damaged", "removed", "biopsy", "scan", "x-ray", "mri", "ct"]
+        )
+
         self.analyzer.registry.add_recognizer(medical_recognizer)
         self.analyzer.registry.add_recognizer(condition_recognizer)
         self.analyzer.registry.add_recognizer(lab_recognizer)
+        self.analyzer.registry.add_recognizer(body_part_recognizer)
 
     def _add_scispacy_medical_recognizer(self):
         """
@@ -2119,6 +2182,22 @@ class PIIDetector:
                 if entity.confidence < 0.7:
                     continue
 
+            # Filter PASSPORT false positives
+            if entity.entity_type == "PASSPORT":
+                # Skip common words that look like passport numbers
+                passport_false_positives = {
+                    'chartered', 'certified', 'registered', 'licensed', 'qualified',
+                    'accredited', 'authorized', 'approved', 'verified', 'validated',
+                }
+                if entity_text.lower() in passport_false_positives:
+                    continue
+                # Passport numbers should be alphanumeric, not just letters
+                if entity_text.isalpha() and len(entity_text) > 5:
+                    continue
+                # Skip if confidence is low
+                if entity.confidence < 0.7:
+                    continue
+
             # Filter URL false positives (from email domain parts)
             if entity.entity_type == "URL":
                 # Skip if it's just a domain without protocol (likely email domain)
@@ -2218,6 +2297,19 @@ class PIIDetector:
                 if len(words) == 1 and len(entity_text) < 15:
                     # Single word locations need high confidence
                     if entity.confidence < 0.75:
+                        continue
+                    # Filter standalone country names (not PII without full address context)
+                    standalone_countries = {
+                        'india', 'china', 'japan', 'korea', 'australia', 'canada', 'mexico',
+                        'brazil', 'argentina', 'france', 'germany', 'italy', 'spain', 'portugal',
+                        'russia', 'ukraine', 'poland', 'netherlands', 'belgium', 'switzerland',
+                        'austria', 'sweden', 'norway', 'denmark', 'finland', 'ireland', 'scotland',
+                        'england', 'wales', 'britain', 'uk', 'usa', 'america', 'africa', 'asia',
+                        'europe', 'singapore', 'malaysia', 'indonesia', 'thailand', 'vietnam',
+                        'philippines', 'pakistan', 'bangladesh', 'egypt', 'turkey', 'greece',
+                        'israel', 'dubai', 'qatar', 'kuwait', 'saudi', 'iran', 'iraq',
+                    }
+                    if entity_text.lower() in standalone_countries:
                         continue
                 # Require at least one address indicator for texts > 10 chars
                 if len(entity_text) > 10:
@@ -2417,6 +2509,9 @@ class PIIDetector:
 
             # Filter PERSON false positives
             if entity.entity_type == "PERSON":
+                # Skip if contains newlines or excessive whitespace (likely OCR/formatting artifact)
+                if '\n' in entity_text or '\r' in entity_text or '  ' in entity_text:
+                    continue
                 # Skip if it looks like a state/province abbreviation in an address context
                 if len(entity_text) <= 3 and entity_text.isupper():
                     continue
@@ -2532,8 +2627,24 @@ class PIIDetector:
                     'provided by', 'submitted by', 'reviewed by', 'approved by',
                     'has been', 'have been', 'was ', 'were ', 'will be',
                     'in accordance', 'in compliance', 'in relation', 'in connection',
+                    # Accounting terms and partial sentences
+                    'property, plant', 'plant and equipment', 'namely ', 'one branch',
+                    'assets and', 'and liabilities', 'revenue and', 'income and',
                 ]
                 if any(indicator in text_lower for indicator in company_phrase_indicators):
+                    continue
+                # Skip department/division names that aren't company names
+                department_names = {
+                    'research & development', 'research and development', 'r&d',
+                    'human resources', 'hr', 'finance', 'accounting', 'marketing',
+                    'sales', 'operations', 'it', 'information technology', 'legal',
+                    'compliance', 'audit', 'internal audit', 'external audit',
+                    'customer service', 'customer support', 'technical support',
+                    'quality assurance', 'qa', 'quality control', 'qc',
+                    'supply chain', 'logistics', 'procurement', 'purchasing',
+                    'engineering', 'product development', 'business development',
+                }
+                if text_lower in department_names:
                     continue
 
             # Filter DATE_TIME false positives (dates are not PII in most contexts)
@@ -2557,15 +2668,8 @@ class PIIDetector:
                 if entity.confidence < 0.75:
                     continue
 
-            # Filter FINANCIAL false positives (currency amounts are often not sensitive PII)
-            if entity.entity_type == "FINANCIAL":
-                text_lower = entity_text.lower()
-                # Skip plain currency amounts (e.g., "$125,000", "INR 2 Lakhs")
-                if re.match(r'^[\$£€¥₹]?\s*[\d,]+(?:\.\d+)?(?:\s*(?:lakhs?|crores?|million|billion|thousand|k|m|b))?\s*$', text_lower, re.IGNORECASE):
-                    continue
-                # Skip amounts with currency codes (e.g., "USD 100", "INR 500")
-                if re.match(r'^(?:USD|EUR|GBP|INR|JPY|CNY|AUD|CAD)\s*[\d,]+', entity_text, re.IGNORECASE):
-                    continue
+            # Note: Currency amounts ARE now detected as FINANCIAL (user feedback)
+            # Previously filtered out, but users want to redact financial data
 
             filtered.append(entity)
 

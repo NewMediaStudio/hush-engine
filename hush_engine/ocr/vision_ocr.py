@@ -36,17 +36,20 @@ class VisionOCR:
     to PIL (pixel-based, top-left origin).
     """
 
-    def __init__(self, recognition_level: str = "accurate"):
+    def __init__(self, recognition_level: str = "accurate", bbox_padding: float = 0.02):
         """
         Initialize the OCR engine
 
         Args:
             recognition_level: "fast" or "accurate" (default: accurate)
+            bbox_padding: Fractional padding to add to bounding boxes (default: 2%)
+                         Helps capture full text when boxes are slightly too small
         """
         if not VISION_AVAILABLE:
             raise RuntimeError("Vision framework not available. Install pyobjc-framework-Vision.")
 
         self.recognition_level = recognition_level
+        self.bbox_padding = bbox_padding
 
         # Map recognition level to Vision constants
         if recognition_level == "fast":
@@ -134,7 +137,8 @@ class VisionOCR:
             pil_bbox = self.vision_to_pil_coords(
                 vision_box,
                 image_height,
-                image_width
+                image_width,
+                padding=self.bbox_padding
             )
 
             # Extract character-level bounding boxes for precise entity localization
@@ -177,7 +181,8 @@ class VisionOCR:
     def vision_to_pil_coords(
         vision_box: Tuple[float, float, float, float],
         image_height: int,
-        image_width: int
+        image_width: int,
+        padding: float = 0.0
     ) -> Tuple[float, float, float, float]:
         """
         Transform Vision coordinates to PIL coordinates
@@ -189,11 +194,21 @@ class VisionOCR:
             vision_box: (x, y, width, height) in Vision format
             image_height: Height of image in pixels
             image_width: Width of image in pixels
+            padding: Fractional padding to add (0.02 = 2% of box dimensions)
 
         Returns:
             (x1, y1, x2, y2) in PIL format
         """
         x, y, width, height = vision_box
+
+        # Add padding to normalized coordinates (expand box slightly)
+        if padding > 0:
+            pad_w = width * padding
+            pad_h = height * padding
+            x = max(0, x - pad_w)
+            y = max(0, y - pad_h)
+            width = min(1 - x, width + 2 * pad_w)
+            height = min(1 - y, height + 2 * pad_h)
 
         # Denormalize to pixels
         x_pixel = x * image_width
