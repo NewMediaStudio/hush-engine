@@ -11,6 +11,10 @@ from presidio_analyzer.nlp_engine import NlpEngineProvider
 import pandas as pd
 import threading
 import re
+from pathlib import Path
+
+# Package version
+__version__ = "1.1.1"
 
 # Import locale support
 from .locale import (
@@ -154,6 +158,27 @@ class PIIDetector:
             # Common disclaimer/explanatory phrases (prevent address false positives)
             "business network", "billing purposes", "connected to", "may be connected", "used for"
         }
+
+    @staticmethod
+    def getVersion() -> str:
+        """
+        Get the current version of the PII detector engine.
+
+        Returns:
+            str: Version string (e.g., "1.1.1")
+        """
+        return __version__
+
+    @staticmethod
+    def get_version() -> str:
+        """
+        Get the current version of the PII detector engine.
+        Alias for getVersion() using Python naming convention.
+
+        Returns:
+            str: Version string (e.g., "1.1.1")
+        """
+        return __version__
 
     def _add_location_recognizers(self):
         """Add pattern recognizers for address formats (e.g. Canadian place, province, postal code)."""
@@ -1253,9 +1278,21 @@ class PIIDetector:
                     name="generic_15",
                     regex=r"\b\d{4}[\s-]?\d{6}[\s-]?\d{5}\b",
                     score=0.6
+                ),
+                # Maestro cards (12-19 digits, starts with 50, 56-69, 5018, 5020, 5038, 6304, 6759, 6761-6763)
+                Pattern(
+                    name="maestro_12_13",
+                    regex=r"\b(?:50|5[6-9]|6[0-9])\d{10,11}\b",
+                    score=0.75
+                ),
+                # Generic 12-digit pattern with card context (fallback for Maestro/other cards)
+                Pattern(
+                    name="generic_12",
+                    regex=r"\b\d{12}\b",
+                    score=0.5
                 )
             ],
-            context=["card", "credit", "payment", "visa", "mastercard", "amex", "discover"]
+            context=["card", "credit", "payment", "visa", "mastercard", "amex", "discover", "maestro", "debit", "cvv", "cvc", "expir"]
         )
 
         self.analyzer.registry.add_recognizer(credit_card_recognizer)
@@ -1964,13 +2001,17 @@ class PIIDetector:
             # Filter NATIONAL_ID false positives
             if entity.entity_type == "NATIONAL_ID":
                 digits = re.sub(r'\D', '', entity_text)
-                # Skip if it looks like a credit card (15-16 continuous digits with card prefixes)
-                if len(digits) >= 15 and len(digits) <= 16:
+                # Skip if it looks like a credit card (12-19 digits with card prefixes)
+                # Maestro: 12-19 digits starting with 50, 56-69, 5018, 5020, 5038, 6304, 6759, 6761-6763
+                if len(digits) >= 12 and len(digits) <= 19:
+                    # Maestro/Debit prefixes (50, 56-69)
+                    if digits[:2] in ('50', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69'):
+                        continue
                     # Visa (4), Mastercard (5), Amex/Diners (3), Discover (6)
-                    if digits[0] in ('3', '4', '5', '6'):
+                    if len(digits) >= 15 and digits[0] in ('3', '4', '5', '6'):
                         continue
                     # Also check for Mastercard 2xxx range
-                    if digits[:4].isdigit() and 2221 <= int(digits[:4]) <= 2720:
+                    if len(digits) >= 15 and digits[:4].isdigit() and 2221 <= int(digits[:4]) <= 2720:
                         continue
                 # Skip if it has credit card format (4-4-4-4 with separators)
                 if re.match(r'^\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]?\d{0,4}$', entity_text):
@@ -2001,6 +2042,9 @@ class PIIDetector:
 
             # Filter DATE_TIME - reduce false positives from phone numbers and credit cards
             if entity.entity_type == "DATE_TIME":
+                # Skip if it looks like an international phone number (+CC XXXXXXXXXX)
+                if re.match(r'^\+\d{1,3}[\s-]?\d{7,14}$', entity_text):
+                    continue
                 # Skip if it looks like a phone number fragment (contains dashes in phone pattern)
                 if re.match(r'^\d{3,4}[-.]?\d{4}$', entity_text):
                     continue
@@ -2478,6 +2522,18 @@ class PIIDetector:
                         continue
                 # Skip very short company names (less than 4 chars)
                 if len(entity_text.strip()) < 4:
+                    continue
+                # Skip very long "company names" (likely sentences/phrases, not company names)
+                if len(entity_text.strip()) > 50:
+                    continue
+                # Skip if it looks like a descriptive phrase (contains common non-company words)
+                company_phrase_indicators = [
+                    'verified against', 'claims were', 'related to', 'purchased by',
+                    'provided by', 'submitted by', 'reviewed by', 'approved by',
+                    'has been', 'have been', 'was ', 'were ', 'will be',
+                    'in accordance', 'in compliance', 'in relation', 'in connection',
+                ]
+                if any(indicator in text_lower for indicator in company_phrase_indicators):
                     continue
 
             # Filter DATE_TIME false positives (dates are not PII in most contexts)
