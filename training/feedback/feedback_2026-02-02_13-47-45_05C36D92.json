@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 75.86206545148616,
+    "width" : 189.415034436915,
+    "x" : 2992.7576622615793,
+    "y" : 1953.4482780932221
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "$2,250",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T18:47:45Z"
+}

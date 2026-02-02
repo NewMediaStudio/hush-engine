@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 73.24736186436257,
+    "width" : 389.41809606640254,
+    "x" : 2064.0653301378557,
+    "y" : 2490.5314904621428
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "TUMOR\/CANCER X",
+  "fileName" : "medical_report_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/medical_report_1.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "MEDICAL"
+  ],
+  "timestamp" : "2026-02-02T18:30:35Z"
+}

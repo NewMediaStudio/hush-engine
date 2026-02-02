@@ -20,6 +20,7 @@ DEFAULT_THRESHOLDS = {
     "CREDIT_CARD": 0.5,
     "SSN": 0.5,
     "DATE_TIME": 0.5,
+    "AGE": 0.5,  # Age detection ("15 years old", "Age: 45")
     "NRP": 0.5,  # Nationality, Religion, Political group
     "ORGANIZATION": 0.5,
     "URL": 0.5,

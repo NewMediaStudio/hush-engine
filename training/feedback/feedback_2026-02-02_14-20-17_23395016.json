@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 36.17030609130859,
+    "width" : 176.47273494466117,
+    "x" : 1896.9117366017326,
+    "y" : 306.7906428346297
+  },
+  "confidence" : 0.65,
+  "detectedEntityType" : "PERSON",
+  "detectedText" : "recently paid",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "Not a name",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T19:20:17Z"
+}

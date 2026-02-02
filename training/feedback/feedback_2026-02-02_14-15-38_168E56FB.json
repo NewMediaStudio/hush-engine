@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 69.14719190325104,
+    "width" : 441.5329854229576,
+    "x" : 354.14080316556897,
+    "y" : 2767.5273894341262
+  },
+  "confidence" : 0.65,
+  "detectedEntityType" : "PERSON",
+  "detectedText" : "Adhere your label to",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "Not a name",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T19:15:38Z"
+}

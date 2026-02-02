@@ -41,6 +41,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ui.file_router import FileRouter
 import detection_config
 from analyze_feedback import FeedbackAnalyzer
+from library_manager import get_library_manager
+from locale_manager import get_locale_manager
 
 
 # =============================================================================
@@ -114,6 +116,13 @@ ALLOWED_METHODS = {
     'saveConfig',
     'resetConfig',
     'ingestTrainingFeedback',
+    # Library management
+    'getLibraryStatus',
+    'setLibraryEnabled',
+    'downloadLibrary',
+    # Locale management
+    'getLocale',
+    'setLocale',
 }
 
 # Protected locations that should never be written to
@@ -363,7 +372,79 @@ class RPCServer:
         analyzer = FeedbackAnalyzer(str(feedback_path))
         result = analyzer.auto_adjust_thresholds(min_samples=3)
         return result
-    
+
+    # =========================================================================
+    # Library Management Methods
+    # =========================================================================
+
+    def handle_get_library_status(self, params):
+        """Handle getLibraryStatus: get status of optional libraries"""
+        library_name = params.get('libraryName')  # Optional, None returns all
+        manager = get_library_manager()
+        return manager.get_library_status(library_name)
+
+    def handle_set_library_enabled(self, params):
+        """Handle setLibraryEnabled: enable or disable a library"""
+        library_name = params.get('libraryName')
+        enabled = params.get('enabled')
+
+        if library_name is None:
+            raise ValueError("Missing required parameter: libraryName")
+        if enabled is None:
+            raise ValueError("Missing required parameter: enabled")
+        if not isinstance(enabled, bool):
+            raise ValueError("Parameter 'enabled' must be a boolean")
+
+        manager = get_library_manager()
+        result = manager.set_library_enabled(library_name, enabled)
+
+        audit_log.info(f"LIBRARY | action={'enable' if enabled else 'disable'} | library={library_name}")
+
+        return result
+
+    def handle_download_library(self, params):
+        """Handle downloadLibrary: install an optional library via pip"""
+        library_name = params.get('libraryName')
+        sync = params.get('sync', False)  # If True, wait for completion
+
+        if library_name is None:
+            raise ValueError("Missing required parameter: libraryName")
+
+        manager = get_library_manager()
+
+        audit_log.info(f"LIBRARY | action=download | library={library_name}")
+
+        if sync:
+            return manager.download_library_sync(library_name)
+        else:
+            return manager.download_library(library_name)
+
+    # =========================================================================
+    # Locale Management Methods
+    # =========================================================================
+
+    def handle_get_locale(self, params):
+        """Handle getLocale: get current locale settings"""
+        manager = get_locale_manager()
+        return manager.get_locale()
+
+    def handle_set_locale(self, params):
+        """Handle setLocale: set locale preference"""
+        locale = params.get('locale')
+
+        if locale is None:
+            raise ValueError("Missing required parameter: locale")
+        if not isinstance(locale, str):
+            raise ValueError("Parameter 'locale' must be a string")
+
+        manager = get_locale_manager()
+        result = manager.set_locale(locale)
+
+        if result.get("success"):
+            audit_log.info(f"LOCALE | action=set | locale={locale}")
+
+        return result
+
     def handle_request(self, request):
         """Handle a single JSON-RPC request"""
         req_id = request.get('id')
@@ -404,6 +485,18 @@ class RPCServer:
                 result = self.handle_ingest_training_feedback(params)
             elif method == 'getPDFPage':
                 result = self.handle_get_pdf_page(params)
+            # Library management
+            elif method == 'getLibraryStatus':
+                result = self.handle_get_library_status(params)
+            elif method == 'setLibraryEnabled':
+                result = self.handle_set_library_enabled(params)
+            elif method == 'downloadLibrary':
+                result = self.handle_download_library(params)
+            # Locale management
+            elif method == 'getLocale':
+                result = self.handle_get_locale(params)
+            elif method == 'setLocale':
+                result = self.handle_set_locale(params)
             else:
                 raise ValueError(f"Unknown method: {method}")
 

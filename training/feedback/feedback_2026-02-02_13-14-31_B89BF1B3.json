@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 47.41379165649437,
+    "width" : 274.65181192056093,
+    "x" : 1022.8412295364697,
+    "y" : 1716.3793105941663
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "BANGLADESH",
+  "fileName" : "medical_report_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/medical_report_1.pdf",
+  "notes" : "Country.",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:14:31Z"
+}

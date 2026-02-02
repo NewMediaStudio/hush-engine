@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 36.96727813720702,
+    "width" : 274.2387808227537,
+    "x" : 930.9530494809668,
+    "y" : 594.2743409853302
+  },
+  "confidence" : 0.65,
+  "detectedEntityType" : "PERSON",
+  "detectedText" : "Turn leads into sales",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T19:21:20Z"
+}

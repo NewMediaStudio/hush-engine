@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 184.20182600950122,
+    "width" : 240.2222980997625,
+    "x" : 2001.3454869358673,
+    "y" : 2608.997832541568
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM_RECT",
+  "detectedText" : "[Rectangle]",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "3 dates within this area",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T21:31:58Z"
+}

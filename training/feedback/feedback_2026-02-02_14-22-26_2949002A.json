@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 30.484585418701386,
+    "width" : 367.1137695312498,
+    "x" : 1227.7569100033222,
+    "y" : 688.2481529876769
+  },
+  "confidence" : 0.65,
+  "detectedEntityType" : "PERSON",
+  "detectedText" : "business seize opportunities",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "Not a name",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T19:22:26Z"
+}

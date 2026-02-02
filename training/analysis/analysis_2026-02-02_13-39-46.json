@@ -1,0 +1,650 @@
+{
+  "analysis_timestamp": "2026-02-02T13:39:46.750531",
+  "detector_version": "1.1.1",
+  "feedback_count": 24,
+  "summary": {
+    "false_positives": 3,
+    "missed_detections": 18,
+    "misclassifications": 0,
+    "confirmed_correct": 0,
+    "duplicates": 3
+  },
+  "verification": {
+    "still_false_positives": 3,
+    "now_detected": 5,
+    "still_missed": 13
+  },
+  "action_items": [
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "LOCATION",
+      "action": "Improve LOCATION detection to catch these patterns",
+      "examples": [
+        "BANGLADESH",
+        "01 INDIANA AV",
+        "APT 1104",
+        "SUNDARPARA PT IV, ASSAM",
+        "GUWAHATI"
+      ],
+      "count": 5,
+      "implementation_hint": "Add pattern recognizer or update existing LOCATION patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "PERSON",
+      "action": "Improve PERSON detection to catch these patterns",
+      "examples": [
+        ": MOHAMMED ALDAK-",
+        "ALI",
+        "A S EUSUF",
+        "ABDUL"
+      ],
+      "count": 4,
+      "implementation_hint": "Add pattern recognizer or update existing PERSON patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "FALSE_POSITIVE",
+      "entity_type": "COMPANY",
+      "action": "Add filter to exclude these patterns from COMPANY detection",
+      "examples": [
+        "Expenses & Bills",
+        "Expenses & Bills",
+        "Sales & Get Paid"
+      ],
+      "count": 3,
+      "implementation_hint": "Update _filter_false_positives() in pii_detector.py to filter COMPANY patterns like: Expenses & Bills, Expenses & Bills, Sales & Get Paid"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "FINANCIAL",
+      "action": "Improve FINANCIAL detection to catch these patterns",
+      "examples": [
+        "$0",
+        "$452",
+        "$533"
+      ],
+      "count": 3,
+      "implementation_hint": "Add pattern recognizer or update existing FINANCIAL patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "DATE_TIME",
+      "action": "Improve DATE_TIME detection to catch these patterns",
+      "examples": [
+        "04/01/1945",
+        "12/06/2033",
+        "LEusuR Dei \u2192 13/06/2023"
+      ],
+      "count": 3,
+      "implementation_hint": "Add pattern recognizer or update existing DATE_TIME patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "COMPANY",
+      "action": "Improve COMPANY detection to catch these patterns",
+      "examples": [
+        "6 & 10 Euro Market",
+        "ALLELES Design"
+      ],
+      "count": 2,
+      "implementation_hint": "Add pattern recognizer or update existing COMPANY patterns in pii_detector.py"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "MISSED_DETECTION",
+      "entity_type": "MEDICAL",
+      "action": "Improve MEDICAL detection to catch these patterns",
+      "examples": [
+        "TUMOR/CANCER X"
+      ],
+      "count": 1,
+      "implementation_hint": "Add pattern recognizer or update existing MEDICAL patterns in pii_detector.py"
+    }
+  ],
+  "detailed_patterns": {
+    "false_positive_patterns": {
+      "COMPANY": [
+        {
+          "text": "Expenses & Bills",
+          "notes": "\n",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        },
+        {
+          "text": "Expenses & Bills",
+          "notes": "Not a company, menu navigation",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        },
+        {
+          "text": "Sales & Get Paid",
+          "notes": "Not a company, part of navigation",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        }
+      ]
+    },
+    "missed_detection_patterns": {
+      "LOCATION": [
+        {
+          "text": "BANGLADESH",
+          "notes": "Country.",
+          "file": "medical_report_1.pdf"
+        },
+        {
+          "text": "01 INDIANA AV",
+          "notes": "",
+          "file": "shipping_label.pdf"
+        },
+        {
+          "text": "APT 1104",
+          "notes": "",
+          "file": "shipping_label.pdf"
+        },
+        {
+          "text": "SUNDARPARA PT IV, ASSAM",
+          "notes": "",
+          "file": "india_passport.pdf"
+        },
+        {
+          "text": "GUWAHATI",
+          "notes": "",
+          "file": "india_passport.pdf"
+        }
+      ],
+      "PERSON": [
+        {
+          "text": ": MOHAMMED ALDAK-",
+          "notes": "",
+          "file": "shipping_label.pdf"
+        },
+        {
+          "text": "ALI",
+          "notes": "",
+          "file": "india_passport.pdf"
+        },
+        {
+          "text": "A S EUSUF",
+          "notes": "",
+          "file": "india_passport.pdf"
+        },
+        {
+          "text": "ABDUL",
+          "notes": "",
+          "file": "india_passport.pdf"
+        }
+      ],
+      "FINANCIAL": [
+        {
+          "text": "$0",
+          "notes": "",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        },
+        {
+          "text": "$452",
+          "notes": "",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        },
+        {
+          "text": "$533",
+          "notes": "",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        }
+      ],
+      "COMPANY": [
+        {
+          "text": "6 & 10 Euro Market",
+          "notes": "",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        },
+        {
+          "text": "ALLELES Design",
+          "notes": "",
+          "file": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png"
+        }
+      ],
+      "MEDICAL": [
+        {
+          "text": "TUMOR/CANCER X",
+          "notes": "",
+          "file": "medical_report_1.pdf"
+        }
+      ],
+      "DATE_TIME": [
+        {
+          "text": "04/01/1945",
+          "notes": "",
+          "file": "india_passport.pdf"
+        },
+        {
+          "text": "12/06/2033",
+          "notes": "",
+          "file": "india_passport.pdf"
+        },
+        {
+          "text": "LEusuR Dei \u2192 13/06/2023",
+          "notes": "",
+          "file": "india_passport.pdf"
+        }
+      ]
+    }
+  },
+  "raw_categories": {
+    "false_positives": [
+      {
+        "bbox": {
+          "height": 34.47133827209481,
+          "width": 269.0732727050781,
+          "x": 29.353453217773364,
+          "y": 190.52866207924814
+        },
+        "confidence": 0.7,
+        "detectedEntityType": "COMPANY",
+        "detectedText": "Expenses & Bills",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "\n",
+        "suggestedEntityTypes": [
+          "CUSTOM"
+        ],
+        "timestamp": "2026-02-02T18:08:58Z",
+        "_feedback_file": "feedback_2026-02-02_13-08-58_3FE10470.json"
+      },
+      {
+        "bbox": {
+          "height": 34.47133827209481,
+          "width": 269.0732727050781,
+          "x": 29.353453217773364,
+          "y": 190.52866207924814
+        },
+        "confidence": 0.7,
+        "detectedEntityType": "COMPANY",
+        "detectedText": "Expenses & Bills",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "Not a company, menu navigation",
+        "suggestedEntityTypes": [],
+        "timestamp": "2026-02-02T18:26:14Z",
+        "_feedback_file": "feedback_2026-02-02_13-26-14_B0A99FA4.json"
+      },
+      {
+        "bbox": {
+          "height": 35,
+          "width": 264.1810302734375,
+          "x": 34.24568906910028,
+          "y": 278.0000006947399
+        },
+        "confidence": 0.7,
+        "detectedEntityType": "COMPANY",
+        "detectedText": "Sales & Get Paid",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "Not a company, part of navigation",
+        "suggestedEntityTypes": [],
+        "timestamp": "2026-02-02T18:26:42Z",
+        "_feedback_file": "feedback_2026-02-02_13-26-42_EA7CB106.json"
+      }
+    ],
+    "missed_detections": [
+      {
+        "bbox": {
+          "height": 47.41379165649437,
+          "width": 274.65181192056093,
+          "x": 1022.8412295364697,
+          "y": 1716.3793105941663
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "BANGLADESH",
+        "fileName": "medical_report_1.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/medical_report_1.pdf",
+        "notes": "Country.",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "LOCATION"
+        ],
+        "timestamp": "2026-02-02T18:14:31Z",
+        "_feedback_file": "feedback_2026-02-02_13-14-31_B89BF1B3.json"
+      },
+      {
+        "bbox": {
+          "height": 76.13300296238549,
+          "width": 483.00832582709995,
+          "x": 1818.3844213037203,
+          "y": 3176.7241393087397
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": ": MOHAMMED ALDAK-",
+        "fileName": "shipping_label.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/shipping_label.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "PERSON"
+        ],
+        "timestamp": "2026-02-02T18:23:32Z",
+        "_feedback_file": "feedback_2026-02-02_13-23-32_41C614DA.json"
+      },
+      {
+        "bbox": {
+          "height": 67.73888560703836,
+          "width": 274.9778352691592,
+          "x": 1950.8119207688433,
+          "y": 3232.940901563539
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "01 INDIANA AV",
+        "fileName": "shipping_label.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/shipping_label.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "LOCATION"
+        ],
+        "timestamp": "2026-02-02T18:23:46Z",
+        "_feedback_file": "feedback_2026-02-02_13-23-46_688DFBEE.json"
+      },
+      {
+        "bbox": {
+          "height": 59.79399190630238,
+          "width": 199.69680489982557,
+          "x": 1903.21566770766,
+          "y": 3289.0685191090884
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "APT 1104",
+        "fileName": "shipping_label.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/shipping_label.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "LOCATION"
+        ],
+        "timestamp": "2026-02-02T18:24:39Z",
+        "_feedback_file": "feedback_2026-02-02_13-24-39_4369E6D6.json"
+      },
+      {
+        "bbox": {
+          "height": 43.968151092529354,
+          "width": 53.81465530395508,
+          "x": 543.0387929887552,
+          "y": 254.0382178870475
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "$0",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "",
+        "suggestedEntityTypes": [
+          "FINANCIAL"
+        ],
+        "timestamp": "2026-02-02T18:27:02Z",
+        "_feedback_file": "feedback_2026-02-02_13-27-02_729EC8AC.json"
+      },
+      {
+        "bbox": {
+          "height": 43.96815109252918,
+          "width": 102.73706817626953,
+          "x": 1208.3836223684923,
+          "y": 254.03821714203167
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "$452",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "",
+        "suggestedEntityTypes": [
+          "FINANCIAL"
+        ],
+        "timestamp": "2026-02-02T18:27:13Z",
+        "_feedback_file": "feedback_2026-02-02_13-27-13_42F5247F.json"
+      },
+      {
+        "bbox": {
+          "height": 43.968151092529354,
+          "width": 102.73706817626976,
+          "x": 1868.8362068508739,
+          "y": 254.0382178870475
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "$533",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "",
+        "suggestedEntityTypes": [
+          "FINANCIAL"
+        ],
+        "timestamp": "2026-02-02T18:27:26Z",
+        "_feedback_file": "feedback_2026-02-02_13-27-26_3137671A.json"
+      },
+      {
+        "bbox": {
+          "height": 24.42675018310547,
+          "width": 244.612060546875,
+          "x": 606.6379311669361,
+          "y": 1113.8598735603582
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "6 & 10 Euro Market",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "",
+        "suggestedEntityTypes": [
+          "COMPANY"
+        ],
+        "timestamp": "2026-02-02T18:27:53Z",
+        "_feedback_file": "feedback_2026-02-02_13-27-53_56F8F47C.json"
+      },
+      {
+        "bbox": {
+          "height": 29.331210136413574,
+          "width": 205.47413635253918,
+          "x": 606.6379301929834,
+          "y": 1377.6687895937284
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "ALLELES Design",
+        "fileName": "Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/Screenshot 2026-01-28 at 11.34.38\u202fAM.png",
+        "notes": "",
+        "suggestedEntityTypes": [
+          "COMPANY"
+        ],
+        "timestamp": "2026-02-02T18:28:24Z",
+        "_feedback_file": "feedback_2026-02-02_13-28-24_732B2E18.json"
+      },
+      {
+        "bbox": {
+          "height": 73.24736186436257,
+          "width": 389.41809606640254,
+          "x": 2064.0653301378557,
+          "y": 2490.5314904621428
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "TUMOR/CANCER X",
+        "fileName": "medical_report_1.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/medical_report_1.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "MEDICAL"
+        ],
+        "timestamp": "2026-02-02T18:30:35Z",
+        "_feedback_file": "feedback_2026-02-02_13-30-35_57FC9BCA.json"
+      },
+      {
+        "bbox": {
+          "height": 60.491374914986864,
+          "width": 151.1890274972627,
+          "x": 1199.4329237638685,
+          "y": 655.3232784630235
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "ALI",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "PERSON"
+        ],
+        "timestamp": "2026-02-02T18:37:29Z",
+        "_feedback_file": "feedback_2026-02-02_13-37-29_F8EA6E88.json"
+      },
+      {
+        "bbox": {
+          "height": 70.57327498299674,
+          "width": 453.56705701423425,
+          "x": 1199.4329303718464,
+          "y": 846.8793112884584
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "A S EUSUF",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "PERSON"
+        ],
+        "timestamp": "2026-02-02T18:37:37Z",
+        "_feedback_file": "feedback_2026-02-02_13-37-37_C73F4C4B.json"
+      },
+      {
+        "bbox": {
+          "height": 90.73706874574941,
+          "width": 514.0426680131391,
+          "x": 1189.3536661194212,
+          "y": 1038.4353438032565
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "04/01/1945",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "DATE_TIME"
+        ],
+        "timestamp": "2026-02-02T18:37:48Z",
+        "_feedback_file": "feedback_2026-02-02_13-37-48_8EC2275A.json"
+      },
+      {
+        "bbox": {
+          "height": 70.57327498299719,
+          "width": 503.963391020804,
+          "x": 2419.0244070902077,
+          "y": 1653.4310344181997
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "12/06/2033",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "DATE_TIME"
+        ],
+        "timestamp": "2026-02-02T18:37:58Z",
+        "_feedback_file": "feedback_2026-02-02_13-37-58_93D6D38A.json"
+      },
+      {
+        "bbox": {
+          "height": 152.0350000000003,
+          "width": 1390.939002019709,
+          "x": 312.457317507219,
+          "y": 1572.142140278298
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "LEusuR Dei \u2192 13/06/2023",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "DATE_TIME"
+        ],
+        "timestamp": "2026-02-02T18:38:27Z",
+        "_feedback_file": "feedback_2026-02-02_13-38-27_6FEE7EAF.json"
+      },
+      {
+        "bbox": {
+          "height": 91.88928571428596,
+          "width": 1108.7194500547469,
+          "x": 1199.4329639470168,
+          "y": 1249.6942872809602
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "SUNDARPARA PT IV, ASSAM",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "LOCATION"
+        ],
+        "timestamp": "2026-02-02T18:38:40Z",
+        "_feedback_file": "feedback_2026-02-02_13-38-40_C59505BF.json"
+      },
+      {
+        "bbox": {
+          "height": 75.59818349838247,
+          "width": 404.0194312818121,
+          "x": 1199.0085834397287,
+          "y": 1449.2806507266012
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "GUWAHATI",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 1,
+        "suggestedEntityTypes": [
+          "LOCATION"
+        ],
+        "timestamp": "2026-02-02T18:38:50Z",
+        "_feedback_file": "feedback_2026-02-02_13-38-50_73276167.json"
+      },
+      {
+        "bbox": {
+          "height": 103.62467009804482,
+          "width": 363.7260177721298,
+          "x": 1602.6326820391525,
+          "y": 986.3522978472931
+        },
+        "confidence": 1,
+        "detectedEntityType": "CUSTOM",
+        "detectedText": "ABDUL",
+        "fileName": "india_passport.pdf",
+        "filePath": "/Users/valentine/Desktop/Hush Test Data/india_passport.pdf",
+        "notes": "",
+        "page": 2,
+        "suggestedEntityTypes": [
+          "PERSON"
+        ],
+        "timestamp": "2026-02-02T18:39:02Z",
+        "_feedback_file": "feedback_2026-02-02_13-39-02_137A8D3F.json"
+      }
+    ],
+    "misclassifications": []
+  }
+}

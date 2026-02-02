@@ -1,0 +1,98 @@
+{
+  "purpose": "Hush Engine improvement actions based on user feedback",
+  "instructions": "Use these action items to improve pii_detector.py",
+  "detector_file": "hush_engine/detectors/pii_detector.py",
+  "action_items": [
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "LOCATION",
+      "action": "Improve LOCATION detection to catch these patterns",
+      "examples": [
+        "BANGLADESH",
+        "01 INDIANA AV",
+        "APT 1104",
+        "SUNDARPARA PT IV, ASSAM",
+        "GUWAHATI"
+      ],
+      "count": 5,
+      "implementation_hint": "Add pattern recognizer or update existing LOCATION patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "PERSON",
+      "action": "Improve PERSON detection to catch these patterns",
+      "examples": [
+        ": MOHAMMED ALDAK-",
+        "ALI",
+        "A S EUSUF",
+        "ABDUL"
+      ],
+      "count": 4,
+      "implementation_hint": "Add pattern recognizer or update existing PERSON patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "FALSE_POSITIVE",
+      "entity_type": "COMPANY",
+      "action": "Add filter to exclude these patterns from COMPANY detection",
+      "examples": [
+        "Expenses & Bills",
+        "Expenses & Bills",
+        "Sales & Get Paid"
+      ],
+      "count": 3,
+      "implementation_hint": "Update _filter_false_positives() in pii_detector.py to filter COMPANY patterns like: Expenses & Bills, Expenses & Bills, Sales & Get Paid"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "FINANCIAL",
+      "action": "Improve FINANCIAL detection to catch these patterns",
+      "examples": [
+        "$0",
+        "$452",
+        "$533"
+      ],
+      "count": 3,
+      "implementation_hint": "Add pattern recognizer or update existing FINANCIAL patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "DATE_TIME",
+      "action": "Improve DATE_TIME detection to catch these patterns",
+      "examples": [
+        "04/01/1945",
+        "12/06/2033",
+        "LEusuR Dei \u2192 13/06/2023"
+      ],
+      "count": 3,
+      "implementation_hint": "Add pattern recognizer or update existing DATE_TIME patterns in pii_detector.py"
+    },
+    {
+      "priority": "HIGH",
+      "category": "MISSED_DETECTION",
+      "entity_type": "COMPANY",
+      "action": "Improve COMPANY detection to catch these patterns",
+      "examples": [
+        "6 & 10 Euro Market",
+        "ALLELES Design"
+      ],
+      "count": 2,
+      "implementation_hint": "Add pattern recognizer or update existing COMPANY patterns in pii_detector.py"
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "MISSED_DETECTION",
+      "entity_type": "MEDICAL",
+      "action": "Improve MEDICAL detection to catch these patterns",
+      "examples": [
+        "TUMOR/CANCER X"
+      ],
+      "count": 1,
+      "implementation_hint": "Add pattern recognizer or update existing MEDICAL patterns in pii_detector.py"
+    }
+  ]
+}

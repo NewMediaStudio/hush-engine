@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 78.95290307181222,
+    "width" : 1309.9943906322205,
+    "x" : 69.51534850004562,
+    "y" : 832.9102474100481
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Address:Street Jinjia 100-4,Shenhe, Shenyang,Liaoning",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T19:18:27Z"
+}

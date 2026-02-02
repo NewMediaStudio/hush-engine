@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 30.484585418701272,
+    "width" : 118.71838460286449,
+    "x" : 1347.4863542655014,
+    "y" : 1201.209936345745
+  },
+  "confidence" : 0.85,
+  "detectedEntityType" : "LOCATION",
+  "detectedText" : "770-4541",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "Not an addres, part of phone number.",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T21:30:17Z"
+}

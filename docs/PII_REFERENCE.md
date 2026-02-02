@@ -86,7 +86,7 @@ This classification draws from authoritative sources:
 | **City, State/Province** | `\b[A-Z][a-z]+,?\s+[A-Z]{2}\b` | HIPAA, GDPR | ✅ `LOCATION` |
 | **Postal/ZIP Code** | `\b\d{5}(-\d{4})?\b` or `\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b` | HIPAA, GDPR | ✅ `LOCATION` |
 | **Date of Birth** | `\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b` | HIPAA, GDPR, CCPA | ✅ `DATE_TIME` |
-| **Age (exact, or >89)** | `\b\d{1,3}\s*(years?\|yrs?)\b` | HIPAA | ⚠️ Partial |
+| **Age (exact)** | `\b\d{1,3}\s*(years?\|yrs?)\s*old\b` or `Age:\s*\d+` | HIPAA | ✅ `AGE` |
 | **IP Address** | `\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b` | GDPR, CCPA | ✅ `IP_ADDRESS` |
 | **GPS Coordinates** | `\b-?\d{1,3}\.\d{3,8},\s*-?\d{1,3}\.\d{3,8}\b` | CCPA (precise geolocation) | ✅ `COORDINATES` |
 | **Latitude/Longitude** | DMS format: `\d+°\d+'\d+"[NS]` | CCPA | ✅ `COORDINATES` |
@@ -172,6 +172,9 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 | LOCATION | `Portland, OR 97201` | ✅ |
 | COORDINATES | `40.7128, -74.0060` | ✅ |
 | COORDINATES | `40°42'46"N 74°0'22"W` | ✅ |
+| AGE | `25 years old` | ✅ |
+| AGE | `Age: 45` | ✅ |
+| AGE | `aged 30` | ✅ |
 | MEDICAL | `Blood Type: A+` | ✅ |
 | MEDICAL | `Diagnosed with Type 2 Diabetes` | ✅ |
 | MEDICAL | `Prescribed Metformin 500mg` | ✅ |
@@ -228,4 +231,4 @@ These patterns may cause false positives and should be validated:
 ---
 
 *Last updated: 2026-02-02*
-*Document version: 1.2 - Added international validation (116 IBAN countries, 150+ phone patterns, 35+ national IDs)*
+*Document version: 1.3 - Added AGE detection, lightweight names database, library management, locale configuration*

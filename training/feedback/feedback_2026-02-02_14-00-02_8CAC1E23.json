@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 66.54187202453625,
+    "width" : 1837.3257621158734,
+    "x" : 284.12264499591606,
+    "y" : 730.1724131001971
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Act. The total taxable income stood at INR 500 Crores, with an effective tax rate of 25%.",
+  "fileName" : "Test_Data.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Test_Data.pdf",
+  "notes" : "Contains currency INR 500 Crores",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T19:00:02Z"
+}

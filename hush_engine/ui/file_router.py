@@ -21,6 +21,13 @@ from detectors.barcode_detector import BarcodeDetector
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
 from image_optimizer import optimize_image
+
+# Import locale manager for locale-aware PII detection
+try:
+    from locale_manager import get_locale_manager
+    LOCALE_MANAGER_AVAILABLE = True
+except ImportError:
+    LOCALE_MANAGER_AVAILABLE = False
 from PIL import Image
 import pandas as pd
 import tempfile
@@ -165,6 +172,31 @@ class FileRouter:
             self._table_detector = TableDetector()
         return self._table_detector
 
+    def get_user_locales(self) -> list:
+        """
+        Get the user's locale preferences for PII detection.
+
+        Returns:
+            List of ISO locale codes (e.g., ["en-US"]) or None for auto-detect.
+        """
+        if not LOCALE_MANAGER_AVAILABLE:
+            return None
+
+        try:
+            locale_mgr = get_locale_manager()
+            locale_info = locale_mgr.get_locale()
+            current_locale = locale_info.get("current", {}).get("locale")
+
+            if current_locale and current_locale != "auto":
+                # Convert locale code format (en_US -> en-US)
+                iso_locale = current_locale.replace("_", "-")
+                return [iso_locale]
+
+            # Auto mode - return None to let detector auto-detect
+            return None
+        except Exception:
+            return None
+
     @property
     def context_aware_detector(self):
         """Lazy-load context-aware PII detector"""
@@ -262,17 +294,31 @@ class FileRouter:
             'bbox': detection.bbox
         } for detection in ocr_detections]
 
-        # Detect PII in text
+        # Detect PII in text using user's locale preferences
         pii_detections = []
+        user_locales = self.get_user_locales()
         for detection in ocr_detections:
-            entities = self.detector.analyze_text(detection.text)
+            entities = self.detector.analyze_text(
+                detection.text,
+                locales=user_locales,
+                auto_detect_locale=(user_locales is None)
+            )
 
             for entity in entities:
+                # Calculate precise bounding box for just the detected entity text
+                # Uses character-level boxes if available, otherwise estimates proportionally
+                entity_bbox = VisionOCR.calculate_substring_bbox(
+                    text=detection.text,
+                    start=entity.start,
+                    end=entity.end,
+                    char_boxes=detection.char_boxes,
+                    fallback_bbox=detection.bbox
+                )
                 pii_detections.append({
                     'entity_type': entity.entity_type,
                     'text': entity.text,
                     'confidence': entity.confidence,
-                    'bbox': detection.bbox
+                    'bbox': entity_bbox
                 })
 
         # Detect faces if enabled
@@ -348,6 +394,9 @@ class FileRouter:
         Returns:
             Dictionary with 'detections' (PII with page numbers), 'all_text_blocks', and 'total_pages'
         """
+        # Get user's locale preferences for detection
+        user_locales = self.get_user_locales()
+
         # Convert PDF to images
         page_images = self.pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
@@ -383,14 +432,26 @@ class FileRouter:
                 # Detect PII in this page (initial pass)
                 page_detections = []
                 for detection in ocr_detections:
-                    entities = self.detector.analyze_text(detection.text)
+                    entities = self.detector.analyze_text(
+                        detection.text,
+                        locales=user_locales,
+                        auto_detect_locale=(user_locales is None)
+                    )
 
                     for entity in entities:
+                        # Calculate precise bounding box for just the detected entity text
+                        entity_bbox = VisionOCR.calculate_substring_bbox(
+                            text=detection.text,
+                            start=entity.start,
+                            end=entity.end,
+                            char_boxes=detection.char_boxes,
+                            fallback_bbox=detection.bbox
+                        )
                         page_detections.append({
                             'entity_type': entity.entity_type,
                             'text': entity.text,
                             'confidence': entity.confidence,
-                            'bbox': detection.bbox,
+                            'bbox': entity_bbox,
                             'page': page_num
                         })
 
@@ -638,6 +699,9 @@ class FileRouter:
         """
         print(f"Scrubbing image: {input_path}")
 
+        # Get user's locale preferences
+        user_locales = self.get_user_locales()
+
         # Extract text
         detections = self.ocr.extract_text(input_path)
         print(f"  → Detected {len(detections)} text regions")
@@ -647,7 +711,11 @@ class FileRouter:
         pii_count = 0
 
         for detection in detections:
-            entities = self.detector.analyze_text(detection.text)
+            entities = self.detector.analyze_text(
+                detection.text,
+                locales=user_locales,
+                auto_detect_locale=(user_locales is None)
+            )
             if entities:
                 pii_regions.append(detection.bbox)
                 pii_count += len(entities)
@@ -690,6 +758,10 @@ class FileRouter:
         """
         print(f"Analyzing spreadsheet: {input_path}")
 
+        # Get user's locale preferences (None for spreadsheets = use all patterns)
+        # Spreadsheets often contain international data, so we don't restrict by locale
+        user_locales = self.get_user_locales()
+
         # Load file
         ext = Path(input_path).suffix.lower()
         if ext == '.csv':
@@ -711,8 +783,8 @@ class FileRouter:
             sample = non_null.sample(n=min(20, len(non_null)), random_state=42)
             sample_text = " | ".join(str(val) for val in sample)
 
-            # Detect
-            entities = self.detector.analyze_text(sample_text)
+            # Detect (use locales=None for international spreadsheet data)
+            entities = self.detector.analyze_text(sample_text, locales=user_locales)
             high_conf = [e for e in entities if e.confidence >= 0.5]
 
             if high_conf:
@@ -787,6 +859,9 @@ class FileRouter:
         """
         print(f"Scrubbing spreadsheet: {input_path}")
 
+        # Get user's locale preferences (spreadsheets often have international data)
+        user_locales = self.get_user_locales()
+
         # Load file
         ext = Path(input_path).suffix.lower()
         if ext == '.csv':
@@ -808,8 +883,8 @@ class FileRouter:
             sample = non_null.sample(n=min(20, len(non_null)), random_state=42)
             sample_text = " | ".join(str(val) for val in sample)
 
-            # Detect
-            entities = self.detector.analyze_text(sample_text)
+            # Detect (use user's locale preference)
+            entities = self.detector.analyze_text(sample_text, locales=user_locales)
             high_conf = [e for e in entities if e.confidence >= 0.5]
 
             if high_conf:

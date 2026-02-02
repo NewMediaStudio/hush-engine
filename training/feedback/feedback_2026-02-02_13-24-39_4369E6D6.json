@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 59.79399190630238,
+    "width" : 199.69680489982557,
+    "x" : 1903.21566770766,
+    "y" : 3289.0685191090884
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "APT 1104",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:24:39Z"
+}

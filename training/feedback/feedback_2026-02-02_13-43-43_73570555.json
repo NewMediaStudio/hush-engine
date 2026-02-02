@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 75.8620654514857,
+    "width" : 170.47353099322345,
+    "x" : 2500.27855483765,
+    "y" : 3745.6896576880504
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "12-31",
+  "fileName" : "bank_statement_multipage.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/bank_statement_multipage.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "DATE_TIME"
+  ],
+  "timestamp" : "2026-02-02T18:43:43Z"
+}

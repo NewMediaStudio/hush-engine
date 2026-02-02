@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 101.1371288598575,
+    "width" : 355.3179631828979,
+    "x" : 752.9519596199525,
+    "y" : 3234.7159144893117
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM_RECT",
+  "detectedText" : "[Rectangle]",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "SWIFT, no bounding box over text",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T19:18:03Z"
+}

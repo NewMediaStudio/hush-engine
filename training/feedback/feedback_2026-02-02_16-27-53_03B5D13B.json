@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 55.2559814453125,
+    "width" : 143.7801513671875,
+    "x" : 642.9146728515625,
+    "y" : 299.4774169921875
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM_RECT",
+  "detectedText" : "[Rectangle]",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.14 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.14 AM.png",
+  "notes" : "Text not detected",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T21:27:53Z"
+}

@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 69.20354690551767,
+    "width" : 248.20945613952756,
+    "x" : 356.36206813491583,
+    "y" : 2378.841576607982
+  },
+  "confidence" : 0.7,
+  "detectedEntityType" : "PERSON",
+  "detectedText" : "Each Click-",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "Not a name",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T19:15:01Z"
+}

@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 49.761181782313656,
+    "width" : 610.6740959576449,
+    "x" : 954.2729700898873,
+    "y" : 700.7671933251434
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Sat Breazu, Com. Rediu, Jud. lasi,",
+  "fileName" : "commercial_invoice_3.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_3.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T21:46:04Z"
+}

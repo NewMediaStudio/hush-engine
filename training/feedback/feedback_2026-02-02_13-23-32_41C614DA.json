@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 76.13300296238549,
+    "width" : 483.00832582709995,
+    "x" : 1818.3844213037203,
+    "y" : 3176.7241393087397
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : ": MOHAMMED ALDAK-",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PERSON"
+  ],
+  "timestamp" : "2026-02-02T18:23:32Z"
+}

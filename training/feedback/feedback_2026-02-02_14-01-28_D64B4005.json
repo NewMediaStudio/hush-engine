@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 47.413791656493686,
+    "width" : 303.0640550990643,
+    "x" : 284.12257360181405,
+    "y" : 3537.0689657665807
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Well Apt. 454",
+  "fileName" : "Test_Data.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Test_Data.pdf",
+  "notes" : "Partial address from previous line.",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T19:01:28Z"
+}

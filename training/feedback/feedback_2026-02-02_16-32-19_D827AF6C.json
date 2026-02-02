@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 80.07999999999993,
+    "width" : 669.7715617689319,
+    "x" : 1701.3259102297407,
+    "y" : 2871.031429769044
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "From: MOHAMMED ALDAKHIL",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "Name here",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PERSON"
+  ],
+  "timestamp" : "2026-02-02T21:32:19Z"
+}

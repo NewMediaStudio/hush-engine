@@ -56,13 +56,21 @@ def scrub_image(
     for detection in detections:
         entities = detector.analyze_text(detection.text)
         if entities:
-            pii_regions.append(detection.bbox)
             for entity in entities:
+                # Calculate precise bounding box for just the detected entity text
+                entity_bbox = VisionOCR.calculate_substring_bbox(
+                    text=detection.text,
+                    start=entity.start,
+                    end=entity.end,
+                    char_boxes=detection.char_boxes,
+                    fallback_bbox=detection.bbox
+                )
+                pii_regions.append(entity_bbox)
                 pii_details.append({
                     'type': entity.entity_type,
                     'text': entity.text,
                     'confidence': entity.confidence,
-                    'bbox': detection.bbox
+                    'bbox': entity_bbox
                 })
                 print(f"  → Found {entity.entity_type}: '{entity.text}' (confidence: {entity.confidence:.2f})")
 

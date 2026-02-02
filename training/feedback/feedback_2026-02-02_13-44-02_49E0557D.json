@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 67.57142857142856,
+    "width" : 397.7715723175218,
+    "x" : 322.00558272146185,
+    "y" : 625.4285720742736
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Bonita M Browy",
+  "fileName" : "bank_statement_multipage.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/bank_statement_multipage.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PERSON"
+  ],
+  "timestamp" : "2026-02-02T18:44:02Z"
+}

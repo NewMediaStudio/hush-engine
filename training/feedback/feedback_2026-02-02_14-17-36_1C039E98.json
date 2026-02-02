@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 59.45418450491752,
+    "width" : 531.8774416318884,
+    "x" : 1561.9164272731923,
+    "y" : 3345.9995083369186
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "DATE A # 2022.09.23",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "DATE_TIME"
+  ],
+  "timestamp" : "2026-02-02T19:17:36Z"
+}

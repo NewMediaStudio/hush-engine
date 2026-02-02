@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 43.96815109252918,
+    "width" : 102.73706817626953,
+    "x" : 1208.3836223684923,
+    "y" : 254.03821714203167
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "$452",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "",
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T18:27:13Z"
+}

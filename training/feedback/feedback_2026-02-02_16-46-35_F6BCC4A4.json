@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 49.310343322753624,
+    "width" : 472.7799259545403,
+    "x" : 568.6239721759331,
+    "y" : 1886.120689933451
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "SWIFT: HASEHKHHXXX",
+  "fileName" : "commercial_invoice_3.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_3.pdf",
+  "notes" : "Swift code",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T21:46:35Z"
+}

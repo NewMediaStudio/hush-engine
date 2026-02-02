@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 70.57327498299674,
+    "width" : 453.56705701423425,
+    "x" : 1199.4329303718464,
+    "y" : 846.8793112884584
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "A S EUSUF",
+  "fileName" : "india_passport.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/india_passport.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PERSON"
+  ],
+  "timestamp" : "2026-02-02T18:37:37Z"
+}

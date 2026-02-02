@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 56.95073509216286,
+    "width" : 823.9554357616826,
+    "x" : 303.06407308851794,
+    "y" : 1384.4285728062766
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "please call us at 800-453-BANK.",
+  "fileName" : "bank_statement_multipage.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/bank_statement_multipage.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PHONE_NUMBER"
+  ],
+  "timestamp" : "2026-02-02T18:42:48Z"
+}

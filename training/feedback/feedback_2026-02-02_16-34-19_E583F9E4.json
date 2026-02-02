@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 62.830345306396794,
+    "width" : 739.8013720703125,
+    "x" : 2071.5886638111797,
+    "y" : 2460.7917233509884
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Date Issue : July3Oth 2015",
+  "fileName" : "medical_report_2.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/medical_report_2.pdf",
+  "notes" : "Date here",
+  "page" : 2,
+  "suggestedEntityTypes" : [
+    "DATE_TIME"
+  ],
+  "timestamp" : "2026-02-02T21:34:19Z"
+}

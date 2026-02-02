@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 75.59818349838247,
+    "width" : 404.0194312818121,
+    "x" : 1199.0085834397287,
+    "y" : 1449.2806507266012
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "GUWAHATI",
+  "fileName" : "india_passport.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/india_passport.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:38:50Z"
+}

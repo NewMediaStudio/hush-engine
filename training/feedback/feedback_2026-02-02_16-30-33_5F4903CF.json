@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 30.504458541870235,
+    "width" : 213.6931018066407,
+    "x" : 602.5284474659327,
+    "y" : 1377.082165391
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "ALLELES Design",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "",
+  "suggestedEntityTypes" : [
+    "COMPANY"
+  ],
+  "timestamp" : "2026-02-02T21:30:33Z"
+}

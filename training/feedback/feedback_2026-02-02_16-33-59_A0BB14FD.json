@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 76.96000000000004,
+    "width" : 1341.6737597656247,
+    "x" : 769.9432834623404,
+    "y" : 1892.520000905439
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : ": Komp.Mustika Griya Angkasa 111Blok. B. No.19",
+  "fileName" : "medical_report_2.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/medical_report_2.pdf",
+  "notes" : "Overlapping boxes, part of address was detected",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T21:33:59Z"
+}

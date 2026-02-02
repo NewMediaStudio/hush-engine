@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 58.142857142857224,
+    "width" : 2812.8133213233596,
+    "x" : 284.1226341294048,
+    "y" : 369.28571561725386
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "31, 2023. Our examination included a detailed analysis of corporate tax returns, GST filings, and withholding tax submissions across all",
+  "fileName" : "Test_Data.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Test_Data.pdf",
+  "notes" : "Line 2 of 2 lines containing a date (break in the middle)",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "DATE_TIME"
+  ],
+  "timestamp" : "2026-02-02T18:59:37Z"
+}

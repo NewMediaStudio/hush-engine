@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 60.491374914986864,
+    "width" : 151.1890274972627,
+    "x" : 1199.4329237638685,
+    "y" : 655.3232784630235
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "ALI",
+  "fileName" : "india_passport.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/india_passport.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "PERSON"
+  ],
+  "timestamp" : "2026-02-02T18:37:29Z"
+}

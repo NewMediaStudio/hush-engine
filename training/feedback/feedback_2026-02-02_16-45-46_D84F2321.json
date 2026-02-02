@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 88.75862047467876,
+    "width" : 1093.30361616942,
+    "x" : 1248.0557259078614,
+    "y" : 1069.8448291161087
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "A post, saoomodea a it a i,0.8m height for 52,780.00",
+  "fileName" : "commercial_invoice_3.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_3.pdf",
+  "notes" : "Financial data in this block not detected",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T21:45:46Z"
+}

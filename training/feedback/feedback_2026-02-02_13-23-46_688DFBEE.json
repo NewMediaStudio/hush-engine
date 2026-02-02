@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 67.73888560703836,
+    "width" : 274.9778352691592,
+    "x" : 1950.8119207688433,
+    "y" : 3232.940901563539
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "01 INDIANA AV",
+  "fileName" : "shipping_label.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/shipping_label.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:23:46Z"
+}

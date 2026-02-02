@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 76.18719046456499,
+    "width" : 246.23954476798963,
+    "x" : 2964.345410433355,
+    "y" : 2617.241380660956
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "$ 202.02",
+  "fileName" : "bank_statement_multipage.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/bank_statement_multipage.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "FINANCIAL"
+  ],
+  "timestamp" : "2026-02-02T18:43:02Z"
+}

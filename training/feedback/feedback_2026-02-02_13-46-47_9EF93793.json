@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 66.43349702017622,
+    "width" : 1297.4930458280382,
+    "x" : 94.70752905812547,
+    "y" : 2949.137930973761
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Beneficiary address: 10 COLLYER QUAY #10-01 OCEAN",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "Look at context",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:46:47Z"
+}

@@ -7,15 +7,17 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 ## Features
 
 - **Multi-format support**: Images (PNG, JPEG, HEIC), PDFs, Spreadsheets (Excel, CSV)
-- **Comprehensive PII detection**: Names, emails, phone numbers, SSN, credit cards, API keys, crypto wallets, IBAN, and more
+- **Comprehensive PII detection**: Names, emails, phone numbers, SSN, credit cards, API keys, crypto wallets, IBAN, age, and more
 - **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
-- **Locale-aware detection**: Automatic document locale detection with confidence boosting
+- **Locale-aware detection**: User-configurable locale preferences with automatic document locale detection
 - **Table detection**: Context-aware PII detection in structured data (headers boost confidence)
 - **Medical NER**: Biomedical entity recognition using scispaCy models
 - **Face detection**: OpenCV Haar cascade face detection in images
 - **Apple Vision OCR**: Native macOS optical character recognition
 - **Privacy-first**: All processing happens locally, no data leaves your machine
 - **Checksum validation**: Luhn, Verhoeff, Mod-11, Mod-97 algorithms for ID validation
+- **Lightweight name database**: Curated 1,400+ names across 13 languages for fast lookup
+- **Library management**: Optional libraries (phonenumbers, spaCy, etc.) can be enabled/disabled
 - **Extensible**: Easy to add custom PII recognizers
 
 ## Installation
@@ -90,13 +92,14 @@ for detection in detections:
 
 ## Supported PII Types
 
-- **Personal**: Names (PERSON), Email addresses, Phone numbers (150+ countries), Dates of birth
+- **Personal**: Names (PERSON), Email addresses, Phone numbers (150+ countries), Dates of birth, Age
 - **Financial**: Credit card numbers (Luhn validated), IBAN (116 countries), BIC/SWIFT, Crypto wallets
 - **Government**: SSN, National IDs (35+ countries), Passport numbers, Driver's license
 - **Medical**: Diagnoses, Medications, Lab results, ICD-10 codes, Biomedical entities
 - **Technical**: API keys, AWS keys, Stripe keys, IP addresses, MAC addresses, URLs
 - **Location**: Street addresses (international), ZIP/postal codes, GPS coordinates
 - **Biometric**: Face detection in images
+- **Demographics**: Gender identity, Age (e.g., "25 years old", "Age: 45")
 
 ## Architecture
 
@@ -256,6 +259,10 @@ For security issues, please email security@newmediastudio.com instead of using t
 - [x] Medical/biomedical NER (scispaCy integration)
 - [x] Face detection in images
 - [x] Table/structured data detection
+- [x] Age detection ("25 years old", "Age: 45")
+- [x] Library management (enable/disable optional libraries)
+- [x] Locale configuration (11 locales supported)
+- [x] Lightweight names database (1,400+ names, 13 languages)
 - [ ] Custom local model training
 - [ ] Batch processing optimizations
 - [ ] Video frame processing

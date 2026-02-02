@@ -13,6 +13,14 @@ import threading
 import re
 from pathlib import Path
 
+# Phone number validation using Google's libphonenumber
+try:
+    import phonenumbers
+    from phonenumbers import NumberParseException
+    PHONENUMBERS_AVAILABLE = True
+except ImportError:
+    PHONENUMBERS_AVAILABLE = False
+
 # Package version
 __version__ = "1.1.1"
 
@@ -117,6 +125,10 @@ class PIIDetector:
         self._add_credit_card_recognizers()
         # Add location recognizers (e.g. Canadian address format)
         self._add_location_recognizers()
+        # Add date/time recognizers (international date formats)
+        self._add_datetime_recognizers()
+        # Add age recognizers (age in years, "X years old", "Age: X")
+        self._add_age_recognizers()
         # Add financial recognizers (currency, SWIFT codes, etc.)
         self._add_financial_recognizers()
         # Add company recognizers
@@ -158,7 +170,9 @@ class PIIDetector:
             "business", "request", "requests", "menu", "navigation", "header", "footer", "new customer",
             "help your business", "financial",
             # Common disclaimer/explanatory phrases (prevent address false positives)
-            "business network", "billing purposes", "connected to", "may be connected", "used for"
+            "business network", "billing purposes", "connected to", "may be connected", "used for",
+            # Software/brand names (not person names)
+            "creo", "adobe", "figma", "sketch", "canva", "illustrator", "photoshop", "indesign",
         }
 
     @staticmethod
@@ -395,7 +409,63 @@ class PIIDetector:
                 )
             ],
         )
-        
+
+        # 10. Standalone apartment/unit: "APT 1104", "SUITE 200", "UNIT 5A", "FL 3"
+        standalone_unit = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="standalone_apt",
+                    # Matches: Apt/Unit/Suite/Floor + number (with optional letter)
+                    regex=r"\b(?:APT|Apt\.?|APARTMENT|Apartment|UNIT|Unit|SUITE|Suite|STE|Ste\.?|FL|Floor|FLOOR|RM|Room|ROOM)\s+[0-9]+[A-Za-z]?\b",
+                    score=0.75,
+                )
+            ],
+            context=["address", "mail", "deliver", "ship", "building", "floor"]
+        )
+
+        # 11. US street address with abbreviated types: "01 INDIANA AV", "123 MAIN ST"
+        # Handles ALL CAPS street names and abbreviated street types
+        na_abbrev_street_types = r"(?:ST|AVE?|AV|RD|BLVD|DR|LN|CT|CIR|WAY|PL|TER|PKWY|HWY|CRES)"
+        street_address_uppercase = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="street_address_caps",
+                    # Matches: number + optional direction + name + abbreviated type (ALL CAPS)
+                    regex=rf"\b\d{{1,6}}\s+(?:[NSEW]\.?\s+)?[A-Z][A-Z]+(?:\s+[A-Z][A-Z]+){{0,3}}\s+{na_abbrev_street_types}\b",
+                    score=0.85,
+                )
+            ],
+        )
+
+        # 12. Indian city/state patterns (major cities and states)
+        indian_states = r"(?:ASSAM|BIHAR|GOA|GUJARAT|HARYANA|HIMACHAL|JHARKHAND|KARNATAKA|KERALA|MADHYA|MAHARASHTRA|MANIPUR|MEGHALAYA|MIZORAM|NAGALAND|ODISHA|PUNJAB|RAJASTHAN|SIKKIM|TAMIL|TELANGANA|TRIPURA|UTTAR|UTTARAKHAND|WEST\s+BENGAL|Assam|Bihar|Goa|Gujarat|Haryana|Karnataka|Kerala|Maharashtra|Punjab|Rajasthan|Tamil\s+Nadu|Telangana|West\s+Bengal)"
+        indian_cities = r"(?:GUWAHATI|MUMBAI|DELHI|BANGALORE|BENGALURU|CHENNAI|KOLKATA|HYDERABAD|PUNE|AHMEDABAD|JAIPUR|LUCKNOW|KANPUR|NAGPUR|INDORE|THANE|BHOPAL|VISAKHAPATNAM|PATNA|VADODARA|Guwahati|Mumbai|Delhi|Bangalore|Bengaluru|Chennai|Kolkata|Hyderabad|Pune|Ahmedabad|Jaipur|Lucknow|Kanpur)"
+
+        indian_locality = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="indian_city",
+                    regex=rf"\b{indian_cities}\b",
+                    score=0.70,
+                ),
+                Pattern(
+                    name="indian_state",
+                    regex=rf"\b{indian_states}\b",
+                    score=0.70,
+                ),
+                Pattern(
+                    name="indian_locality_state",
+                    # Matches: locality name + comma + state (e.g., "SUNDARPARA PT IV, ASSAM")
+                    regex=rf"\b[A-Z][A-Za-z\s]+(?:PT|PART|PHASE)?\s*[IVX0-9]*,?\s+{indian_states}\b",
+                    score=0.80,
+                ),
+            ],
+            context=["india", "address", "pin", "pincode", "city", "state", "district"]
+        )
+
         # =========================================
         # INTERNATIONAL POSTAL CODE PATTERNS
         # =========================================
@@ -563,6 +633,9 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(european_street_address)
         self.analyzer.registry.add_recognizer(po_box_address)
         self.analyzer.registry.add_recognizer(unit_street_address)
+        self.analyzer.registry.add_recognizer(standalone_unit)
+        self.analyzer.registry.add_recognizer(street_address_uppercase)
+        self.analyzer.registry.add_recognizer(indian_locality)
         # International postal codes
         self.analyzer.registry.add_recognizer(japan_postal)
         self.analyzer.registry.add_recognizer(uk_postcode)
@@ -575,6 +648,156 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(netherlands_postal)
         self.analyzer.registry.add_recognizer(australia_postal)
 
+    def _add_datetime_recognizers(self):
+        """Add pattern recognizers for international date formats."""
+        # DD/MM/YYYY format (European, UK, Australia, most of the world)
+        # Examples: 04/01/1945, 12/06/2033, 31/12/2024
+        date_dmy_slash = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(
+                    name="date_dmy_slash",
+                    # DD/MM/YYYY - day 01-31, month 01-12, year 1900-2099
+                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[0-2])/(?:19|20)\d{2}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="date_dmy_dash",
+                    # DD-MM-YYYY
+                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])-(?:0[1-9]|1[0-2])-(?:19|20)\d{2}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="date_dmy_dot",
+                    # DD.MM.YYYY (German format)
+                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])\.(?:0[1-9]|1[0-2])\.(?:19|20)\d{2}\b",
+                    score=0.85,
+                ),
+            ],
+        )
+
+        # YYYY/MM/DD format (ISO-like, Asian countries)
+        date_ymd = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(
+                    name="date_ymd_slash",
+                    regex=r"\b(?:19|20)\d{2}/(?:0[1-9]|1[0-2])/(?:0[1-9]|[12][0-9]|3[01])\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="date_ymd_dash",
+                    regex=r"\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b",
+                    score=0.90,  # ISO 8601 format - higher confidence
+                ),
+            ],
+        )
+
+        # Date with arrow/text prefix (OCR artifacts): "→ 13/06/2023", "LEusuR Dei → 13/06/2023"
+        date_with_prefix = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(
+                    name="date_arrow_prefix",
+                    # Matches dates that follow arrow or other characters
+                    regex=r"→\s*(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[0-2])/(?:19|20)\d{2}\b",
+                    score=0.80,
+                ),
+            ],
+        )
+
+        # Birth date patterns: "DOB: 04/01/1945", "Date of Birth: 12/06/1990"
+        date_birth = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(
+                    name="date_birth_dob",
+                    regex=r"\b(?:DOB|D\.O\.B\.?|Date\s+of\s+Birth)[:\s]+(?:0?[1-9]|[12][0-9]|3[01])[/\-.](?:0?[1-9]|1[0-2])[/\-.](?:19|20)\d{2}\b",
+                    score=0.95,
+                ),
+            ],
+            context=["birth", "born", "dob", "date of birth", "birthday"]
+        )
+
+        # Partial date patterns: "31, 2023", "January 15, 2024", "Dec 31, 2023"
+        date_partial = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                # Day, Year: "31, 2023" (common in documents after month name)
+                Pattern(
+                    name="date_day_comma_year",
+                    regex=r"\b(?:0?[1-9]|[12][0-9]|3[01]),\s*(?:19|20)\d{2}\b",
+                    score=0.75,
+                ),
+                # Month Day, Year: "January 15, 2024", "Dec 31, 2023"
+                Pattern(
+                    name="date_month_day_year",
+                    regex=r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+(?:0?[1-9]|[12][0-9]|3[01]),?\s*(?:19|20)\d{2}\b",
+                    score=0.90,
+                ),
+                # Month+Day ordinal (no space): "July30th 2015", "Jan1st 2024"
+                Pattern(
+                    name="date_month_ordinal_attached",
+                    regex=r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?(?:0?[1-9]|[12][0-9]|3[01])(?:st|nd|rd|th)\s+(?:19|20)\d{2}\b",
+                    score=0.90,
+                ),
+            ],
+        )
+
+        self.analyzer.registry.add_recognizer(date_dmy_slash)
+        self.analyzer.registry.add_recognizer(date_ymd)
+        self.analyzer.registry.add_recognizer(date_with_prefix)
+        self.analyzer.registry.add_recognizer(date_birth)
+        self.analyzer.registry.add_recognizer(date_partial)
+
+    def _add_age_recognizers(self):
+        """Add pattern recognizers for age detection.
+
+        Detects age in various formats:
+        - "15 years old", "75 yrs old", "25 y/o"
+        - "Age: 45", "AGE 30", "age=25"
+        - "aged 30", "Aged: 55"
+        - "Years: 75", "years old: 42"
+        """
+        age_recognizer = PatternRecognizer(
+            supported_entity="AGE",
+            patterns=[
+                # "X years old", "X yrs old", "X y/o"
+                Pattern(
+                    name="age_years_old",
+                    regex=r"\b(\d{1,3})\s*(?:years?\s*old|yrs?\s*old|y/?o)\b",
+                    score=0.95,
+                ),
+                # "Age: X", "AGE X", "age=X", "age - X"
+                Pattern(
+                    name="age_labeled",
+                    regex=r"\b[Aa][Gg][Ee]\s*[:=\-]?\s*(\d{1,3})\b",
+                    score=0.90,
+                ),
+                # "aged X", "Aged: X"
+                Pattern(
+                    name="age_aged",
+                    regex=r"\b[Aa]ged\s*[:=]?\s*(\d{1,3})\b",
+                    score=0.90,
+                ),
+                # "Years: X" (in forms/tables)
+                Pattern(
+                    name="age_years_label",
+                    regex=r"\b[Yy]ears?\s*[:=]\s*(\d{1,3})\b",
+                    score=0.75,
+                ),
+                # "X-year-old", "X year old" (as adjective)
+                Pattern(
+                    name="age_hyphenated",
+                    regex=r"\b(\d{1,3})[\-\s]year[\-\s]old\b",
+                    score=0.90,
+                ),
+            ],
+            context=["age", "aged", "years", "old", "born", "birthday", "dob"]
+        )
+
+        self.analyzer.registry.add_recognizer(age_recognizer)
+
     def _add_financial_recognizers(self):
         """Add pattern recognizers for financial data (currency, SWIFT codes, etc.)."""
         # Generic currency regex: symbol followed by numbers (with or without commas)
@@ -582,8 +805,12 @@ class PIIDetector:
         # Now handles: $1234.56, $1,234.56, €3750.25, ¥450000
         currency_regex = r"[\$£€¥₹₽]\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
 
-        # Word-based currency regex: USD, CAD, EUR, etc. followed by numbers
-        word_currency_regex = r"\b(?:USD|CAD|EUR|GBP|JPY|AUD|CNY)\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
+        # Word-based currency regex: USD, CAD, EUR, INR, etc. followed by numbers
+        word_currency_regex = r"\b(?:USD|CAD|EUR|GBP|JPY|AUD|CNY|INR|CHF|SGD|HKD|NZD|SEK|NOK|DKK|MXN|BRL|ZAR|KRW|THB|MYR|PHP|IDR|VND)\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
+
+        # Indian currency notation: "INR 500 Crores", "Rs. 10 Lakhs", "₹50 Crore"
+        # Lakhs = 100,000, Crores = 10,000,000
+        indian_currency_regex = r"\b(?:INR|Rs\.?|₹)\s?\d{1,3}(?:,?\d{2,3})*(?:\.\d{1,2})?\s*(?:Crores?|Lakhs?|Cr\.?|L)\b"
 
         # SWIFT/BIC code regex: 8 or 11 characters
         # Format: AAAA BB CC DDD (bank code + country + location + optional branch)
@@ -609,6 +836,9 @@ class PIIDetector:
 
         # Branch code regex: "Branch code: 001" or "Branch Code: 12345"
         branch_code_regex = r"\b[Bb]ranch\s+[Cc]ode[:\s]+\d{3,10}\b"
+
+        # Labeled SWIFT/BIC: "SWIFT: HASEHKHHXXX", "BIC: DEUTDEFF"
+        labeled_swift_regex = rf"\b(?:SWIFT|BIC)\s*[:=]\s*[A-Z]{{4}}(?:{country_codes})[A-Z0-9]{{2}}(?:[A-Z0-9]{{3}})?\b"
 
         currency_recognizer = PatternRecognizer(
             supported_entity="FINANCIAL",
@@ -637,9 +867,19 @@ class PIIDetector:
                     name="branch_code",
                     regex=branch_code_regex,
                     score=0.85,
+                ),
+                Pattern(
+                    name="indian_currency",
+                    regex=indian_currency_regex,
+                    score=0.85,
+                ),
+                Pattern(
+                    name="labeled_swift_bic",
+                    regex=labeled_swift_regex,
+                    score=0.95,  # Higher score for labeled codes
                 )
             ],
-            context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch"]
+            context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch", "inr", "rupee", "crore", "lakh"]
         )
 
         # IBAN (International Bank Account Number)
@@ -708,42 +948,104 @@ class PIIDetector:
                      "sepa", "swift", "bic", "bank", "international"]
         )
 
+        # Labeled bank account numbers: "Beneficiary account number: 1030 1784 7086 1"
+        # Captures account numbers that follow descriptive labels
+        labeled_bank_account = PatternRecognizer(
+            supported_entity="BANK_NUMBER",
+            patterns=[
+                Pattern(
+                    name="labeled_account_number",
+                    # Matches: Label + colon + number (with spaces/dashes)
+                    regex=r"(?:account\s*(?:number|no\.?|#)?|beneficiary|routing|sort\s*code)[:\s]+[\d\s\-]{8,20}",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="account_number_grouped",
+                    # Matches: groups of digits like "1030 1784 7086 1"
+                    regex=r"\b\d{4}\s\d{4}\s\d{4}(?:\s\d{1,4})?\b",
+                    score=0.70,
+                ),
+            ],
+            context=["account", "beneficiary", "bank", "transfer", "routing", "sort code", "wire"]
+        )
+
         self.analyzer.registry.add_recognizer(currency_recognizer)
         self.analyzer.registry.add_recognizer(iban_recognizer)
+        self.analyzer.registry.add_recognizer(labeled_bank_account)
 
     def _add_person_recognizers(self):
-        """Add pattern recognizers for person names with titles."""
+        """Add recognizers for person names using smart cascade NER.
+
+        PERSON detection strategy (via PersonRecognizer):
+        1. Pattern matching: Title + Name patterns (Dr. Smith), labeled names (Name: John)
+        2. Dictionary lookup: name-dataset for contextless names (spreadsheets)
+        3. Standard NER: spaCy for fast, reliable detection
+        4. Advanced NER: GLiNER/Flair for ambiguous names (when available)
+
+        Falls back to pattern-only mode if NER engines unavailable.
+        """
+        try:
+            from .person_recognizer import get_person_recognizer, is_person_ner_available
+
+            # Use balanced mode: patterns + name-dataset + spaCy
+            person_recognizer = get_person_recognizer(mode="balanced")
+            self.analyzer.registry.add_recognizer(person_recognizer)
+
+            if is_person_ner_available():
+                import sys
+                sys.stderr.write("[PIIDetector] PersonRecognizer loaded with NER cascade\n")
+            else:
+                sys.stderr.write("[PIIDetector] PersonRecognizer loaded (patterns only)\n")
+
+        except ImportError:
+            # Fallback to basic pattern recognizers if person_recognizer module unavailable
+            import sys
+            sys.stderr.write("[PIIDetector] PersonRecognizer unavailable, using basic patterns\n")
+            self._add_person_pattern_recognizers()
+
+    def _add_person_pattern_recognizers(self):
+        """Fallback: Basic pattern recognizers for person names.
+
+        Used when PersonRecognizer module is unavailable.
+        """
         # Titles that indicate a person name follows
-        # Handles: Dr. Smith, dr. DARYL, Mr. Jones, Prof. Williams, etc.
         titles = r"(?:Dr|DR|dr|Mr|MR|mr|Mrs|MRS|mrs|Ms|MS|ms|Miss|MISS|Prof|PROF|prof|Professor|Rev|REV|rev|Reverend|Sr|JR|Jr|Esq|Hon|Capt|Col|Gen|Lt|Maj|Sgt)"
 
-        # Name pattern: Title + optional period + name(s)
-        # Handles mixed case like "dr. DARYL" or "Dr. John Smith"
-        title_name_patterns = [
-            # Title. Name (e.g., "Dr. Smith", "dr. DARYL")
-            rf"\b{titles}\.?\s+[A-Za-z][A-Za-z]+(?:\s+[A-Za-z][A-Za-z]+)?\b",
-            # Title Name Name (e.g., "Dr John Smith", "Professor Jane Doe")
-            rf"\b{titles}\s+[A-Z][a-z]+\s+[A-Z][a-z]+\b",
-        ]
-
+        # HIGH CONFIDENCE: Title + Name patterns
         person_recognizer = PatternRecognizer(
             supported_entity="PERSON",
             patterns=[
                 Pattern(
                     name="title_name",
-                    regex=title_name_patterns[0],
-                    score=0.85,
+                    regex=rf"\b{titles}\.?\s+[A-Za-z][A-Za-z]+(?:\s+[A-Za-z][A-Za-z]+)?\b",
+                    score=0.90,
                 ),
                 Pattern(
                     name="title_full_name",
-                    regex=title_name_patterns[1],
-                    score=0.9,
+                    regex=rf"\b{titles}\s+[A-Z][a-z]+\s+[A-Z][a-z]+\b",
+                    score=0.95,
                 ),
             ],
-            context=["name", "person", "patient", "doctor", "contact", "recipient", "sender"]
         )
-
         self.analyzer.registry.add_recognizer(person_recognizer)
+
+        # CONTEXT-REQUIRED: Labeled name patterns
+        labeled_name_recognizer = PatternRecognizer(
+            supported_entity="PERSON",
+            patterns=[
+                Pattern(
+                    name="labeled_name",
+                    regex=r"(?:(?:First|Last|Full|Middle|Given|Family|Sur|Patient|Client|Customer|Applicant|Cardholder|Account\s*Holder|Beneficiary|Employee|Contact)\s*)?Name\s*[:]\s*[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,2}",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="labeled_person",
+                    regex=r"(?:Patient|Client|Applicant|Cardholder|Beneficiary|Employee|Recipient|Sender|Owner|Holder)\s*[:]\s*[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){0,2}",
+                    score=0.85,
+                ),
+            ],
+        )
+        self.analyzer.registry.add_recognizer(labeled_name_recognizer)
 
     def _add_company_recognizers(self):
         """Add pattern recognizers for company names and legal designations."""
@@ -766,7 +1068,7 @@ class PIIDetector:
             r"Associates", r"Association",
             r"Group", r"Holdings",
             r"Agency", r"Agencies",
-            r"Studio", r"Studios",
+            r"Studio", r"Studios", r"Design",
             r"Foundation", r"Trust",
             r"Solutions", r"Services",
             r"Management", r"Consulting",
@@ -1267,10 +1569,32 @@ class PIIDetector:
             context=["phone", "tel", "mobile", "cell", "fax", "contact"]
         )
 
+        # Vanity phone numbers: 800-453-BANK, 1-800-FLOWERS
+        # Uses letters that map to phone digits (ABC=2, DEF=3, etc.)
+        vanity_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="vanity_phone_dash",
+                    # Matches: NNN-NNN-WORD or 1-NNN-WORD where WORD has letters
+                    regex=r"\b1?-?\d{3}-\d{0,3}[A-Z]{2,}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="vanity_phone_mixed",
+                    # Matches: 800-453-BANK (digits and letters in last part)
+                    regex=r"\b\d{3}-\d{3}-[A-Z0-9]{4,}\b",
+                    score=0.85,
+                ),
+            ],
+            context=["call", "phone", "dial", "contact", "toll-free", "hotline"]
+        )
+
         self.analyzer.registry.add_recognizer(na_phone_parens)
         self.analyzer.registry.add_recognizer(na_phone_dashes)
         self.analyzer.registry.add_recognizer(na_phone_dots)
         self.analyzer.registry.add_recognizer(intl_phone)
+        self.analyzer.registry.add_recognizer(vanity_phone)
 
         # UK NHS Number: XXX XXX XXXX (10 digits with spaces)
         # High confidence when context words are present
@@ -1302,7 +1626,10 @@ class PIIDetector:
         # Mastercard: starts with 51-55 or 2221-2720, 16 digits
         # American Express: starts with 34 or 37, 15 digits
         # Discover: starts with 6011, 622126-622925, 644-649, or 65, 16 digits
-        
+        # JCB: starts with 3528-3589, 16 digits
+        # Diners Club: starts with 300-305, 36, 38, 14-16 digits
+        # UnionPay: starts with 62, 16-19 digits
+
         credit_card_recognizer = PatternRecognizer(
             supported_entity="CREDIT_CARD",
             patterns=[
@@ -1324,6 +1651,34 @@ class PIIDetector:
                     regex=r"\b3[47]\d{2}[\s-]?\d{6}[\s-]?\d{5}\b",
                     score=0.9
                 ),
+                # JCB (3528-3589) - 15 or 16 digits
+                Pattern(
+                    name="jcb_16",
+                    regex=r"\b35(?:2[89]|[3-8]\d)[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
+                    score=0.9
+                ),
+                Pattern(
+                    name="jcb_15",
+                    regex=r"\b35(?:2[89]|[3-8]\d)[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{3}\b",
+                    score=0.9
+                ),
+                # Diners Club (300-305, 36, 38) - 14 digits
+                Pattern(
+                    name="diners_14",
+                    regex=r"\b(?:30[0-5]\d|36\d{2}|38\d{2})[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{2}\b",
+                    score=0.9
+                ),
+                # UnionPay (62) - 16-19 digits
+                Pattern(
+                    name="unionpay_16",
+                    regex=r"\b62\d{2}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
+                    score=0.85
+                ),
+                Pattern(
+                    name="unionpay_19",
+                    regex=r"\b62\d{2}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{3}\b",
+                    score=0.85
+                ),
                 # Discover (6011, 622126-622925, 644-649, 65)
                 Pattern(
                     name="discover",
@@ -1336,7 +1691,7 @@ class PIIDetector:
                     regex=r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
                     score=0.6
                 ),
-                # Generic 15-digit pattern (fallback for Amex)
+                # Generic 15-digit pattern (fallback for Amex/JCB)
                 Pattern(
                     name="generic_15",
                     regex=r"\b\d{4}[\s-]?\d{6}[\s-]?\d{5}\b",
@@ -1355,7 +1710,7 @@ class PIIDetector:
                     score=0.5
                 )
             ],
-            context=["card", "credit", "payment", "visa", "mastercard", "amex", "discover", "maestro", "debit", "cvv", "cvc", "expir"]
+            context=["card", "credit", "payment", "visa", "mastercard", "amex", "discover", "maestro", "debit", "cvv", "cvc", "expir", "jcb", "diners", "unionpay"]
         )
 
         self.analyzer.registry.add_recognizer(credit_card_recognizer)
@@ -1955,6 +2310,80 @@ class PIIDetector:
         has_parens = '(' in text and ')' in text
         return has_dashes or has_dots or has_parens
 
+    def _validate_phone_with_phonenumbers(self, phone_text: str, default_region: str = "US") -> bool:
+        """
+        Validate a phone number using Google's libphonenumber library.
+
+        Args:
+            phone_text: The phone number text to validate
+            default_region: Default region code for parsing (e.g., "US", "GB", "CA")
+
+        Returns:
+            True if the phone number is valid, False otherwise
+        """
+        if not PHONENUMBERS_AVAILABLE:
+            return True  # Fall back to pattern-only validation if library unavailable
+
+        try:
+            # Try to parse the phone number
+            parsed = phonenumbers.parse(phone_text, default_region)
+
+            # Check if it's a valid number
+            if not phonenumbers.is_valid_number(parsed):
+                return False
+
+            # Check if it's a possible number (less strict check)
+            if not phonenumbers.is_possible_number(parsed):
+                return False
+
+            return True
+        except NumberParseException:
+            # If parsing fails, fall back to pattern validation
+            return True  # Allow it through to pattern-based validation
+
+    def _get_phone_region_from_context(self, full_text: str, start: int, end: int) -> str:
+        """
+        Determine the likely region of a phone number based on surrounding context.
+
+        Args:
+            full_text: The full text containing the phone number
+            start: Start position of the phone number
+            end: End position of the phone number
+
+        Returns:
+            ISO country code (e.g., "US", "GB", "CA")
+        """
+        # Get surrounding context
+        window = 200
+        context_start = max(0, start - window)
+        context_end = min(len(full_text), end + window)
+        context = full_text[context_start:context_end].lower()
+
+        # Check for country indicators
+        region_indicators = {
+            "US": ["usa", "united states", "america", "usd", "$", "california", "new york",
+                   "texas", "florida", "illinois", "ohio", "georgia", "michigan"],
+            "CA": ["canada", "canadian", "cad", "ontario", "quebec", "alberta",
+                   "british columbia", "toronto", "vancouver", "montreal"],
+            "GB": ["uk", "united kingdom", "england", "scotland", "wales", "gbp", "£",
+                   "london", "manchester", "birmingham", "nhs"],
+            "AU": ["australia", "australian", "aud", "sydney", "melbourne", "brisbane"],
+            "DE": ["germany", "german", "deutschland", "eur", "€", "berlin", "munich"],
+            "FR": ["france", "french", "paris", "lyon", "marseille"],
+            "IN": ["india", "indian", "inr", "₹", "mumbai", "delhi", "bangalore"],
+            "BR": ["brazil", "brazilian", "brl", "r$", "são paulo", "rio de janeiro"],
+            "MX": ["mexico", "mexican", "mxn", "mexico city"],
+            "JP": ["japan", "japanese", "jpy", "¥", "tokyo", "osaka"],
+        }
+
+        for region, indicators in region_indicators.items():
+            for indicator in indicators:
+                if indicator in context:
+                    return region
+
+        # Default to US if no specific indicators found
+        return "US"
+
     def _detect_geographic_context(self, text: str) -> str:
         """
         Detect geographic context from currency and other indicators.
@@ -2155,14 +2584,16 @@ class PIIDetector:
 
             # Filter BANK_NUMBER - many false positives
             if entity.entity_type == "BANK_NUMBER":
-                # Only keep if it's exactly 10 digits (common bank account format)
+                # Keep bank accounts between 8-17 digits (covers most international formats)
+                # 8-12 digits: US routing/account numbers
+                # 13-17 digits: International BBAN, Asian bank accounts
                 digits = re.sub(r'\D', '', entity_text)
-                if len(digits) < 8 or len(digits) > 12:
+                if len(digits) < 8 or len(digits) > 17:
                     continue
                 # Skip if it matches credit card pattern (starts with 3, 4, 5, 6)
                 if digits[0] in ('3', '4', '5', '6') and len(digits) >= 15:
                     continue
-                # Skip if low confidence
+                # Skip if low confidence (unless it has "beneficiary" or "account" context)
                 if entity.confidence < 0.6:
                     continue
 
@@ -2242,6 +2673,20 @@ class PIIDetector:
                 # Skip if it looks like a date format (YYYY-MM-DD or DD-MM-YYYY)
                 if re.match(r'^\d{4}-\d{2}-\d{2}$', entity_text) or re.match(r'^\d{2}-\d{2}-\d{4}$', entity_text):
                     continue
+                # Validate using phonenumbers library (Google's libphonenumber)
+                if PHONENUMBERS_AVAILABLE and len(digits) >= 7:
+                    region = self._get_phone_region_from_context(text, entity.start, entity.end)
+                    if not self._validate_phone_with_phonenumbers(entity_text, region):
+                        # Lower confidence for numbers that fail phonenumbers validation
+                        entity = PIIEntity(
+                            entity_type=entity.entity_type,
+                            text=entity.text,
+                            start=entity.start,
+                            end=entity.end,
+                            confidence=entity.confidence * 0.5,  # Reduce confidence
+                            pattern_name=entity.pattern_name,
+                            locale=entity.locale
+                        )
 
             # Filter LOCATION false positives
             if entity.entity_type == "LOCATION":
@@ -2508,73 +2953,26 @@ class PIIDetector:
                     continue
 
             # Filter PERSON false positives
+            # Note: PERSON detection now uses context-aware patterns:
+            # - Title + Name (Dr. Smith) - high confidence, always detected
+            # - Labeled names (Name: John Smith) - require explicit label
+            # This filter handles edge cases from spaCy NER
             if entity.entity_type == "PERSON":
-                # Skip if contains newlines or excessive whitespace (likely OCR/formatting artifact)
+                # Skip if contains newlines or excessive whitespace (OCR artifact)
                 if '\n' in entity_text or '\r' in entity_text or '  ' in entity_text:
                     continue
-                # Skip if it looks like a state/province abbreviation in an address context
-                if len(entity_text) <= 3 and entity_text.isupper():
+                # Skip very short text (likely abbreviations)
+                if len(entity_text) <= 3:
                     continue
-                # Skip if it looks like a street type
-                if entity_text.lower() in ('street', 'avenue', 'road', 'drive', 'lane', 'court', 'blvd', 'st', 'ave', 'rd', 'dr'):
-                    continue
-                # Skip common words that NER incorrectly flags as names
-                person_false_positives = {
-                    # Common nouns/titles
-                    'customer', 'customers', 'member', 'members', 'user', 'users', 'client', 'clients',
-                    'employee', 'employees', 'manager', 'managers', 'director', 'directors', 'officer',
-                    'president', 'chairman', 'ceo', 'cfo', 'cto', 'founder', 'owner', 'partner',
-                    # Job titles that look like names
-                    'jeweler', 'doctor', 'nurse', 'teacher', 'engineer', 'developer', 'designer',
-                    'analyst', 'consultant', 'specialist', 'coordinator', 'administrator', 'assistant',
-                    # Common words mistaken for names
-                    'diamond', 'necklace', 'jewelry', 'art', 'form', 'family', 'heirloom', 'project',
-                    'clasp', 'setting', 'studio', 'office', 'address', 'website', 'email', 'phone',
-                    # Day/time words
-                    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-                    'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
-                    'september', 'october', 'november', 'december',
-                    # Other common false positives
-                    'inc', 'llc', 'ltd', 'corp', 'company', 'corporation', 'enterprise', 'group',
-                    'associates', 'partners', 'services', 'solutions', 'technologies', 'systems',
-                    # US cities often confused with person names
-                    'austin', 'jackson', 'madison', 'franklin', 'washington', 'lincoln', 'clinton',
-                    'hamilton', 'jefferson', 'anderson', 'wilson', 'taylor', 'tyler', 'harrison',
-                    'monroe', 'pierce', 'buchanan', 'cleveland', 'mckinley', 'kennedy', 'johnson',
-                    'dallas', 'houston', 'phoenix', 'denver', 'portland', 'orlando', 'charlotte',
-                    # Last names that are common company name parts
-                    'hill', 'coleman', 'schaefer', 'galloway', 'bentley', 'turner', 'phillips',
-                    'martinez', 'williams', 'harris', 'clark', 'lewis', 'walker', 'hall', 'young',
-                    # Credit card brand names detected as persons
-                    'visa', 'mastercard', 'amex', 'discover', 'maestro', 'diners',
-                    # Other false positives from testing
-                    'chartered', 'india', 'america', 'american', 'british', 'european',
-                }
-                if entity_text.lower() in person_false_positives:
-                    continue
-                # Note: Hyphenated names like "Jackson-Guzman" are NOT filtered here.
-                # They can be valid person names (married surnames) OR company names.
-                # Both PERSON and COMPANY detections are allowed for ambiguous patterns.
-                # Context and downstream processing should determine the correct interpretation.
-                # Skip single words that are likely not names (require at least 2 parts for full names)
-                words = entity_text.split()
-                if len(words) == 1:
-                    # Single-word names need much higher confidence (0.85+)
-                    if entity.confidence < 0.85:
-                        continue
-                    # Skip if it's all caps (likely acronym or heading)
-                    if entity_text.isupper() and len(entity_text) > 3:
-                        continue
-                elif len(words) >= 2 and entity.confidence < 0.8:
-                    # Two-word names with low confidence need extra validation
-                    # Skip if both words are very short (likely initials or abbreviations)
-                    if all(len(w) <= 2 for w in words):
-                        continue
-                # Skip very long "names" (likely phrases)
-                if len(entity_text) > 40:
-                    continue
-                # Skip if contains numbers (names shouldn't have digits)
+                # Skip if contains numbers (names don't have digits)
                 if any(c.isdigit() for c in entity_text):
+                    continue
+                # Skip very long text (likely phrases, not names)
+                if len(entity_text) > 35:
+                    continue
+                # For spaCy NER detections (lower confidence), require higher threshold
+                # Our pattern recognizers have scores 0.85-0.95
+                if entity.confidence < 0.80:
                     continue
 
             # Filter COORDINATES false positives
@@ -2645,6 +3043,25 @@ class PIIDetector:
                     'engineering', 'product development', 'business development',
                 }
                 if text_lower in department_names:
+                    continue
+                # Skip UI navigation/menu patterns that aren't company names
+                ui_navigation_patterns = {
+                    'expenses & bills', 'expenses and bills', 'expenses',
+                    'sales & get paid', 'sales and get paid', 'get paid',
+                    'banking & cash', 'banking and cash', 'banking',
+                    'reports & insights', 'reports and insights', 'insights',
+                    'settings & preferences', 'settings and preferences', 'preferences',
+                    'accounts & sync', 'accounts and sync', 'sync',
+                    'help & support', 'help and support', 'support',
+                    'tools & templates', 'tools and templates', 'templates',
+                    'import & export', 'import and export', 'export',
+                    'billing & payments', 'billing and payments', 'payments',
+                    'invoices & estimates', 'invoices and estimates', 'estimates',
+                    'time & projects', 'time and projects', 'projects',
+                    'payroll & employees', 'payroll and employees', 'payroll',
+                    'taxes & forms', 'taxes and forms', 'forms',
+                }
+                if text_lower in ui_navigation_patterns:
                     continue
 
             # Filter DATE_TIME false positives (dates are not PII in most contexts)

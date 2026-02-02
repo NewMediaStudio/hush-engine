@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 152.0350000000003,
+    "width" : 1390.939002019709,
+    "x" : 312.457317507219,
+    "y" : 1572.142140278298
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "LEusuR Dei → 13\/06\/2023",
+  "fileName" : "india_passport.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/india_passport.pdf",
+  "notes" : "",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "DATE_TIME"
+  ],
+  "timestamp" : "2026-02-02T18:38:27Z"
+}

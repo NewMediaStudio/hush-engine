@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 24.42675018310547,
+    "width" : 244.612060546875,
+    "x" : 606.6379311669361,
+    "y" : 1113.8598735603582
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "6 & 10 Euro Market",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "",
+  "suggestedEntityTypes" : [
+    "COMPANY"
+  ],
+  "timestamp" : "2026-02-02T18:27:53Z"
+}

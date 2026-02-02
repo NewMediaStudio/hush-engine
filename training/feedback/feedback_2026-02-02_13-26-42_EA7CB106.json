@@ -1,0 +1,18 @@
+{
+  "bbox" : {
+    "height" : 35,
+    "width" : 264.1810302734375,
+    "x" : 34.24568906910028,
+    "y" : 278.0000006947399
+  },
+  "confidence" : 0.7,
+  "detectedEntityType" : "COMPANY",
+  "detectedText" : "Sales & Get Paid",
+  "fileName" : "Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/Screenshot 2026-01-28 at 11.34.38 AM.png",
+  "notes" : "Not a company, part of navigation",
+  "suggestedEntityTypes" : [
+
+  ],
+  "timestamp" : "2026-02-02T18:26:42Z"
+}

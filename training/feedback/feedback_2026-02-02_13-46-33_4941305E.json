@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 78.20178822108664,
+    "width" : 1060.889326226028,
+    "x" : 94.62498537637588,
+    "y" : 2881.588760659162
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "Beneficiary account number: 1030 1784 7086 1",
+  "fileName" : "commercial_invoice_1.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/commercial_invoice_1.pdf",
+  "notes" : "Considering the context of text next to it",
+  "page" : 1,
+  "suggestedEntityTypes" : [
+    "BANK_NUMBER"
+  ],
+  "timestamp" : "2026-02-02T18:46:33Z"
+}

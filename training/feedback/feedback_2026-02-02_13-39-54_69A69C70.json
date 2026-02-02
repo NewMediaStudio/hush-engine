@@ -1,0 +1,19 @@
+{
+  "bbox" : {
+    "height" : 136.12941101536626,
+    "width" : 1111.0249999999999,
+    "x" : 1598.316680554479,
+    "y" : 1555.7647050415817
+  },
+  "confidence" : 1,
+  "detectedEntityType" : "CUSTOM",
+  "detectedText" : "LAKHIPUR, ASSAM",
+  "fileName" : "india_passport.pdf",
+  "filePath" : "\/Users\/valentine\/Desktop\/Hush Test Data\/india_passport.pdf",
+  "notes" : "Country",
+  "page" : 2,
+  "suggestedEntityTypes" : [
+    "LOCATION"
+  ],
+  "timestamp" : "2026-02-02T18:39:54Z"
+}
