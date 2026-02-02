@@ -5,6 +5,50 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-02
+
+### Added
+- **International PII Validation**
+  - IBAN validation for 116 countries (php-iban registry)
+  - Phone number validation for 150+ countries (ariankoochak patterns + phonenumbers library)
+  - National ID validation for 35+ countries via python-stdnum
+  - Checksum algorithms: Luhn, Verhoeff, Mod-11, Mod-97
+
+- **Locale-Aware Detection**
+  - Automatic document locale detection from content patterns
+  - Confidence boosting for locale-specific entity types
+  - Support for 30+ locales (ISO codes)
+
+- **Table Detection**
+  - Context-aware PII detection for structured data
+  - Header-based confidence boosting (e.g., "SSN" column boosts SSN detection)
+  - Spreadsheet column analysis
+
+- **Medical NER**
+  - Biomedical entity recognition using scispaCy
+  - ICD-10 code detection
+  - Medication, diagnosis, and lab result detection
+
+- **Face Detection**
+  - OpenCV Haar cascade face detection in images
+  - Automatic face region identification for redaction
+
+- **New Validators Module**
+  - `validate_iban()` - ISO 13616 IBAN validation
+  - `validate_bic()` - BIC/SWIFT code validation
+  - `validate_phone()` - International phone validation
+  - `validate_credit_card()` - Luhn checksum validation
+  - `validate_national_id()` - Country-specific ID validation
+  - `validate_south_african_id()` - South African ID validation
+
+### Changed
+- Detection engine now uses validation libraries instead of pattern-only matching
+- Improved false positive filtering for credit card vs national ID detection
+
+### Fixed
+- IBAN detection no longer produces duplicates (unified to IBAN_CODE entity type)
+- National ID no longer falsely matches credit card numbers
+
 ## [1.0.3] - 2026-01-30
 
 ### Fixed
@@ -61,5 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File routing for images, PDFs, spreadsheets
 - RPC server for inter-process communication
 
+[1.1.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.3...v1.1.0
+[1.0.3]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.0...v1.0.2
 [1.0.0]: https://github.com/NewMediaStudio/hush-engine/releases/tag/v1.0.0

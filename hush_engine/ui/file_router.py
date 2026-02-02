@@ -14,8 +14,10 @@ import mimetypes
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ocr import VisionOCR
-from detectors import PIIDetector
+from detectors import PIIDetector, TableDetector, ContextAwarePIIDetector
 from detectors.face_detector import FaceDetector
+from detectors.qr_detector import QRDetector
+from detectors.barcode_detector import BarcodeDetector
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
 from image_optimizer import optimize_image
@@ -87,9 +89,13 @@ class FileRouter:
         self._ocr = None
         self._detector = None
         self._face_detector = None
+        self._qr_detector = None
+        self._barcode_detector = None
         self._image_anonymizer = None
         self._spreadsheet_anonymizer = None
         self._pdf_processor = None
+        self._table_detector = None
+        self._context_aware_detector = None
 
         # File type mapping
         self.image_extensions = {'.png', '.jpg', '.jpeg', '.heic'}
@@ -118,6 +124,20 @@ class FileRouter:
         return self._face_detector
 
     @property
+    def qr_detector(self):
+        """Lazy-load QR code detector"""
+        if self._qr_detector is None:
+            self._qr_detector = QRDetector()
+        return self._qr_detector
+
+    @property
+    def barcode_detector(self):
+        """Lazy-load barcode detector"""
+        if self._barcode_detector is None:
+            self._barcode_detector = BarcodeDetector()
+        return self._barcode_detector
+
+    @property
     def image_anonymizer(self):
         """Lazy-load image anonymizer"""
         if self._image_anonymizer is None:
@@ -137,9 +157,23 @@ class FileRouter:
         if self._pdf_processor is None:
             self._pdf_processor = PDFProcessor(dpi=400)  # Use 400 DPI for accurate OCR detection
         return self._pdf_processor
-    
 
-    
+    @property
+    def table_detector(self):
+        """Lazy-load table structure detector"""
+        if self._table_detector is None:
+            self._table_detector = TableDetector()
+        return self._table_detector
+
+    @property
+    def context_aware_detector(self):
+        """Lazy-load context-aware PII detector"""
+        if self._context_aware_detector is None:
+            self._context_aware_detector = ContextAwarePIIDetector(
+                self.detector, self.table_detector
+            )
+        return self._context_aware_detector
+
     @property
     def preview_pdf_processor(self):
         """Lazy-load PDF processor for preview images (150 DPI, JPG format for speed)"""
@@ -260,6 +294,44 @@ class FileRouter:
             except Exception as e:
                 print(f"Face detection error: {e}", file=sys.stderr)
 
+        # Detect QR codes
+        try:
+            from PIL import Image
+            img = Image.open(input_path)
+            qr_detections = self.qr_detector.detect_qr_codes(img)
+            for qr in qr_detections:
+                # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
+                x, y, w, h = qr.bbox
+                pii_detections.append({
+                    'entity_type': 'QR_CODE',
+                    'text': qr.data if qr.data else '[QR Code]',
+                    'confidence': qr.confidence,
+                    'bbox': [float(x), float(y), float(x + w), float(y + h)]
+                })
+            if qr_detections:
+                print(f"Detected {len(qr_detections)} QR code(s)", file=sys.stderr)
+        except Exception as e:
+            print(f"QR code detection error: {e}", file=sys.stderr)
+
+        # Detect barcodes
+        try:
+            from PIL import Image
+            img = Image.open(input_path)
+            barcode_detections = self.barcode_detector.detect_barcodes(img)
+            for barcode in barcode_detections:
+                # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
+                x, y, w, h = barcode.bbox
+                pii_detections.append({
+                    'entity_type': 'BARCODE',
+                    'text': f"[{barcode.barcode_type}] {barcode.data}" if barcode.data else f'[{barcode.barcode_type}]',
+                    'confidence': barcode.confidence,
+                    'bbox': [float(x), float(y), float(x + w), float(y + h)]
+                })
+            if barcode_detections:
+                print(f"Detected {len(barcode_detections)} barcode(s)", file=sys.stderr)
+        except Exception as e:
+            print(f"Barcode detection error: {e}", file=sys.stderr)
+
         return {
             'detections': pii_detections,
             'all_text_blocks': all_text_blocks
@@ -298,25 +370,48 @@ class FileRouter:
                 ocr_detections = self.ocr.extract_text(temp_path)
 
                 # Convert OCR detections to text blocks with page number
+                page_text_blocks = []
                 for detection in ocr_detections:
-                    all_text_blocks.append({
+                    block = {
                         'text': detection.text,
                         'bbox': detection.bbox,
                         'page': page_num
-                    })
+                    }
+                    all_text_blocks.append(block)
+                    page_text_blocks.append(block)
 
-                # Detect PII in this page
+                # Detect PII in this page (initial pass)
+                page_detections = []
                 for detection in ocr_detections:
                     entities = self.detector.analyze_text(detection.text)
 
                     for entity in entities:
-                        all_detections.append({
+                        page_detections.append({
                             'entity_type': entity.entity_type,
                             'text': entity.text,
                             'confidence': entity.confidence,
                             'bbox': detection.bbox,
                             'page': page_num
                         })
+
+                # Apply context-aware detection (table structure + header context)
+                try:
+                    # Enhance detections using table context
+                    page_detections = self.context_aware_detector.detect_with_context(
+                        page_text_blocks, page_detections
+                    )
+                    # Fill in missing detections based on header context
+                    page_detections = self.context_aware_detector.fill_missing_detections(
+                        page_text_blocks, page_detections
+                    )
+                    # Add page number to any new detections
+                    for det in page_detections:
+                        if 'page' not in det:
+                            det['page'] = page_num
+                except Exception as e:
+                    print(f"Page {page_num}: Context-aware detection error: {e}", file=sys.stderr)
+
+                all_detections.extend(page_detections)
 
                 # Detect faces in this page if enabled
                 if detect_faces:
@@ -336,6 +431,42 @@ class FileRouter:
                             print(f"Page {page_num}: Detected {len(face_detections)} face(s)", file=sys.stderr)
                     except Exception as e:
                         print(f"Page {page_num}: Face detection error: {e}", file=sys.stderr)
+
+                # Detect QR codes in this page
+                try:
+                    qr_detections = self.qr_detector.detect_qr_codes(page_image)
+                    for qr in qr_detections:
+                        # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
+                        x, y, w, h = qr.bbox
+                        all_detections.append({
+                            'entity_type': 'QR_CODE',
+                            'text': qr.data if qr.data else '[QR Code]',
+                            'confidence': qr.confidence,
+                            'bbox': [float(x), float(y), float(x + w), float(y + h)],
+                            'page': page_num
+                        })
+                    if qr_detections:
+                        print(f"Page {page_num}: Detected {len(qr_detections)} QR code(s)", file=sys.stderr)
+                except Exception as e:
+                    print(f"Page {page_num}: QR code detection error: {e}", file=sys.stderr)
+
+                # Detect barcodes in this page
+                try:
+                    barcode_detections = self.barcode_detector.detect_barcodes(page_image)
+                    for barcode in barcode_detections:
+                        # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
+                        x, y, w, h = barcode.bbox
+                        all_detections.append({
+                            'entity_type': 'BARCODE',
+                            'text': f"[{barcode.barcode_type}] {barcode.data}" if barcode.data else f'[{barcode.barcode_type}]',
+                            'confidence': barcode.confidence,
+                            'bbox': [float(x), float(y), float(x + w), float(y + h)],
+                            'page': page_num
+                        })
+                    if barcode_detections:
+                        print(f"Page {page_num}: Detected {len(barcode_detections)} barcode(s)", file=sys.stderr)
+                except Exception as e:
+                    print(f"Page {page_num}: Barcode detection error: {e}", file=sys.stderr)
 
                 print(f"Page {page_num}: Found {len([d for d in all_detections if d['page'] == page_num])} total detections", file=sys.stderr)
 

@@ -54,5 +54,10 @@ coverage.xml
 test_outputs/
 *.log
 
+# Test data (large files, downloaded separately)
+tests/data/*.xlsx
+tests/data/*.pdf
+tests/results/
+
 # Spacy models (downloaded separately)
 en_core_web_lg/

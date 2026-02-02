@@ -8,8 +8,14 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 - **Multi-format support**: Images (PNG, JPEG, HEIC), PDFs, Spreadsheets (Excel, CSV)
 - **Comprehensive PII detection**: Names, emails, phone numbers, SSN, credit cards, API keys, crypto wallets, IBAN, and more
+- **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
+- **Locale-aware detection**: Automatic document locale detection with confidence boosting
+- **Table detection**: Context-aware PII detection in structured data (headers boost confidence)
+- **Medical NER**: Biomedical entity recognition using scispaCy models
+- **Face detection**: OpenCV Haar cascade face detection in images
 - **Apple Vision OCR**: Native macOS optical character recognition
 - **Privacy-first**: All processing happens locally, no data leaves your machine
+- **Checksum validation**: Luhn, Verhoeff, Mod-11, Mod-97 algorithms for ID validation
 - **Extensible**: Easy to add custom PII recognizers
 
 ## Installation
@@ -84,22 +90,27 @@ for detection in detections:
 
 ## Supported PII Types
 
-- **Personal**: Names (PERSON), Email addresses, Phone numbers, Dates of birth
-- **Financial**: Credit card numbers, IBAN, Crypto wallet addresses
-- **Government**: SSN, Passport numbers, Driver's license numbers
-- **Technical**: API keys, AWS keys, IP addresses, URLs
-- **Location**: Street addresses, ZIP codes
+- **Personal**: Names (PERSON), Email addresses, Phone numbers (150+ countries), Dates of birth
+- **Financial**: Credit card numbers (Luhn validated), IBAN (116 countries), BIC/SWIFT, Crypto wallets
+- **Government**: SSN, National IDs (35+ countries), Passport numbers, Driver's license
+- **Medical**: Diagnoses, Medications, Lab results, ICD-10 codes, Biomedical entities
+- **Technical**: API keys, AWS keys, Stripe keys, IP addresses, MAC addresses, URLs
+- **Location**: Street addresses (international), ZIP/postal codes, GPS coordinates
+- **Biometric**: Face detection in images
 
 ## Architecture
 
 ### Core Components
 
 - **FileRouter**: High-level API for processing different file types
-- **PIIDetector**: Text-based PII detection using Presidio
+- **PIIDetector**: Text-based PII detection using Presidio with 50+ custom recognizers
+- **TableDetector**: Context-aware detection for structured data (spreadsheets, tables)
 - **VisionOCR**: Apple Vision-powered OCR
-- **PDFProcessor**: PDF to image conversion
+- **PDFProcessor**: PDF to image conversion (400 DPI for accuracy)
 - **ImageAnonymizer**: Apply red censor bars to detected areas
 - **SpreadsheetAnonymizer**: Redact PII in Excel/CSV files
+- **FaceDetector**: OpenCV Haar cascade face detection
+- **Validators**: Industry-standard validation using python-stdnum and phonenumbers
 
 ## Custom PII Recognizers
 
@@ -241,7 +252,10 @@ For security issues, please email security@newmediastudio.com instead of using t
 ## Roadmap
 
 - [ ] Windows/Linux support (alternative OCR engines)
-- [ ] Pre-trained custom models for specific domains
+- [x] International PII validation (116 IBAN countries, 150+ phone patterns)
+- [x] Medical/biomedical NER (scispaCy integration)
+- [x] Face detection in images
+- [x] Table/structured data detection
 - [ ] Custom local model training
 - [ ] Batch processing optimizations
 - [ ] Video frame processing

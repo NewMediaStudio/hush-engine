@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.0.3"
+version = "1.1.0"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
-readme = "README_ENGINE.md"
+readme = "README.md"
 license = {text = "MIT"}
 authors = [
     {name = "Valentine Makhouleen", email = "valentine@newmediastudio.com"}
 ]
 requires-python = ">=3.10"
-keywords = ["pii", "privacy", "detection", "ocr", "presidio", "anonymization", "data-security"]
+keywords = ["pii", "privacy", "detection", "ocr", "presidio", "anonymization", "data-security", "international", "iban", "gdpr", "hipaa"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -43,6 +43,13 @@ dependencies = [
     "mozjpeg-lossless-optimization>=1.0.0",  # BSD-3 - JPEG optimization
     # Face detection (Apache 2.0 license)
     "opencv-python>=4.8.0",  # Haar cascade face detection
+    # Barcode detection (MIT license)
+    "pyzbar>=0.1.9",  # Linear barcode detection
+    # Biomedical NER (Apache 2.0 license)
+    "scispacy>=0.5.0",  # Biomedical spaCy models
+    # PII Validation (LGPL-2.1 license)
+    "python-stdnum>=2.2",  # National ID, IBAN, BIC validation for 35+ countries
+    "phonenumbers>=9.0.0",  # International phone validation for 249 countries
 ]
 
 [project.urls]

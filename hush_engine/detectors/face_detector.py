@@ -62,20 +62,20 @@ class FaceDetector:
         bbox: tuple,
         img_width: int,
         img_height: int,
-        top_expand: float = 0.4,
-        side_expand: float = 0.4,
-        bottom_expand: float = 1.0
+        top_expand: float = 0.25,
+        side_expand: float = 0.25,
+        bottom_expand: float = 0.5
     ) -> tuple:
         """
-        Expand a face bounding box to include full head and shoulders.
+        Expand a face bounding box to include full head and partial neck/shoulders.
 
         Args:
             bbox: (x, y, w, h) of detected face
             img_width: Image width for clamping
             img_height: Image height for clamping
-            top_expand: Fraction to expand upward (for hair/forehead)
-            side_expand: Fraction to expand sideways (for ears)
-            bottom_expand: Fraction to expand downward (for neck/shoulders)
+            top_expand: Fraction to expand upward (for hair/forehead) - 25%
+            side_expand: Fraction to expand sideways (for ears) - 25%
+            bottom_expand: Fraction to expand downward (for neck) - 50%
 
         Returns:
             Expanded (x, y, w, h) tuple clamped to image boundaries
