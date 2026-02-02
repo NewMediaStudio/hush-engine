@@ -2078,6 +2078,13 @@ class PIIDetector:
                 # Skip if confidence is very low
                 if entity.confidence < 0.5:
                     continue
+                # Skip if text contains common non-address words (disclaimers, explanations)
+                non_address_words = {'connected', 'info', 'information', 'may be', 'network',
+                                    'billing', 'purposes', 'used for', 'this', 'that', 'which',
+                                    'help', 'your', 'business', 'please', 'contact', 'visit'}
+                text_lower = entity_text.lower()
+                if any(word in text_lower for word in non_address_words):
+                    continue
 
             # Filter URL false positives
             if entity.entity_type == "URL":
