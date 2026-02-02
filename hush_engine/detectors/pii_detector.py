@@ -150,7 +150,9 @@ class PIIDetector:
             "customer", "customers", "customer hub", "customer agent", "customer request", "customer requests",
             "overview", "dashboard", "portal", "service", "services", "support", "agent", "agents",
             "business", "request", "requests", "menu", "navigation", "header", "footer", "new customer",
-            "help your business", "financial"
+            "help your business", "financial",
+            # Common disclaimer/explanatory phrases (prevent address false positives)
+            "business network", "billing purposes", "connected to", "may be connected", "used for"
         }
 
     def _add_location_recognizers(self):
@@ -2105,10 +2107,13 @@ class PIIDetector:
                 # Skip common English words that accidentally match SWIFT pattern (CUST+OM+ER = CUSTOMER)
                 swift_false_positives = {
                     'customer', 'customers', 'overview', 'services', 'business', 'register',
-                    'chapters', 'chapters', 'pictures', 'features', 'measures', 'treasur',
+                    'chapters', 'pictures', 'features', 'measures', 'treasur',
                     'pleasure', 'captures', 'ventures', 'lectures', 'cultures', 'textures',
                     'mixtures', 'fixtures', 'dentures', 'gestures', 'pastures', 'postures',
-                    'ruptures', 'sutures', 'natures', 'futures', 'tortures', 'fractures'
+                    'ruptures', 'sutures', 'natures', 'futures', 'tortures', 'fractures',
+                    'industry', 'industries', 'ministry', 'chemistry', 'geometry', 'symmetry',
+                    'registry', 'forestry', 'ancestry', 'artistry', 'tapestry', 'infantry',
+                    'industry', 'district', 'districts', 'abstract', 'construc', 'instruct'
                 }
                 if entity_text.lower() in swift_false_positives:
                     continue
