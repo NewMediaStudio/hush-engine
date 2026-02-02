@@ -728,6 +728,17 @@ class PIIDetector:
         # Company name with business suffix: "Johnson & Partners", "Davis Creative Agency"
         company_suffix_regex = rf"\b[A-Z][a-zA-Z0-9&',.-]+(?:\s+[A-Z&][a-zA-Z0-9&',.-]+)*\s+(?:{business_suffix_pattern})\b"
 
+        # Hyphenated company names (e.g., "Jackson-Guzman", "Hewlett-Packard")
+        # Two capitalized words connected by hyphen
+        hyphenated_company_regex = r"\b[A-Z][a-z]+(?:-[A-Z][a-z]+)+\b"
+
+        # Company names with ampersand (e.g., "Johnson & Johnson", "Ernst & Young")
+        ampersand_company_regex = r"\b[A-Z][a-z]+\s*&\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b"
+
+        # Company names after context keywords (e.g., "at Jackson-Guzman", "for Andrade LLC")
+        # Match capitalized phrase following company context
+        context_company_regex = r"(?:at|for|by|from|to|of|with)\s+([A-Z][a-zA-Z]+(?:[-\s][A-Z][a-zA-Z]+)*)"
+
         company_recognizer = PatternRecognizer(
             supported_entity="COMPANY",
             patterns=[
@@ -740,9 +751,19 @@ class PIIDetector:
                     name="company_suffix",
                     regex=company_suffix_regex,
                     score=0.75,
-                )
+                ),
+                Pattern(
+                    name="company_hyphenated",
+                    regex=hyphenated_company_regex,
+                    score=0.65,
+                ),
+                Pattern(
+                    name="company_ampersand",
+                    regex=ampersand_company_regex,
+                    score=0.70,
+                ),
             ],
-            context=["company", "inc", "ltd", "corp", "limited", "firm", "business", "employer", "organization"]
+            context=["company", "inc", "ltd", "corp", "limited", "firm", "business", "employer", "organization", "corporation", "enterprise", "client", "vendor"]
         )
 
         self.analyzer.registry.add_recognizer(company_recognizer)
@@ -1992,6 +2013,29 @@ class PIIDetector:
                 # Skip very low confidence
                 if entity.confidence < 0.5:
                     continue
+                # Skip generic time-related words that aren't actual dates
+                date_false_positives = {
+                    'annual', 'annually', 'yearly', 'monthly', 'weekly', 'daily', 'quarterly',
+                    'the year', 'the month', 'the date', 'the day', 'the week', 'the quarter',
+                    'this year', 'last year', 'next year', 'each year', 'per year', 'every year',
+                    'this month', 'last month', 'next month', 'each month', 'per month',
+                    'fiscal year', 'calendar year', 'tax year', 'financial year',
+                    'year ended', 'year ending', 'year end', 'year-end', 'year to date',
+                    'schedule i', 'schedule ii', 'schedule iii', 'schedule iv', 'schedule v',
+                    'part i', 'part ii', 'part iii', 'part iv', 'part v',
+                    'section i', 'section ii', 'section iii', 'section iv', 'section v',
+                    'the year ended on that date', 'during the year', 'for the year',
+                }
+                if entity_text.lower() in date_false_positives:
+                    continue
+                # Skip if it's a generic phrase without a specific date (no digits or month names)
+                month_names = ['january', 'february', 'march', 'april', 'may', 'june',
+                              'july', 'august', 'september', 'october', 'november', 'december',
+                              'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+                has_digits = any(c.isdigit() for c in entity_text)
+                has_month = any(month in entity_text.lower() for month in month_names)
+                if not has_digits and not has_month:
+                    continue
 
             # Filter BANK_NUMBER - many false positives
             if entity.entity_type == "BANK_NUMBER":
@@ -2076,15 +2120,55 @@ class PIIDetector:
                 if re.match(r'^[\w-]+\.(?:com|org|net|edu|gov|io|co|de|uk|jp|cn|ru|br|in)/\S*', entity_text.lower()):
                     continue
                 # Skip if confidence is very low
-                if entity.confidence < 0.5:
+                if entity.confidence < 0.55:
                     continue
                 # Skip if text contains common non-address words (disclaimers, explanations)
-                non_address_words = {'connected', 'info', 'information', 'may be', 'network',
-                                    'billing', 'purposes', 'used for', 'this', 'that', 'which',
-                                    'help', 'your', 'business', 'please', 'contact', 'visit'}
+                non_address_words = {
+                    # Common function words that appear in non-address contexts
+                    'connected', 'info', 'information', 'may be', 'network', 'billing', 'purposes',
+                    'used for', 'this', 'that', 'which', 'help', 'your', 'business', 'please',
+                    'contact', 'visit', 'report', 'report on', 'assessed', 'controls', 'performed',
+                    'tests of', 'details on', 'timeliness', 'decision', 'include', 'assumptions',
+                    'recognition', 'capitalization', 'assets', 'the following', 'in place',
+                    'accordance', 'compliance', 'creating', 'beautiful', 'jewelry', 'spending',
+                    'enjoy', 'love', 'sharing', 'knowledge', 'connecting', 'passionate', 'art form',
+                    'also', 'family', 'exploring', 'places', 'learn', 'more about', 'feel free',
+                    'website', 'studio', 'located at', 'remember', 'unique', 'challenging', 'project',
+                    'work on', 'customer', 'approached', 'precious', 'heirloom', 'diamond', 'necklace',
+                    'passed down', 'generations', 'unfortunately', 'condition', 'loose', 'broken',
+                    'restore', 'glory', 'ordinary', 'repair', 'specialized', 'tools', 'techniques',
+                    'delicate', 'task', 'dismantling', 'carefully', 'removed', 'setting', 'damaged',
+                    'disassembled', 'meticulously', 'cleaned', 'inspected', 'damage', 'fortunately',
+                    'cracks', 'chips', 'soldered', 'pieces', 'together', 'ensuring', 'sturdy', 'secure',
+                    'repaired', 'process', 'reassembling', 'placed', 'polished', 'sparkled', 'presented',
+                    'restored', 'overjoyed', 'believe', 'bring', 'life', 'looked', 'beautiful', 'created',
+                    'thrilled', 'possession', 'discuss', 'forward', 'hearing', 'when', "i'm", 'not',
+                    'about me', 'my name', 'i am', 'years of experience', 'last year',
+                }
                 text_lower = entity_text.lower()
                 if any(word in text_lower for word in non_address_words):
                     continue
+                # Skip single words that are likely city/country names used in non-address contexts
+                words = entity_text.split()
+                if len(words) == 1 and len(entity_text) < 15:
+                    # Single word locations need high confidence
+                    if entity.confidence < 0.75:
+                        continue
+                # Require at least one address indicator for texts > 10 chars
+                if len(entity_text) > 10:
+                    address_indicators = [
+                        r'^\d+\s+\w',  # Street number at start (123 Main)
+                        r'\b(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|blvd|boulevard|way|place|pl|circle|cir|pkwy|parkway|hwy|highway)\b',  # Street types
+                        r'\b(?:apt|apartment|suite|ste|unit|floor|fl|bldg|building)\b',  # Unit indicators
+                        r'\b[A-Z]{2}\s*\d{5}',  # State + ZIP (CA 90210)
+                        r'\b\d{5}(?:-\d{4})?\b',  # ZIP code
+                        r'\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b',  # Canadian postal code
+                        r'\bP\.?O\.?\s*Box\b',  # PO Box
+                        r'\b(?:rue|via|calle|strasse|platz|piazza|avenue|boulevard)\b',  # European street types
+                    ]
+                    has_address_indicator = any(re.search(pattern, entity_text, re.IGNORECASE) for pattern in address_indicators)
+                    if not has_address_indicator:
+                        continue
 
             # Filter URL false positives
             if entity.entity_type == "URL":
@@ -2112,17 +2196,121 @@ class PIIDetector:
                 if entity_text.lower() in ('inc', 'inc.', 'llc', 'ltd', 'ltd.', 'corp', 'corp.', 's.a.', 'plc', 'pjsc'):
                     continue
                 # Skip common English words that accidentally match SWIFT pattern (CUST+OM+ER = CUSTOMER)
+                # SWIFT pattern is [A-Z]{4}[COUNTRY_CODE]{2}[A-Z0-9]{2,5} which matches many English words
                 swift_false_positives = {
-                    'customer', 'customers', 'overview', 'services', 'business', 'register',
-                    'chapters', 'pictures', 'features', 'measures', 'treasur',
-                    'pleasure', 'captures', 'ventures', 'lectures', 'cultures', 'textures',
-                    'mixtures', 'fixtures', 'dentures', 'gestures', 'pastures', 'postures',
-                    'ruptures', 'sutures', 'natures', 'futures', 'tortures', 'fractures',
+                    # -ER endings (CUST+OM+ER pattern)
+                    'customer', 'customers', 'register', 'registers', 'chapter', 'chapters',
+                    'picture', 'pictures', 'feature', 'features', 'measure', 'measures',
+                    'treasure', 'treasures', 'pleasure', 'pleasures', 'capture', 'captures',
+                    'venture', 'ventures', 'lecture', 'lectures', 'culture', 'cultures',
+                    'texture', 'textures', 'mixture', 'mixtures', 'fixture', 'fixtures',
+                    'denture', 'dentures', 'gesture', 'gestures', 'pasture', 'pastures',
+                    'posture', 'postures', 'rupture', 'ruptures', 'suture', 'sutures',
+                    'nature', 'natures', 'future', 'futures', 'torture', 'tortures',
+                    'fracture', 'fractures', 'structure', 'structures', 'conjecture',
+                    # -RY endings (INDUST+RY pattern)
                     'industry', 'industries', 'ministry', 'chemistry', 'geometry', 'symmetry',
                     'registry', 'forestry', 'ancestry', 'artistry', 'tapestry', 'infantry',
-                    'industry', 'district', 'districts', 'abstract', 'construc', 'instruct'
+                    'poetry', 'poultry', 'country', 'countries', 'entry', 'entries',
+                    'pantry', 'gentry', 'sentry', 'sultry', 'pastry', 'gastry',
+                    # -CT endings (ABSTRA+CT, DISTRI+CT pattern)
+                    'district', 'districts', 'abstract', 'abstracts', 'construct', 'constructs',
+                    'instruct', 'instructs', 'contract', 'contracts', 'extract', 'extracts',
+                    'contact', 'contacts', 'compact', 'compacts', 'impact', 'impacts',
+                    # -ION endings (DECISI+ON, RECOGNITI+ON pattern)
+                    'decision', 'decisions', 'recognition', 'recognitions', 'condition', 'conditions',
+                    'position', 'positions', 'definition', 'definitions', 'composition', 'compositions',
+                    'disposition', 'proposition', 'opposition', 'acquisition', 'requisition',
+                    'transition', 'nutrition', 'coalition', 'partition', 'petition', 'ambition',
+                    'admission', 'commission', 'permission', 'submission', 'emission', 'omission',
+                    'transmission', 'intermission', 'remission', 'mission', 'missions',
+                    'assumption', 'assumptions', 'consumption', 'presumption', 'resumption',
+                    'exemption', 'redemption', 'preemption', 'option', 'options', 'adoption',
+                    'caption', 'captions', 'fraction', 'fractions', 'action', 'actions',
+                    'reaction', 'reactions', 'traction', 'attraction', 'distraction', 'extraction',
+                    'satisfaction', 'infraction', 'refraction', 'interaction', 'transaction',
+                    'section', 'sections', 'election', 'elections', 'selection', 'selections',
+                    'collection', 'collections', 'direction', 'directions', 'protection', 'protections',
+                    'connection', 'connections', 'correction', 'corrections', 'inspection', 'inspections',
+                    'infection', 'infections', 'perfection', 'reflection', 'deflection', 'injection',
+                    'projection', 'rejection', 'objection', 'subjection', 'detection', 'detections',
+                    'function', 'functions', 'junction', 'junctions', 'sanction', 'sanctions',
+                    'production', 'productions', 'reduction', 'reductions', 'deduction', 'deductions',
+                    'introduction', 'reproduction', 'construction', 'destruction', 'instruction',
+                    'obstruction', 'conduction', 'induction', 'seduction', 'abduction',
+                    'version', 'versions', 'conversion', 'diversion', 'inversion', 'reversion',
+                    'aversion', 'perversion', 'subversion', 'immersion', 'submersion', 'dispersion',
+                    'excursion', 'incursion', 'recursion', 'tension', 'tensions', 'extension',
+                    'dimension', 'dimensions', 'suspension', 'apprehension', 'comprehension',
+                    'expansion', 'mansion', 'pension', 'pensions',
+                    # -TY endings (PROPER+TY pattern)
+                    'property', 'properties', 'poverty', 'novelty', 'penalty', 'penalties',
+                    'faculty', 'difficulty', 'specialty', 'specialty', 'casualty', 'casualties',
+                    'royalty', 'royalties', 'loyalty', 'cruelty', 'certainty', 'uncertainty',
+                    'majority', 'minority', 'priority', 'priorities', 'authority', 'authorities',
+                    'security', 'securities', 'publicity', 'electricity', 'simplicity', 'complexity',
+                    'capacity', 'opacity', 'audacity', 'tenacity', 'veracity', 'vivacity',
+                    'velocity', 'atrocity', 'ferocity', 'reciprocity', 'authenticity', 'domesticity',
+                    'elasticity', 'plasticity', 'toxicity', 'publicity', 'complicity', 'duplicity',
+                    'multiplicity', 'specificity', 'eccentricity', 'ethnicity', 'historicity',
+                    # -AL endings
+                    'approval', 'approvals', 'removal', 'removals', 'renewal', 'renewals',
+                    'proposal', 'proposals', 'disposal', 'disposals', 'reversal', 'reversals',
+                    'rehearsal', 'dispersal', 'dismissal', 'dismissals', 'appraisal', 'appraisals',
+                    'survival', 'arrival', 'arrivals', 'revival', 'revivals', 'festival', 'festivals',
+                    'interval', 'intervals', 'approval', 'disapproval', 'withdrawal', 'withdrawals',
+                    'portrayal', 'betrayal', 'betrayals',
+                    # Business/UI terms
+                    'overview', 'overviews', 'services', 'business', 'businesses', 'process',
+                    'processes', 'progress', 'address', 'addresses', 'success', 'successes',
+                    'access', 'accesses', 'excess', 'excesses', 'recess', 'recesses',
+                    'congress', 'progress', 'egress', 'ingress', 'regress', 'digress',
+                    'compress', 'suppress', 'express', 'impress', 'depress', 'oppress',
+                    'assess', 'possess', 'obsess', 'profess', 'confess', 'transgress',
+                    # -NESS endings
+                    'awareness', 'business', 'businesses', 'darkness', 'fairness', 'fitness',
+                    'goodness', 'happiness', 'illness', 'kindness', 'madness', 'openness',
+                    'readiness', 'sadness', 'weakness', 'wellness', 'witness', 'witnesses',
+                    # -MENT endings
+                    'assessment', 'assessments', 'assignment', 'assignments', 'agreement', 'agreements',
+                    'statement', 'statements', 'treatment', 'treatments', 'movement', 'movements',
+                    'department', 'departments', 'development', 'developments', 'government', 'governments',
+                    'management', 'managements', 'investment', 'investments', 'environment', 'environments',
+                    'requirement', 'requirements', 'improvement', 'improvements', 'achievement', 'achievements',
+                    'establishment', 'establishments', 'entertainment', 'entertainments',
+                    'adjustment', 'adjustments', 'arrangement', 'arrangements', 'attachment', 'attachments',
+                    'commitment', 'commitments', 'employment', 'employments', 'equipment', 'equipments',
+                    'measurement', 'measurements', 'replacement', 'replacements', 'settlement', 'settlements',
+                    # Common nouns/verbs that match patterns
+                    'property', 'properly', 'prospective', 'perspective', 'respective',
+                    'objective', 'objectives', 'subjective', 'effective', 'detective', 'defective',
+                    'selective', 'collective', 'corrective', 'protective', 'projective', 'directive',
+                    'executive', 'executives', 'sensitive', 'intensive', 'extensive', 'expensive',
+                    'defensive', 'offensive', 'comprehensive', 'apprehensive', 'reprehensive',
+                    'progressive', 'aggressive', 'regressive', 'excessive', 'successive', 'impressive',
+                    'expressive', 'depressive', 'oppressive', 'compressive', 'suppressive',
+                    'inclusive', 'exclusive', 'conclusive', 'intrusive', 'obtrusive', 'protrusive',
+                    'abusive', 'diffusive', 'effusive', 'infusive', 'profusive', 'confusive',
+                    # Accounting/Finance terms (ironically false positives for FINANCIAL)
+                    'amortisation', 'amortization', 'depreciation', 'appreciation', 'appropriation',
+                    'capitalization', 'capitalisation', 'reconciliation', 'consolidation',
+                    'liquidation', 'valuation', 'evaluation', 'devaluation', 'revaluation',
+                    # Additional common words
+                    'information', 'communication', 'organization', 'administration', 'registration',
+                    'documentation', 'implementation', 'specification', 'classification', 'notification',
+                    'verification', 'certification', 'identification', 'authorization', 'authentication',
+                    'presentation', 'representation', 'demonstration', 'concentration', 'consideration',
+                    'determination', 'discrimination', 'examination', 'imagination', 'investigation',
+                    'negotiation', 'obligation', 'observation', 'operation', 'preparation', 'publication',
+                    'recommendation', 'regulation', 'reservation', 'resignation', 'resolution', 'situation',
+                    'specification', 'transportation', 'violation',
                 }
                 if entity_text.lower() in swift_false_positives:
+                    continue
+                # Additional check: if word is all letters and >6 chars, likely an English word not a SWIFT code
+                # Real SWIFT codes are 8 or 11 chars with specific format and contain bank identifiers
+                if entity_text.isalpha() and len(entity_text) > 6:
+                    # SWIFT codes should not be common English words
                     continue
 
             # Filter MEDICAL false positives
@@ -2137,6 +2325,21 @@ class PIIDetector:
                 if entity.confidence < 0.6:
                     if re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', entity_text):
                         continue
+                # Skip if it looks like a postal code (STATE + ZIP pattern like "GA 22984")
+                if re.match(r'^[A-Z]{2}\s*\d{5}(?:-\d{4})?$', entity_text):
+                    continue
+                # Skip if it looks like a reference number or ID code (short alphanumeric)
+                if re.match(r'^[A-Z]{1,3}\s*\d{3,6}$', entity_text):
+                    continue
+                # Skip common technical/business terms incorrectly flagged as medical
+                medical_false_positives = {
+                    'schedule', 'schedules', 'section', 'sections', 'part', 'parts',
+                    'item', 'items', 'note', 'notes', 'page', 'pages', 'form', 'forms',
+                    'table', 'tables', 'figure', 'figures', 'appendix', 'exhibit',
+                    'attachment', 'attachments', 'document', 'documents', 'report', 'reports',
+                }
+                if entity_text.lower() in medical_false_positives:
+                    continue
 
             # Filter PERSON false positives
             if entity.entity_type == "PERSON":
@@ -2145,6 +2348,43 @@ class PIIDetector:
                     continue
                 # Skip if it looks like a street type
                 if entity_text.lower() in ('street', 'avenue', 'road', 'drive', 'lane', 'court', 'blvd', 'st', 'ave', 'rd', 'dr'):
+                    continue
+                # Skip common words that NER incorrectly flags as names
+                person_false_positives = {
+                    # Common nouns/titles
+                    'customer', 'customers', 'member', 'members', 'user', 'users', 'client', 'clients',
+                    'employee', 'employees', 'manager', 'managers', 'director', 'directors', 'officer',
+                    'president', 'chairman', 'ceo', 'cfo', 'cto', 'founder', 'owner', 'partner',
+                    # Job titles that look like names
+                    'jeweler', 'doctor', 'nurse', 'teacher', 'engineer', 'developer', 'designer',
+                    'analyst', 'consultant', 'specialist', 'coordinator', 'administrator', 'assistant',
+                    # Common words mistaken for names
+                    'diamond', 'necklace', 'jewelry', 'art', 'form', 'family', 'heirloom', 'project',
+                    'clasp', 'setting', 'studio', 'office', 'address', 'website', 'email', 'phone',
+                    # Day/time words
+                    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+                    'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+                    'september', 'october', 'november', 'december',
+                    # Other common false positives
+                    'inc', 'llc', 'ltd', 'corp', 'company', 'corporation', 'enterprise', 'group',
+                    'associates', 'partners', 'services', 'solutions', 'technologies', 'systems',
+                }
+                if entity_text.lower() in person_false_positives:
+                    continue
+                # Skip single words that are likely not names (require at least 2 parts for full names)
+                words = entity_text.split()
+                if len(words) == 1:
+                    # Single-word names need higher confidence
+                    if entity.confidence < 0.7:
+                        continue
+                    # Skip if it's all caps (likely acronym or heading)
+                    if entity_text.isupper() and len(entity_text) > 3:
+                        continue
+                # Skip very long "names" (likely phrases)
+                if len(entity_text) > 40:
+                    continue
+                # Skip if contains numbers (names shouldn't have digits)
+                if any(c.isdigit() for c in entity_text):
                     continue
 
             # Filter COORDINATES false positives
