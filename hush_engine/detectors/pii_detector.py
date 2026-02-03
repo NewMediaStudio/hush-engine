@@ -21,6 +21,22 @@ try:
 except ImportError:
     PHONENUMBERS_AVAILABLE = False
 
+# Address parsing using libpostal
+try:
+    from postal.parser import parse_address
+    LIBPOSTAL_AVAILABLE = True
+except ImportError:
+    LIBPOSTAL_AVAILABLE = False
+
+# URL extraction using urlextract (better than regex for bare domains, subdomains)
+try:
+    from urlextract import URLExtract
+    URLEXTRACT_AVAILABLE = True
+    _url_extractor = None  # Lazy-loaded singleton
+except ImportError:
+    URLEXTRACT_AVAILABLE = False
+    _url_extractor = None
+
 # Package version
 __version__ = "1.1.1"
 
@@ -110,11 +126,19 @@ class PIIDetector:
     - Technical secrets (API keys, tokens, credentials)
     """
 
-    def __init__(self):
-        """Initialize Presidio analyzer with custom recognizers"""
+    def __init__(self, enable_libpostal: bool = True):
+        """Initialize Presidio analyzer with custom recognizers
+
+        Args:
+            enable_libpostal: If True, enable libpostal-based address detection.
+                             Set to False for faster benchmark runs (30-40% speedup).
+        """
         # Thread lock for analyzer access
         self._lock = threading.Lock()
-        
+
+        # Store config for introspection
+        self._enable_libpostal = enable_libpostal
+
         # Use Presidio WITHOUT NLP engine (regex-only mode)
         # This avoids the spaCy threading issue but won't detect PERSON entities
         self.analyzer = AnalyzerEngine(nlp_engine=None)
@@ -149,12 +173,20 @@ class PIIDetector:
         self._add_vehicle_recognizers()
         # Add device ID recognizers (IMEI, MAC address, UUID)
         self._add_device_recognizers()
+        # Add IP address recognizers (IPv4, IPv6)
+        self._add_ip_address_recognizers()
         # Add SSN recognizer for test/fake SSNs with reserved area numbers
         self._add_ssn_recognizers()
         # Add international national ID recognizers
         self._add_international_id_recognizers()
         # Add person name recognizers (title + name patterns)
         self._add_person_recognizers()
+        # Add URL recognizers (http, https, www, subdomains)
+        self._add_url_recognizers()
+        # Add libpostal-based address detection (99.45% accuracy on global addresses)
+        # Note: libpostal is the slowest recognizer (~30-40% of detection time)
+        if enable_libpostal:
+            self._add_libpostal_recognizer()
 
         # Denylist of common words that should not be detected as PII
         # These are often document headers (e.g. "Email:", "Phone:")
@@ -216,8 +248,10 @@ class PIIDetector:
         
         # Canadian province abbreviations
         provinces = r"(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)"
-        # Canadian postal code: A1A 1A1 or A1A1A1
-        postal = r"[A-Z]\d[A-Z] ?\d[A-Z]\d"
+        # Canadian postal code: A1A 1A1 or A1A1A1 (Letter-Digit-Letter Digit-Letter-Digit)
+        # Allow O/0 confusion from OCR (e.g., NOH 1KO vs N0H 1K0)
+        # Digit positions: 2nd (can be 0-9 or O), 4th (0-9 or O), 6th (0-9 or O)
+        postal = r"[A-Z][0-9O][A-Z] ?[0-9O][A-Z][0-9O]"
 
         # 1. Full format: "123 Main St, Desboro, ON N0H 1K0" or "Desboro, ON N0H 1K0"
         # We allow numbers and words at the start for street addresses and cities
@@ -321,7 +355,7 @@ class PIIDetector:
                 Pattern(
                     name="us_zip_only",
                     regex=rf"\b{us_zip}\b",
-                    score=0.5,
+                    score=0.55,  # Boosted from 0.5 for better recall
                 )
             ],
             context=["zip", "postal", "code", "address", "city", "state"]
@@ -514,7 +548,7 @@ class PIIDetector:
                 Pattern(
                     name="germany_plz",
                     regex=r"\b[0-9]{5}\b",
-                    score=0.50,  # Low score due to collision with US ZIP
+                    score=0.55,  # Boosted from 0.50 - requires context for disambiguation
                 ),
             ],
             context=["plz", "postleitzahl", "germany", "deutschland", "berlin", "münchen", "hamburg"]
@@ -528,10 +562,40 @@ class PIIDetector:
                 Pattern(
                     name="india_pin",
                     regex=r"\b[1-9]\d{5}\b",  # First digit 1-9
-                    score=0.55,
+                    score=0.60,  # Boosted from 0.55 for better recall
+                ),
+                Pattern(
+                    name="india_pin_labeled",
+                    # PIN: 783330, Pin-123456, PIN CODE: 110001
+                    regex=r"\b(?:PIN|Pin)[:\s-]+[1-9]\d{5}\b",
+                    score=0.95,
+                ),
+                Pattern(
+                    name="india_pin_with_state",
+                    # 783330, ASSAM or PIN: 783330, INDIA
+                    regex=r"\b[1-9]\d{5},?\s*(?:INDIA|India|ASSAM|BIHAR|DELHI|MAHARASHTRA|KARNATAKA|TAMIL\s+NADU)\b",
+                    score=0.90,
                 ),
             ],
             context=["pin", "pincode", "pin code", "india", "delhi", "mumbai", "bangalore"]
+        )
+
+        # Bangladesh: Country and major cities
+        bangladesh_location = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="bangladesh_country",
+                    regex=r"\bBANGLADESH\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="bangladesh_cities",
+                    regex=r"\b(?:DHAKA|Dhaka|CHITTAGONG|Chittagong|KHULNA|Khulna|RAJSHAHI|Rajshahi|SYLHET|Sylhet|COMILLA|Comilla)\b",
+                    score=0.70,
+                ),
+            ],
+            context=["address", "bangladesh", "bd", "country"]
         )
 
         # Brazil: NNNNN-NNN (CEP format)
@@ -556,7 +620,7 @@ class PIIDetector:
                 Pattern(
                     name="korea_postal",
                     regex=r"\b\d{5}\b",
-                    score=0.50,
+                    score=0.55,  # Boosted from 0.50 - requires context
                 ),
             ],
             context=["우편번호", "postal", "korea", "seoul", "busan", "kr"]
@@ -570,7 +634,7 @@ class PIIDetector:
                 Pattern(
                     name="china_postal",
                     regex=r"\b[1-8]\d{5}\b",  # First digit 1-8
-                    score=0.50,
+                    score=0.55,  # Boosted from 0.50 - requires context
                 ),
             ],
             context=["邮政编码", "邮编", "postal", "china", "beijing", "shanghai", "cn"]
@@ -584,7 +648,7 @@ class PIIDetector:
                 Pattern(
                     name="russia_postal",
                     regex=r"\b[1-9]\d{5}\b",
-                    score=0.50,
+                    score=0.55,  # Boosted from 0.50 - requires context
                 ),
             ],
             context=["почтовый индекс", "индекс", "postal", "russia", "moscow", "ru"]
@@ -641,6 +705,7 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(uk_postcode)
         self.analyzer.registry.add_recognizer(germany_plz)
         self.analyzer.registry.add_recognizer(india_pin)
+        self.analyzer.registry.add_recognizer(bangladesh_location)
         self.analyzer.registry.add_recognizer(brazil_cep)
         self.analyzer.registry.add_recognizer(korea_postal)
         self.analyzer.registry.add_recognizer(china_postal)
@@ -651,26 +716,27 @@ class PIIDetector:
     def _add_datetime_recognizers(self):
         """Add pattern recognizers for international date formats."""
         # DD/MM/YYYY format (European, UK, Australia, most of the world)
-        # Examples: 04/01/1945, 12/06/2033, 31/12/2024
+        # Examples: 04/01/1945, 12/06/2033, 31/12/2024, 1/2/1965
         date_dmy_slash = PatternRecognizer(
             supported_entity="DATE_TIME",
             patterns=[
                 Pattern(
                     name="date_dmy_slash",
-                    # DD/MM/YYYY - day 01-31, month 01-12, year 1900-2099
-                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[0-2])/(?:19|20)\d{2}\b",
+                    # DD/MM/YYYY - day 1-31, month 1-12, year 1900-2099
+                    # Supports optional leading zeros: 01/02/1965 or 1/2/1965
+                    regex=r"\b(?:0?[1-9]|[12][0-9]|3[01])/(?:0?[1-9]|1[0-2])/(?:19|20)\d{2}\b",
                     score=0.85,
                 ),
                 Pattern(
                     name="date_dmy_dash",
-                    # DD-MM-YYYY
-                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])-(?:0[1-9]|1[0-2])-(?:19|20)\d{2}\b",
+                    # DD-MM-YYYY with optional leading zeros
+                    regex=r"\b(?:0?[1-9]|[12][0-9]|3[01])-(?:0?[1-9]|1[0-2])-(?:19|20)\d{2}\b",
                     score=0.85,
                 ),
                 Pattern(
                     name="date_dmy_dot",
-                    # DD.MM.YYYY (German format)
-                    regex=r"\b(?:0[1-9]|[12][0-9]|3[01])\.(?:0[1-9]|1[0-2])\.(?:19|20)\d{2}\b",
+                    # DD.MM.YYYY (German format) with optional leading zeros
+                    regex=r"\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\.(?:19|20)\d{2}\b",
                     score=0.85,
                 ),
             ],
@@ -682,12 +748,14 @@ class PIIDetector:
             patterns=[
                 Pattern(
                     name="date_ymd_slash",
-                    regex=r"\b(?:19|20)\d{2}/(?:0[1-9]|1[0-2])/(?:0[1-9]|[12][0-9]|3[01])\b",
+                    # Supports optional leading zeros
+                    regex=r"\b(?:19|20)\d{2}/(?:0?[1-9]|1[0-2])/(?:0?[1-9]|[12][0-9]|3[01])\b",
                     score=0.85,
                 ),
                 Pattern(
                     name="date_ymd_dash",
-                    regex=r"\b(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b",
+                    # ISO 8601 typically uses leading zeros, but support optional
+                    regex=r"\b(?:19|20)\d{2}-(?:0?[1-9]|1[0-2])-(?:0?[1-9]|[12][0-9]|3[01])\b",
                     score=0.90,  # ISO 8601 format - higher confidence
                 ),
             ],
@@ -801,12 +869,23 @@ class PIIDetector:
     def _add_financial_recognizers(self):
         """Add pattern recognizers for financial data (currency, SWIFT codes, etc.)."""
         # Generic currency regex: symbol followed by numbers (with or without commas)
-        # Supports $, £, €, ¥, ₹, ₽, 元 and handles optional space
-        # Now handles: $1234.56, $1,234.56, €3750.25, ¥450000
-        currency_regex = r"[\$£€¥₹₽]\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
+        # Supports $, £, €, ¥, ₹, ₽ and handles optional space and sign
+        # Handles: $1234.56, $1,234.56, €3750.25, ¥450000, $ 202.02, -$500.00, + $1,234.00
+        currency_regex = r"[+\-]?\s?[\$£€¥₹₽]\s?[+\-]?\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
+
+        # Signed amounts without currency symbol (common in financial tables)
+        # Handles: - 1,027.00, + 1,749.00, -500.00, -500, +1000 (decimals now optional)
+        signed_amount_regex = r"\b[+\-]\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?\b"
+
+        # Bare currency amounts (simple amounts without decimals): $0, $100, $452
+        bare_currency_regex = r"[\$£€¥₹₽]\s?\d{1,3}(?:,?\d{3})*\b"
+
+        # US Routing number (9 digits with label)
+        routing_number_regex = r"\b(?:Routing\s*(?:Number|No\.?|#)?)[:\s]+\d{9}\b"
 
         # Word-based currency regex: USD, CAD, EUR, INR, etc. followed by numbers
-        word_currency_regex = r"\b(?:USD|CAD|EUR|GBP|JPY|AUD|CNY|INR|CHF|SGD|HKD|NZD|SEK|NOK|DKK|MXN|BRL|ZAR|KRW|THB|MYR|PHP|IDR|VND)\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
+        # Handles signed amounts: USD -500.00, EUR +1,234.00
+        word_currency_regex = r"\b(?:USD|CAD|EUR|GBP|JPY|AUD|CNY|INR|CHF|SGD|HKD|NZD|SEK|NOK|DKK|MXN|BRL|ZAR|KRW|THB|MYR|PHP|IDR|VND)\s?[+\-]?\s?\d{1,3}(?:,?\d{3})*(?:\.\d{2})?\b"
 
         # Indian currency notation: "INR 500 Crores", "Rs. 10 Lakhs", "₹50 Crore"
         # Lakhs = 100,000, Crores = 10,000,000
@@ -849,6 +928,21 @@ class PIIDetector:
                     score=0.8,
                 ),
                 Pattern(
+                    name="signed_amount",
+                    regex=signed_amount_regex,
+                    score=0.70,  # Lower score for signed amounts without currency symbol
+                ),
+                Pattern(
+                    name="bare_currency",
+                    regex=bare_currency_regex,
+                    score=0.75,  # Simple currency amounts like $0, $100, $452
+                ),
+                Pattern(
+                    name="routing_number",
+                    regex=routing_number_regex,
+                    score=0.85,  # US bank routing numbers
+                ),
+                Pattern(
                     name="currency_code",
                     regex=word_currency_regex,
                     score=0.8,
@@ -879,7 +973,7 @@ class PIIDetector:
                     score=0.95,  # Higher score for labeled codes
                 )
             ],
-            context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch", "inr", "rupee", "crore", "lakh"]
+            context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch", "inr", "rupee", "crore", "lakh", "amount", "balance", "total", "credit", "debit"]
         )
 
         # IBAN (International Bank Account Number)
@@ -969,9 +1063,40 @@ class PIIDetector:
             context=["account", "beneficiary", "bank", "transfer", "routing", "sort code", "wire"]
         )
 
+        # Canadian Business Number (BN)
+        # Format: 9-digit BN + program identifier (RT, RP, RC, RR, etc.) + 4-digit reference
+        # Example: "808921738 RT0001", "123456789RT0001", "808 921 738 RT 0001"
+        # RT = GST/HST, RP = Payroll, RC = Corporate Income Tax, RR = Registered Charity
+        # RZ = Information Returns, RM = Import/Export
+        canadian_bn_recognizer = PatternRecognizer(
+            supported_entity="FINANCIAL",
+            patterns=[
+                Pattern(
+                    name="canadian_bn_spaced",
+                    # 9 digits (with optional spaces) + program ID + 4 digits
+                    regex=r"\b\d{3}\s?\d{3}\s?\d{3}\s?(?:RT|RP|RC|RR|RZ|RM)\s?\d{4}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="canadian_bn_compact",
+                    # 9 digits + program ID + 4 digits (no spaces)
+                    regex=r"\b\d{9}(?:RT|RP|RC|RR|RZ|RM)\d{4}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="canadian_bn_labeled",
+                    # With label: "BN: 808921738 RT0001", "Business Number: 123456789RT0001"
+                    regex=r"(?:BN|Business\s+Number|GST/HST|GST|HST)\s*[:#]?\s*\d{9}\s?(?:RT|RP|RC|RR|RZ|RM)?\s?\d{0,4}",
+                    score=0.95,
+                ),
+            ],
+            context=["business number", "bn", "gst", "hst", "cra", "canada revenue", "tax", "payroll", "employer"]
+        )
+
         self.analyzer.registry.add_recognizer(currency_recognizer)
         self.analyzer.registry.add_recognizer(iban_recognizer)
         self.analyzer.registry.add_recognizer(labeled_bank_account)
+        self.analyzer.registry.add_recognizer(canadian_bn_recognizer)
 
     def _add_person_recognizers(self):
         """Add recognizers for person names using smart cascade NER.
@@ -987,8 +1112,8 @@ class PIIDetector:
         try:
             from .person_recognizer import get_person_recognizer, is_person_ner_available
 
-            # Use balanced mode: patterns + name-dataset + spaCy
-            person_recognizer = get_person_recognizer(mode="balanced")
+            # Use accurate mode: patterns + name-dataset + spaCy + GLiNER + Flair
+            person_recognizer = get_person_recognizer(mode="accurate")
             self.analyzer.registry.add_recognizer(person_recognizer)
 
             if is_person_ner_available():
@@ -1106,6 +1231,11 @@ class PIIDetector:
         # Match capitalized phrase following company context
         context_company_regex = r"(?:at|for|by|from|to|of|with)\s+([A-Z][a-zA-Z]+(?:[-\s][A-Z][a-zA-Z]+)*)"
 
+        # Canadian numbered corporations: "2378238 Ontario Inc.", "1234567 B.C. Ltd."
+        # Format: 6-7 digit number + Canadian province/territory + legal designation
+        canadian_provinces = r"(?:Ontario|Quebec|Québec|Alberta|British\s+Columbia|B\.?C\.?|Manitoba|Saskatchewan|Nova\s+Scotia|New\s+Brunswick|Newfoundland|Prince\s+Edward\s+Island|P\.?E\.?I\.?|Northwest\s+Territories|N\.?W\.?T\.?|Yukon|Nunavut|Canada)"
+        canadian_numbered_corp_regex = rf"\b\d{{6,7}}\s+{canadian_provinces}\s+(?:{designations_pattern})\b"
+
         company_recognizer = PatternRecognizer(
             supported_entity="COMPANY",
             patterns=[
@@ -1133,6 +1263,11 @@ class PIIDetector:
                     name="company_ampersand",
                     regex=ampersand_company_regex,
                     score=0.70,
+                ),
+                Pattern(
+                    name="canadian_numbered_corp",
+                    regex=canadian_numbered_corp_regex,
+                    score=0.90,  # High score - very specific pattern
                 ),
             ],
             context=["company", "inc", "ltd", "corp", "limited", "firm", "business", "employer", "organization", "corporation", "enterprise", "client", "vendor"]
@@ -1222,10 +1357,12 @@ class PIIDetector:
         """
         # Decimal degrees with optional direction
         # Matches: 40.7128, -74.0060 or 40.7128°N, 74.0060°W
-        decimal_coords = r"\b-?\d{1,3}\.\d{3,8}°?\s*[NSEW]?\b"
+        # Now accepts 1-8 decimal places (was 3-8, too restrictive)
+        decimal_coords = r"\b-?\d{1,3}\.\d{1,8}°?\s*[NSEW]?\b"
 
         # Decimal degree pairs (latitude, longitude)
-        decimal_pair = r"\b-?\d{1,3}\.\d{3,8}\s*,\s*-?\d{1,3}\.\d{3,8}\b"
+        # Accepts 1-8 decimal places
+        decimal_pair = r"\b-?\d{1,3}\.\d{1,8}\s*,\s*-?\d{1,3}\.\d{1,8}\b"
 
         # Degrees, minutes, seconds: 40°42'46"N
         dms_coord = r"\b\d{1,3}°\s*\d{1,2}['\u2032]\s*\d{1,2}(?:\.\d+)?[\"″\u2033]?\s*[NSEW]\b"
@@ -1240,7 +1377,8 @@ class PIIDetector:
         gps_labeled = r"\bGPS[:\s]+[-\d.,\s°NSEW]+\b"
 
         # Lat/Long labeled: Lat: 40.7128, Long: -74.0060
-        latlong_labeled = r"\b(?:Lat(?:itude)?|Long(?:itude)?)[:\s]+-?\d{1,3}\.\d{3,8}\b"
+        # Accepts 1-8 decimal places
+        latlong_labeled = r"\b(?:Lat(?:itude)?|Long(?:itude)?)[:\s]+-?\d{1,3}\.\d{1,8}\b"
 
         coordinate_recognizer = PatternRecognizer(
             supported_entity="COORDINATES",
@@ -1590,11 +1728,132 @@ class PIIDetector:
             context=["call", "phone", "dial", "contact", "toll-free", "hotline"]
         )
 
+        # European-style phone: 0XXX XXXXXXX (4 digits starting with 0, space, rest)
+        # Common in UK, Germany, Netherlands, Australia, etc.
+        # Examples: 0475 4429797, 0304 2215930, 0932 173 536
+        european_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="european_4digit_space",
+                    # Matches: 0XXX XXXXXXX or 0XXX XXX XXXX (with optional spaces)
+                    regex=r"\b0\d{3}\s+\d{3,4}\s?\d{3,4}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="european_4digit_compact",
+                    # Matches: 0XXXXXXXXXX (10-11 digits starting with 0)
+                    regex=r"\b0\d{9,10}\b",
+                    score=0.80,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "ring", "call"]
+        )
+
+        # NA phone with spaces: 416 770 4541
+        na_phone_spaces = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="na_phone_spaces",
+                    regex=r"\b\d{3}\s\d{3}\s\d{4}\b",
+                    score=0.85,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact"]
+        )
+
+        # Compact NA phone: 4167704541 (10 digits, validated with area code)
+        compact_na_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="na_phone_compact",
+                    # 10 digits starting with valid NA area code (2-9 for first digit)
+                    regex=r"\b[2-9]\d{2}[2-9]\d{6}\b",
+                    score=0.75,  # Lower score - more prone to false positives
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "call"]
+        )
+
+        # International with varied spacing: +XX XXX XXX XXXX, +XX-XXX-XXX-XXXX
+        intl_phone_varied = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="intl_phone_spaces",
+                    # +CC (area) rest or +CC area-rest
+                    regex=r"\+\d{1,3}\s+\d{2,4}\s+\d{3,4}\s+\d{3,4}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="intl_phone_parens_space",
+                    # +CC (area) rest
+                    regex=r"\+\d{1,3}\s*\(\d{2,4}\)\s*\d{3,4}[-.\s]?\d{3,4}\b",
+                    score=0.90,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "international"]
+        )
+
+        # Australian phone: +61 X XXXX XXXX, 04XX XXX XXX
+        australian_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="au_mobile",
+                    # Australian mobile: 04XX XXX XXX
+                    regex=r"\b04\d{2}\s?\d{3}\s?\d{3}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="au_landline",
+                    # Australian landline: (0X) XXXX XXXX
+                    regex=r"\(0[2-9]\)\s?\d{4}\s?\d{4}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="au_intl",
+                    # +61 X XXXX XXXX
+                    regex=r"\+61\s?\d\s?\d{4}\s?\d{4}\b",
+                    score=0.92,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "contact", "australia"]
+        )
+
+        # UK phone: +44 XXXX XXXXXX, 07XXX XXXXXX
+        uk_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="uk_mobile",
+                    # UK mobile: 07XXX XXXXXX
+                    regex=r"\b07\d{3}\s?\d{6}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="uk_intl",
+                    # +44 XXXX XXXXXX
+                    regex=r"\+44\s?\d{4}\s?\d{6}\b",
+                    score=0.92,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "contact", "uk"]
+        )
+
         self.analyzer.registry.add_recognizer(na_phone_parens)
         self.analyzer.registry.add_recognizer(na_phone_dashes)
         self.analyzer.registry.add_recognizer(na_phone_dots)
         self.analyzer.registry.add_recognizer(intl_phone)
         self.analyzer.registry.add_recognizer(vanity_phone)
+        self.analyzer.registry.add_recognizer(european_phone)
+        self.analyzer.registry.add_recognizer(na_phone_spaces)
+        self.analyzer.registry.add_recognizer(compact_na_phone)
+        self.analyzer.registry.add_recognizer(intl_phone_varied)
+        self.analyzer.registry.add_recognizer(australian_phone)
+        self.analyzer.registry.add_recognizer(uk_phone)
 
         # UK NHS Number: XXX XXX XXXX (10 digits with spaces)
         # High confidence when context words are present
@@ -1989,6 +2248,386 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(mac_recognizer)
         self.analyzer.registry.add_recognizer(uuid_recognizer)
         self.analyzer.registry.add_recognizer(imei_recognizer)
+
+    def _add_ip_address_recognizers(self):
+        """
+        Add pattern recognizers for IP addresses (IPv4 and IPv6).
+
+        Detects:
+        - IPv4: Standard dotted decimal (192.168.1.1)
+        - IPv4 with port: 192.168.1.1:8080
+        - IPv6: Full and compressed formats
+        """
+        # IPv4: Four octets (0-255) separated by dots
+        # Each octet: 0-255 (handles leading zeros)
+        ipv4_octet = r"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+        ipv4_pattern = rf"\b{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}\b"
+
+        # IPv4 with optional port
+        ipv4_with_port = rf"\b{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}(?::\d{{1,5}})?\b"
+
+        # IPv6: Full format (8 groups of 4 hex digits)
+        # Simplified pattern for common formats
+        ipv6_full = r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"
+        # Compressed IPv6 with ::
+        ipv6_compressed = r"\b(?:[0-9a-fA-F]{1,4}:)*:(?::[0-9a-fA-F]{1,4})*\b"
+
+        ip_recognizer = PatternRecognizer(
+            supported_entity="IP_ADDRESS",
+            patterns=[
+                Pattern(name="ipv4_standard", regex=ipv4_pattern, score=0.85),
+                Pattern(name="ipv4_with_port", regex=ipv4_with_port, score=0.90),
+                Pattern(name="ipv6_full", regex=ipv6_full, score=0.95),
+                Pattern(name="ipv6_compressed", regex=ipv6_compressed, score=0.85),
+            ],
+            context=["ip", "ip address", "ipv4", "ipv6", "server", "host", "network",
+                     "address", "connection", "client", "remote", "local", "localhost"]
+        )
+
+        self.analyzer.registry.add_recognizer(ip_recognizer)
+
+    def _add_url_recognizers(self):
+        """
+        Add pattern recognizers for URL detection.
+
+        Detects:
+        - Full URLs with http/https protocol
+        - WWW URLs without protocol
+        - Subdomain URLs (mail.domain.com, blog.domain.org, etc.)
+        """
+        url_recognizer = PatternRecognizer(
+            supported_entity="URL",
+            patterns=[
+                # Full URLs with protocol (http/https)
+                Pattern(
+                    name="url_http_https",
+                    regex=r"\bhttps?://[^\s<>\"{}|\\^`\[\]]+",
+                    score=0.95,
+                ),
+                # WWW prefix (no protocol)
+                Pattern(
+                    name="url_www",
+                    regex=r"\bwww\.[a-z0-9][a-z0-9\-]*(?:\.[a-z0-9][a-z0-9\-]*)*\.[a-z]{2,}(?:/[^\s<>\"{}|\\^`\[\]]*)?",
+                    score=0.90,
+                ),
+                # Subdomain URLs (mail.domain.com, blog.domain.org, etc.)
+                Pattern(
+                    name="url_subdomain",
+                    regex=r"\b(?:mail|blog|news|login|app|api|cdn|ftp|admin|portal|dashboard)\.[a-z][a-z0-9_\-]*(?:\.[a-z]{2,})+(?:/[^\s<>\"{}|\\^`\[\]]*)?",
+                    score=0.85,
+                ),
+                # Bare domain with path (domain.com/path)
+                Pattern(
+                    name="url_bare_with_path",
+                    regex=r"\b[a-z0-9][a-z0-9\-]*\.(?:com|org|net|edu|gov|io|co|app|dev|ai|me|info|biz|us|uk|ca|de|fr|jp|cn|ru|br|in|au)/[^\s<>\"{}|\\^`\[\]]+",
+                    score=0.85,
+                ),
+                # Common TLDs without path (example.com, test.io, app.dev)
+                # Must have alphanumeric before TLD and context to avoid false positives
+                Pattern(
+                    name="url_bare_domain",
+                    regex=r"\b[a-z][a-z0-9\-]{1,62}\.(?:com|org|net|io|co|app|dev|ai)\b",
+                    score=0.70,  # Lower score - needs context
+                ),
+            ],
+            context=["url", "website", "webpage", "link", "site", "http", "www", "visit", "browse", "go to", "check out"]
+        )
+        self.analyzer.registry.add_recognizer(url_recognizer)
+
+        # Add urlextract-based recognizer for better detection of bare domains and edge cases
+        if URLEXTRACT_AVAILABLE:
+            self._add_urlextract_recognizer()
+
+    def _add_urlextract_recognizer(self):
+        """
+        Add urlextract-based URL recognizer for comprehensive URL detection.
+
+        urlextract is better than regex for:
+        - Bare domains (example.com, test.io)
+        - Subdomains without common prefixes (api.stripe.com)
+        - IP addresses with ports (192.168.1.1:8080)
+        - International TLDs
+        - URLs with complex paths
+        """
+        from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
+
+        class URLExtractRecognizer(EntityRecognizer):
+            """Custom recognizer using urlextract library."""
+
+            ENTITIES = ["URL"]
+
+            def __init__(self):
+                super().__init__(
+                    supported_entities=self.ENTITIES,
+                    supported_language="en",
+                    name="URLExtractRecognizer",
+                )
+                self._extractor = None
+
+            def load(self) -> None:
+                """Lazy-load the URL extractor."""
+                global _url_extractor
+                if _url_extractor is None:
+                    _url_extractor = URLExtract()
+                self._extractor = _url_extractor
+
+            def analyze(self, text: str, entities, nlp_artifacts=None):
+                """Extract URLs from text using urlextract."""
+                if "URL" not in entities:
+                    return []
+
+                if self._extractor is None:
+                    self.load()
+
+                results = []
+                try:
+                    # Get URLs with their positions
+                    for url, (start, end) in self._extractor.gen_urls(text, with_schema_only=False):
+                        # Skip very short matches (likely false positives)
+                        if len(url) < 4:
+                            continue
+
+                        # Skip email-like patterns (handled by EMAIL recognizer)
+                        if '@' in url and not url.startswith(('http', 'ftp', 'mailto')):
+                            continue
+
+                        # Skip localhost without port (too generic)
+                        if url.lower() == 'localhost':
+                            continue
+
+                        # Determine confidence based on URL characteristics
+                        score = 0.75  # Base score
+
+                        # Boost for protocol
+                        if url.startswith(('http://', 'https://', 'ftp://')):
+                            score = 0.95
+                        # Boost for www
+                        elif url.lower().startswith('www.'):
+                            score = 0.90
+                        # Boost for paths
+                        elif '/' in url:
+                            score = 0.85
+                        # Boost for common TLDs
+                        elif any(url.lower().endswith(tld) for tld in ['.com', '.org', '.net', '.io', '.co', '.edu', '.gov']):
+                            score = 0.80
+
+                        explanation = AnalysisExplanation(
+                            recognizer=self.name,
+                            original_score=score,
+                            pattern_name="urlextract",
+                            pattern=None,
+                            validation_result=None,
+                        )
+
+                        results.append(
+                            RecognizerResult(
+                                entity_type="URL",
+                                start=start,
+                                end=end,
+                                score=score,
+                                analysis_explanation=explanation,
+                                recognition_metadata={
+                                    "recognizer_name": self.name,
+                                    "detected_url": url,
+                                }
+                            )
+                        )
+                except Exception:
+                    # If urlextract fails, return empty results
+                    pass
+
+                return results
+
+        self.analyzer.registry.add_recognizer(URLExtractRecognizer())
+
+    def _add_libpostal_recognizer(self):
+        """
+        Add libpostal-based address recognizer for high-accuracy global address detection.
+
+        libpostal achieves 99.45% accuracy on global addresses using a CRF model trained
+        on OpenStreetMap data. It handles international address formats that regex patterns
+        often miss.
+
+        Strategy:
+        1. Find candidate address-like strings using broad patterns
+        2. Validate candidates using libpostal's parser
+        3. Accept as LOCATION if parser returns meaningful address components
+        """
+        if not LIBPOSTAL_AVAILABLE:
+            return
+
+        # Create a custom recognizer class for libpostal
+        class LibpostalAddressRecognizer(PatternRecognizer):
+            """
+            Hybrid recognizer: regex for candidate detection + libpostal for validation.
+            """
+
+            def __init__(self):
+                # Broad patterns to find address candidates
+                patterns = [
+                    # Street number + street name pattern (e.g., "123 Main St")
+                    Pattern(
+                        name="street_address",
+                        regex=r"\b\d+\s+[A-Za-z][A-Za-z\s\-\.'']{2,40}(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln|Way|Court|Ct|Circle|Cir|Place|Pl|Terrace|Ter|Highway|Hwy|Parkway|Pkwy)\b",
+                        score=0.50,  # Low initial score, will be boosted by libpostal
+                    ),
+                    # PO Box pattern
+                    Pattern(
+                        name="po_box",
+                        regex=r"\b(?:P\.?O\.?\s*Box|Post\s+Office\s+Box)\s+\d+\b",
+                        score=0.85,
+                    ),
+                    # Number + words with comma + more words (address-like structure)
+                    Pattern(
+                        name="address_with_comma",
+                        regex=r"\b\d+\s+[A-Za-z][A-Za-z\s\-\.'']{2,30},\s*[A-Za-z][A-Za-z\s\-]{2,30}\b",
+                        score=0.50,
+                    ),
+                ]
+
+                super().__init__(
+                    supported_entity="LOCATION",
+                    patterns=patterns,
+                    context=["address", "street", "location", "mail", "ship", "deliver", "reside"],
+                    name="LibpostalAddressRecognizer",
+                )
+
+            def analyze(self, text: str, entities, nlp_artifacts=None):
+                """Override analyze to add libpostal validation."""
+                # Get initial pattern matches
+                pattern_results = super().analyze(text, entities, nlp_artifacts)
+
+                validated_results = []
+                for result in pattern_results:
+                    # Extract the matched text
+                    matched_text = text[result.start:result.end]
+
+                    # Validate with libpostal
+                    try:
+                        parsed = parse_address(matched_text)
+
+                        # Check if libpostal found meaningful address components
+                        component_types = {comp[1] for comp in parsed}
+
+                        # Required: must have at least house_number OR road
+                        # Boost if we have multiple address components
+                        address_components = {'house_number', 'road', 'house', 'po_box', 'unit'}
+                        location_components = {'city', 'suburb', 'state', 'postcode', 'country', 'state_district'}
+
+                        has_street = bool(component_types & address_components)
+                        has_location = bool(component_types & location_components)
+                        num_components = len(component_types & (address_components | location_components))
+
+                        if has_street or (has_location and num_components >= 2):
+                            # Boost confidence based on component count
+                            boost = min(0.45, num_components * 0.10)
+                            new_score = min(0.99, result.score + boost)
+
+                            # Create new result with boosted score
+                            from presidio_analyzer import RecognizerResult
+                            validated_results.append(
+                                RecognizerResult(
+                                    entity_type=result.entity_type,
+                                    start=result.start,
+                                    end=result.end,
+                                    score=new_score,
+                                    analysis_explanation=result.analysis_explanation,
+                                    recognition_metadata={
+                                        "recognizer_name": "LibpostalAddressRecognizer",
+                                        "libpostal_components": list(component_types),
+                                    }
+                                )
+                            )
+                    except Exception:
+                        # If libpostal fails, keep original result but with lower confidence
+                        validated_results.append(result)
+
+                return validated_results
+
+        # Also add a recognizer for international address formats that libpostal excels at
+        # but that might not match the regex patterns above
+        class LibpostalInternationalRecognizer(PatternRecognizer):
+            """
+            Recognizer for international address formats using libpostal.
+            """
+
+            def __init__(self):
+                patterns = [
+                    # European style: street name + number (e.g., "Rue de Rivoli 15")
+                    Pattern(
+                        name="eu_street_number",
+                        regex=r"\b(?:Rue|Via|Calle|Avenida|Strasse|Straße|Rua|Piazza|Platz|Plein)\s+[A-Za-z\s\-'']+\s*\d{1,5}\b",
+                        score=0.60,
+                    ),
+                    # Japanese style: prefecture/city + ward + block (simplified)
+                    Pattern(
+                        name="jp_address",
+                        regex=r"\b[A-Za-z]+(?:ken|shi|ku|cho|machi)\b",
+                        score=0.50,
+                    ),
+                    # UK postcode followed by country
+                    Pattern(
+                        name="uk_postcode_area",
+                        regex=r"\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b",
+                        score=0.70,
+                    ),
+                    # Apartment/Unit/Suite patterns often indicate addresses
+                    Pattern(
+                        name="unit_indicator",
+                        regex=r"\b(?:Apt|Apartment|Unit|Suite|Ste|Floor|Fl)\.?\s*#?\d+\b",
+                        score=0.55,
+                    ),
+                ]
+
+                super().__init__(
+                    supported_entity="LOCATION",
+                    patterns=patterns,
+                    context=["address", "location", "office", "residence", "shipping"],
+                    name="LibpostalInternationalRecognizer",
+                )
+
+            def analyze(self, text: str, entities, nlp_artifacts=None):
+                """Override to validate with libpostal."""
+                pattern_results = super().analyze(text, entities, nlp_artifacts)
+
+                validated_results = []
+                for result in pattern_results:
+                    matched_text = text[result.start:result.end]
+
+                    try:
+                        parsed = parse_address(matched_text)
+                        component_types = {comp[1] for comp in parsed}
+
+                        # Require at least one meaningful component
+                        meaningful = {'house_number', 'road', 'house', 'city', 'suburb',
+                                     'state', 'postcode', 'country', 'unit', 'po_box'}
+
+                        if component_types & meaningful:
+                            boost = min(0.35, len(component_types & meaningful) * 0.08)
+                            new_score = min(0.95, result.score + boost)
+
+                            from presidio_analyzer import RecognizerResult
+                            validated_results.append(
+                                RecognizerResult(
+                                    entity_type=result.entity_type,
+                                    start=result.start,
+                                    end=result.end,
+                                    score=new_score,
+                                    analysis_explanation=result.analysis_explanation,
+                                    recognition_metadata={
+                                        "recognizer_name": "LibpostalInternationalRecognizer",
+                                        "libpostal_components": list(component_types),
+                                    }
+                                )
+                            )
+                    except Exception:
+                        validated_results.append(result)
+
+                return validated_results
+
+        # Register both recognizers
+        self.analyzer.registry.add_recognizer(LibpostalAddressRecognizer())
+        self.analyzer.registry.add_recognizer(LibpostalInternationalRecognizer())
 
     def _add_ssn_recognizers(self):
         """
@@ -2708,8 +3347,8 @@ class PIIDetector:
                 # Skip if it looks like a bare domain with path
                 if re.match(r'^[\w-]+\.(?:com|org|net|edu|gov|io|co|de|uk|jp|cn|ru|br|in)/\S*', entity_text.lower()):
                     continue
-                # Skip if confidence is low (increased threshold from 0.55 to 0.65)
-                if entity.confidence < 0.65:
+                # Skip if confidence is low (lowered from 0.65 to 0.55 for better recall)
+                if entity.confidence < 0.55:
                     continue
                 # Skip if text contains common non-address words (disclaimers, explanations)
                 non_address_words = {
@@ -2740,8 +3379,8 @@ class PIIDetector:
                 # Skip single words that are likely city/country names used in non-address contexts
                 words = entity_text.split()
                 if len(words) == 1 and len(entity_text) < 15:
-                    # Single word locations need high confidence
-                    if entity.confidence < 0.75:
+                    # Single word locations need moderate confidence (lowered from 0.75)
+                    if entity.confidence < 0.60:
                         continue
                     # Filter standalone country names (not PII without full address context)
                     standalone_countries = {
@@ -2961,8 +3600,8 @@ class PIIDetector:
                 # Skip if contains newlines or excessive whitespace (OCR artifact)
                 if '\n' in entity_text or '\r' in entity_text or '  ' in entity_text:
                     continue
-                # Skip very short text (likely abbreviations)
-                if len(entity_text) <= 3:
+                # Skip very short text (allow 3-letter names like Roy, Tom, Amy)
+                if len(entity_text) <= 2:
                     continue
                 # Skip if contains numbers (names don't have digits)
                 if any(c.isdigit() for c in entity_text):
@@ -2970,9 +3609,36 @@ class PIIDetector:
                 # Skip very long text (likely phrases, not names)
                 if len(entity_text) > 35:
                     continue
-                # For spaCy NER detections (lower confidence), require higher threshold
-                # Our pattern recognizers have scores 0.85-0.95
-                if entity.confidence < 0.80:
+                # For spaCy NER detections (lower confidence), require moderate threshold
+                # Our pattern recognizers have scores 0.85-0.95, lowered from 0.80 for better recall
+                if entity.confidence < 0.70:
+                    continue
+                # Skip UI/navigation phrases commonly detected as person names
+                # These are app interface elements, not actual names
+                person_ui_phrases = {
+                    # QuickBooks/accounting app UI elements
+                    'get paid', 'customer agent', 'expenses & bills', 'sales & get paid',
+                    'turn leads', 'my apps', 'unbilled income', 'overdue invoice',
+                    'recently paid', 'responses to help', 'prioritizes follow',
+                    # App names and product UI terms
+                    'creo', 'pro tools', 'quick books', 'sage', 'xero',
+                    # Generic UI/document phrases
+                    'customer agent spots', 'turn leads into sales', 'spots or hides',
+                    'view all', 'see all', 'show more', 'load more', 'read more',
+                    'learn more', 'get started', 'sign up', 'log in', 'sign in',
+                    # Header/title phrases
+                    'dear customer', 'dear user', 'dear member', 'dear client',
+                    'hello there', 'hi there', 'welcome back', 'good morning',
+                    # Status/label phrases
+                    'not available', 'coming soon', 'in progress', 'on hold',
+                    'pending review', 'awaiting approval', 'under review',
+                }
+                if entity_text.lower() in person_ui_phrases:
+                    continue
+                # Skip if text contains common UI indicator words
+                ui_indicator_words = ['&', 'into', 'spots', 'hides', 'leads', 'income', 'invoice', 'paid', 'apps']
+                text_lower = entity_text.lower()
+                if any(word in text_lower for word in ui_indicator_words):
                     continue
 
             # Filter COORDINATES false positives

@@ -77,6 +77,8 @@ class Locale(Enum):
     # Asia - South/Southeast
     HI_IN = "hi-IN"  # India (Hindi)
     EN_IN = "en-IN"  # India (English)
+    BN_BD = "bn-BD"  # Bangladesh (Bengali)
+    EN_BD = "en-BD"  # Bangladesh (English)
     TH_TH = "th-TH"  # Thailand
     VI_VN = "vi-VN"  # Vietnam
     ID_ID = "id-ID"  # Indonesia
@@ -228,6 +230,27 @@ PATTERN_LOCALE_MAP: Dict[str, LocalePatternMapping] = {
     ),
     "india_pin": LocalePatternMapping(
         "india_pin", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.15
+    ),
+    "india_pin_labeled": LocalePatternMapping(
+        "india_pin_labeled", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.20
+    ),
+    "india_pin_with_state": LocalePatternMapping(
+        "india_pin_with_state", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.20
+    ),
+    "indian_city": LocalePatternMapping(
+        "indian_city", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.15
+    ),
+    "indian_state": LocalePatternMapping(
+        "indian_state", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.15
+    ),
+    "indian_locality_state": LocalePatternMapping(
+        "indian_locality_state", "LOCATION", {Locale.HI_IN.value, Locale.EN_IN.value}, 0.20
+    ),
+    "bangladesh_country": LocalePatternMapping(
+        "bangladesh_country", "LOCATION", {Locale.BN_BD.value, Locale.EN_BD.value}, 0.15
+    ),
+    "bangladesh_cities": LocalePatternMapping(
+        "bangladesh_cities", "LOCATION", {Locale.BN_BD.value, Locale.EN_BD.value}, 0.15
     ),
     "brazil_cep": LocalePatternMapping(
         "brazil_cep", "LOCATION", {Locale.PT_BR.value}, 0.15

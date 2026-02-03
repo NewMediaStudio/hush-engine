@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Engine Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8;
+            --blue: #38bdf8; --orange: #fb923c; --green: #4ade80; --red: #f87171;
+            --purple: #a78bfa; --border: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg);
+            color: var(--text); margin: 0; padding: 2rem; display: flex; justify-content: center;
+        }
+        .container { width: 100%; max-width: 1200px; }
+        .upload-zone {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 3rem;
+            text-align: center; margin-bottom: 2rem; transition: 0.2s;
+        }
+        .upload-zone:hover { border-color: var(--blue); background: rgba(56, 189, 248, 0.05); }
+        .hidden { display: none; }
+        .main-card {
+            background: var(--card); padding: 2rem; border-radius: 16px;
+            border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 1.5rem;
+        }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card {
+            background: rgba(0,0,0,0.2); padding: 1rem 1.25rem; border-radius: 12px;
+            border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
+        }
+        .stat-card:hover { background: rgba(0,0,0,0.3); border-color: var(--blue); }
+        .stat-card.active { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3); }
+        .stat-label { color: var(--muted); font-size: 0.8rem; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: var(--blue); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.orange { color: var(--orange); }
+        .stat-value.red { color: var(--red); }
+        .stat-sub { color: var(--muted); font-size: 0.75rem; margin-top: 0.25rem; }
+        h2 { margin-top: 0; font-size: 1.1rem; color: var(--muted); font-weight: 500; }
+        .entity-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .entity-table th, .entity-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .entity-table th { color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; cursor: pointer; user-select: none; }
+        .entity-table th:hover { color: var(--blue); }
+        .entity-table th.sorted { color: var(--blue); }
+        .entity-table th .sort-icon { margin-left: 0.25rem; font-size: 0.7rem; }
+        .entity-table tr:hover { background: rgba(255,255,255,0.02); }
+        .bar { height: 8px; background: var(--blue); border-radius: 4px; }
+        .bar-bg { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; width: 100px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="drop-zone" class="upload-zone">
+        <h2 style="margin-top:0; font-size: 1.5rem; color: var(--text);">PII Detection Benchmark Dashboard</h2>
+        <p style="color: var(--muted)">Select your <b>benchmark_history.json</b> to view insights.</p>
+        <input type="file" id="file-input" class="hidden" accept=".json">
+        <button onclick="document.getElementById('file-input').click()" style="background: var(--blue); color: var(--bg); font-weight: bold; padding: 0.6rem 1.2rem; border-radius: 8px; border: none; cursor: pointer;">Select JSON File</button>
+    </div>
+
+    <div id="dashboard" class="hidden">
+        <!-- Summary Stats (clickable navigation) -->
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <!-- Main Chart Card -->
+        <div class="main-card">
+            <div class="chart-container" id="chart-container">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div id="table-container" class="hidden"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let benchmarkData = null;
+    let chart = null;
+    let currentSort = { column: 'csv', direction: 'desc' };
+    let currentView = 'trend';
+    const ctx = document.getElementById('canvas').getContext('2d');
+
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json = JSON.parse(e.target.result);
+                benchmarkData = json.runs;
+                document.getElementById('drop-zone').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                renderSummaryStats();
+                toggleView('trend');
+            } catch (err) {
+                alert("Error parsing JSON: " + err.message);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function renderSummaryStats() {
+        const latest = benchmarkData[benchmarkData.length - 1];
+        const totalSamples = benchmarkData.reduce((sum, r) => sum + r.samples, 0);
+        const avgSamplesPerSec = benchmarkData.filter(r => r.duration_seconds).map(r => r.samples / r.duration_seconds).reduce((a, b) => a + b, 0) / benchmarkData.filter(r => r.duration_seconds).length;
+
+        // Calculate PII accuracy score (average of CSV and PDF recall)
+        const piiAccuracy = latest.pdf_overall_recall
+            ? (latest.csv_overall_recall + latest.pdf_overall_recall) / 2
+            : latest.csv_overall_recall;
+        const accuracyClass = piiAccuracy >= 0.95 ? 'green' : piiAccuracy >= 0.75 ? 'orange' : 'red';
+
+        // Determine color classes based on recall
+        const csvClass = latest.csv_overall_recall >= 0.7 ? 'green' : latest.csv_overall_recall >= 0.5 ? 'orange' : 'red';
+        const pdfClass = latest.pdf_overall_recall >= 0.7 ? 'green' : latest.pdf_overall_recall >= 0.5 ? 'orange' : 'red';
+
+        document.getElementById('stats-grid').innerHTML = `
+            <div class="stat-card" id="card-runs" onclick="toggleView('trend')" title="Click for Recall Trend">
+                <div class="stat-label">Total Runs</div>
+                <div class="stat-value">${benchmarkData.length}</div>
+                <div class="stat-sub">${totalSamples.toLocaleString()} samples</div>
+            </div>    
+            <div class="stat-card" id="card-duration" onclick="toggleView('latest')" title="Click for Latest Stats">
+                <div class="stat-label">Latest Duration</div>
+                <div class="stat-value">${latest.duration_seconds ? formatDuration(latest.duration_seconds) : 'N/A'}</div>
+                <div class="stat-sub">${latest.samples} samples</div>
+            </div>
+            <div class="stat-card" id="card-accuracy" onclick="toggleView('entities')" title="Click for Entity Breakdown">
+                <div class="stat-label">PII Accuracy</div>
+                <div class="stat-value ${accuracyClass}">${(piiAccuracy * 100).toFixed(1)}%</div>
+                <div class="stat-sub">% PII successfully detected</div>
+            </div>
+            <div class="stat-card" id="card-csv" onclick="toggleView('entities')" title="Click for Entity Breakdown">
+                <div class="stat-label">CSV Recall</div>
+                <div class="stat-value ${csvClass}">${(latest.csv_overall_recall * 100).toFixed(1)}%</div>
+                <div class="stat-sub">Latest run</div>
+            </div>
+            <div class="stat-card" id="card-pdf" onclick="toggleView('entities')" title="Click for Entity Breakdown">
+                <div class="stat-label">PDF Recall</div>
+                <div class="stat-value ${pdfClass}">${latest.pdf_overall_recall ? (latest.pdf_overall_recall * 100).toFixed(1) + '%' : 'N/A'}</div>
+                <div class="stat-sub">Latest run</div>
+            </div>
+            <div class="stat-card" id="card-speed" onclick="toggleView('speed')" title="Click for Speed Analysis">
+                <div class="stat-label">Avg Speed</div>
+                <div class="stat-value">${avgSamplesPerSec.toFixed(2)}</div>
+                <div class="stat-sub">samples/second</div>
+            </div>
+        `;
+        updateActiveCard();
+    }
+
+    function updateActiveCard() {
+        // Remove active from all cards
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+        // Add active to relevant card based on view
+        const cardMap = {
+            'trend': 'card-runs',
+            'entities': 'card-accuracy',
+            'speed': 'card-speed',
+            'latest': 'card-duration'
+        };
+        const activeCard = document.getElementById(cardMap[currentView]);
+        if (activeCard) activeCard.classList.add('active');
+    }
+
+    function formatDuration(seconds) {
+        if (seconds < 60) return seconds.toFixed(1) + 's';
+        const mins = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(0);
+        return `${mins}m ${secs}s`;
+    }
+
+    function toggleView(viewType) {
+        if (chart) chart.destroy();
+        chart = null;
+        currentView = viewType;
+        updateActiveCard();
+
+        const chartContainer = document.getElementById('chart-container');
+        const tableContainer = document.getElementById('table-container');
+
+        if (viewType === 'latest') {
+            chartContainer.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+            renderLatestTable();
+            return;
+        }
+
+        chartContainer.classList.remove('hidden');
+        tableContainer.classList.add('hidden');
+
+        const latest = benchmarkData[benchmarkData.length - 1];
+        const entityLabels = Object.keys(latest.csv_recall_by_type || {});
+
+        if (viewType === 'trend') {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: benchmarkData.map((r, i) => `#${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'CSV Recall',
+                            data: benchmarkData.map(r => r.csv_overall_recall),
+                            borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            tension: 0.3, pointRadius: 4, fill: true
+                        },
+                        {
+                            label: 'PDF Recall',
+                            data: benchmarkData.map(r => r.pdf_overall_recall),
+                            borderColor: '#fb923c', backgroundColor: 'rgba(251, 146, 60, 0.1)',
+                            tension: 0.3, pointRadius: 4, fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('Recall Over Time', 0, 1.1)
+            });
+        } else if (viewType === 'speed') {
+            const durations = benchmarkData.map(r => r.duration_seconds || 0);
+            const samplesPerSec = benchmarkData.map(r => r.duration_seconds ? r.samples / r.duration_seconds : 0);
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: benchmarkData.map((r, i) => `#${i + 1}`),
+                    datasets: [
+                        {
+                            label: 'Duration (seconds)',
+                            data: durations,
+                            backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                            borderColor: '#38bdf8',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Samples/sec',
+                            data: samplesPerSec,
+                            type: 'line',
+                            borderColor: '#4ade80',
+                            backgroundColor: 'transparent',
+                            tension: 0.3,
+                            pointRadius: 5,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } },
+                        title: { display: true, text: 'Benchmark Speed Analysis', color: '#94a3b8' }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear', position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8' },
+                            title: { display: true, text: 'Duration (s)', color: '#94a3b8' }
+                        },
+                        y1: {
+                            type: 'linear', position: 'right',
+                            grid: { display: false },
+                            ticks: { color: '#4ade80' },
+                            title: { display: true, text: 'Samples/sec', color: '#4ade80' }
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        } else if (viewType === 'entities') {
+            // Sort entities by CSV recall descending
+            const sortedEntities = entityLabels.sort((a, b) => {
+                const recallA = latest.csv_recall_by_type[a]?.recall || 0;
+                const recallB = latest.csv_recall_by_type[b]?.recall || 0;
+                return recallB - recallA;
+            });
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedEntities,
+                    datasets: [
+                        {
+                            label: 'CSV Recall (Latest)',
+                            data: sortedEntities.map(e => latest.csv_recall_by_type[e]?.recall || 0),
+                            backgroundColor: 'rgba(56, 189, 248, 0.7)',
+                            borderColor: '#38bdf8', borderWidth: 1
+                        },
+                        {
+                            label: 'PDF Recall (Latest)',
+                            data: sortedEntities.map(e => latest.pdf_recall_by_type?.[e]?.recall || 0),
+                            backgroundColor: 'rgba(251, 146, 60, 0.7)',
+                            borderColor: '#fb923c', borderWidth: 1
+                        }
+                    ]
+                },
+                options: getChartOptions('Entity Type Recall (Latest Run)', 0, 1.1)
+            });
+        }
+    }
+
+    function getChartOptions(title, yMin, yMax) {
+        return {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8' } },
+                title: { display: true, text: title, color: '#94a3b8' }
+            },
+            scales: {
+                y: { min: yMin, max: yMax, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        };
+    }
+
+    function sortTable(column) {
+        if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
+        } else {
+            currentSort.column = column;
+            currentSort.direction = 'desc';
+        }
+        renderLatestTable();
+    }
+
+    function renderLatestTable() {
+        const latest = benchmarkData[benchmarkData.length - 1];
+        const runDate = latest.timestamp ? new Date(latest.timestamp).toLocaleString() : 'N/A';
+
+        // Get sort icon for header
+        const getSortIcon = (col) => {
+            if (currentSort.column !== col) return '<span class="sort-icon">&#8645;</span>';
+            return currentSort.direction === 'desc' ? '<span class="sort-icon">&#8595;</span>' : '<span class="sort-icon">&#8593;</span>';
+        };
+        const getSortedClass = (col) => currentSort.column === col ? 'sorted' : '';
+
+        let html = `
+                <table class="entity-table">
+                <thead>
+                    <tr>
+                        <th class="${getSortedClass('entity')}" onclick="sortTable('entity')">Entity Type${getSortIcon('entity')}</th>
+                        <th class="${getSortedClass('csv')}" onclick="sortTable('csv')">CSV Recall${getSortIcon('csv')}</th>
+                        <th class="${getSortedClass('pdf')}" onclick="sortTable('pdf')">PDF Recall${getSortIcon('pdf')}</th>
+                        <th class="${getSortedClass('detected')}" onclick="sortTable('detected')">Detected${getSortIcon('detected')}</th>
+                        <th class="${getSortedClass('gt')}" onclick="sortTable('gt')">Ground Truth${getSortIcon('gt')}</th>
+                        <th>Recall Bar</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        // Precompute values for sorting
+        const entityData = Object.entries(latest.csv_recall_by_type || {}).map(([entity, data]) => {
+            const csvRecall = data.recall || 0;
+            const pdfData = latest.pdf_recall_by_type?.[entity];
+            const pdfRecall = pdfData?.recall || 0;
+            return {
+                entity,
+                csvRecall,
+                pdfRecall,
+                tp: data.tp || 0,
+                total: data.total || 0
+            };
+        });
+
+        // Sort based on current sort state
+        entityData.sort((a, b) => {
+            let valA, valB;
+            switch (currentSort.column) {
+                case 'entity': valA = a.entity; valB = b.entity; break;
+                case 'csv': valA = a.csvRecall; valB = b.csvRecall; break;
+                case 'pdf': valA = a.pdfRecall; valB = b.pdfRecall; break;
+                case 'detected': valA = a.tp; valB = b.tp; break;
+                case 'gt': valA = a.total; valB = b.total; break;
+                default: valA = a.csvRecall; valB = b.csvRecall; break;
+            }
+            if (currentSort.column === 'entity') {
+                return currentSort.direction === 'desc' ? valB.localeCompare(valA) : valA.localeCompare(valB);
+            }
+            return currentSort.direction === 'desc' ? valB - valA : valA - valB;
+        });
+
+        // Highlight styles
+        const greenHighlight = 'background: rgba(74, 222, 128, 0.2); border-radius: 4px; padding: 2px 6px;';
+        const yellowHighlight = 'background: rgba(234, 179, 8, 0.25); border-radius: 4px; padding: 2px 6px;';
+        const redHighlight = 'background: rgba(248, 113, 113, 0.2); border-radius: 4px; padding: 2px 6px;';
+
+        const getStyle = (value) => {
+            if (value >= 0.95) return greenHighlight;
+            if (value >= 0.75) return yellowHighlight;
+            if (value < 0.75) return redHighlight;
+            return '';
+        };
+
+        entityData.forEach(({ entity, csvRecall, pdfRecall, tp, total }) => {
+            const barWidth = Math.round(csvRecall * 100);
+            const color = csvRecall >= 0.95 ? 'var(--green)' : csvRecall >= 0.8 ? 'var(--blue)' : csvRecall >= 0.5 ? 'var(--orange)' : 'var(--red)';
+
+            html += `
+                <tr>
+                    <td><strong>${entity}</strong></td>
+                    <td><span style="${getStyle(csvRecall)}">${(csvRecall * 100).toFixed(1)}%</span></td>
+                    <td><span style="${pdfRecall ? getStyle(pdfRecall) : ''}">${pdfRecall ? (pdfRecall * 100).toFixed(1) + '%' : 'N/A'}</span></td>
+                    <td>${tp.toLocaleString()}</td>
+                    <td>${total.toLocaleString()}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="bar-bg"><div class="bar" style="width: ${barWidth}%; background: ${color};"></div></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('table-container').innerHTML = html;
+    }
+
+</script>
+</body>
+</html>
