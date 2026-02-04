@@ -514,12 +514,13 @@ class RPCServer:
             sys.stderr.write(traceback.format_exc())
             sys.stderr.flush()
 
+            # SECURITY: Don't expose traceback in responses (internal paths/details)
+            # Traceback is already logged to stderr for debugging
             return {
                 "id": req_id,
                 "error": {
                     "code": -1,
-                    "message": str(e),
-                    "traceback": traceback.format_exc()
+                    "message": str(e)
                 }
             }
     

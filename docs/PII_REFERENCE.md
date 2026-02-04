@@ -230,5 +230,5 @@ These patterns may cause false positives and should be validated:
 
 ---
 
-*Last updated: 2026-02-02*
-*Document version: 1.3 - Added AGE detection, lightweight names database, library management, locale configuration*
+*Last updated: 2026-02-04*
+*Document version: 1.4 - Added cities database, countries database, preprocessing module, improved PERSON and ADDRESS recall*

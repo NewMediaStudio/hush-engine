@@ -4,7 +4,11 @@ Hush Engine - Local-first PII detection
 Open-source PII detection engine using Presidio and Apple Vision OCR.
 """
 
-__version__ = "1.0.3"
+try:
+    from hush_engine.detection_config import VERSION
+except ImportError:
+    from .detection_config import VERSION
+__version__ = VERSION
 
 from .ui.file_router import FileRouter
 from .detectors.pii_detector import PIIDetector

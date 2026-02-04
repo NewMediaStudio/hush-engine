@@ -48,8 +48,16 @@ class FeedbackAnalyzer:
             try:
                 with open(fb_file, 'r') as f:
                     data = json.load(f)
-                    data['_feedback_file'] = fb_file.name
-                    self.feedback_items.append(data)
+                    # Handle both single entries (dict) and batch entries (list)
+                    if isinstance(data, list):
+                        # Batch feedback from benchmark runs
+                        for item in data:
+                            item['_feedback_file'] = fb_file.name
+                            self.feedback_items.append(item)
+                    else:
+                        # Single feedback entry
+                        data['_feedback_file'] = fb_file.name
+                        self.feedback_items.append(data)
             except Exception as e:
                 print(f"Error loading {fb_file.name}: {e}")
 

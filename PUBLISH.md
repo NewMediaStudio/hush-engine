@@ -81,7 +81,7 @@ pip install build twine
 
 # Build distribution packages
 python -m build
-# Creates: dist/hush_engine-1.0.0.tar.gz and dist/hush_engine-1.0.0-py3-none-any.whl
+# Creates: dist/hush_engine-1.3.0.tar.gz and dist/hush_engine-1.3.0-py3-none-any.whl
 
 # Upload to PyPI
 python -m twine upload dist/*
@@ -94,7 +94,7 @@ python -m twine upload dist/*
 ### Verify Upload
 
 1. Visit https://pypi.org/project/hush-engine/
-2. Check that version 1.0.0 is visible
+2. Check that the version is visible
 3. Verify README renders correctly
 4. Test installation: `pip install hush-engine`
 

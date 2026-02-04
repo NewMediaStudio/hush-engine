@@ -54,6 +54,12 @@ coverage.xml
 test_outputs/
 *.log
 
+# Local development (not committed to repo per CLAUDE.md)
+tests/
+training/
+icons/
+.claude/
+
 # Test data (large files, downloaded separately)
 tests/data/
 tests/results/

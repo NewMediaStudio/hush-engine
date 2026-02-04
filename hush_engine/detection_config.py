@@ -8,6 +8,28 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+# Engine version - single source of truth
+VERSION = "1.3.0"
+
+# Detection library/integration toggles
+# These control which detection backends are enabled
+DEFAULT_INTEGRATIONS = {
+    # NER models for PERSON detection
+    "spacy": True,           # spaCy NER (fast, reliable)
+    "gliner": True,          # GLiNER zero-shot PII model
+    "flair": True,           # Flair NER (high accuracy)
+    "transformers": True,    # Transformers BERT NER (high precision)
+    "name_dataset": True,    # Dictionary lookup for names
+    # Address detection
+    "libpostal": True,       # libpostal address parsing (99.45% accuracy)
+    # URL detection
+    "urlextract": True,      # urlextract for comprehensive URL detection
+    # Medical NER
+    "scispacy": True,        # scispaCy biomedical NER
+    # Other integrations
+    "phonenumbers": True,    # Google libphonenumber validation
+}
+
 
 # Default confidence thresholds per entity type
 DEFAULT_THRESHOLDS = {
@@ -62,6 +84,7 @@ class DetectionConfig:
         self.config: Dict[str, Any] = {
             "thresholds": DEFAULT_THRESHOLDS.copy(),
             "enabled_entities": {k: True for k in DEFAULT_THRESHOLDS.keys()},  # All enabled by default
+            "enabled_integrations": DEFAULT_INTEGRATIONS.copy(),  # Detection library toggles
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "adjustment_history": []
@@ -80,6 +103,8 @@ class DetectionConfig:
                     # Merge enabled_entities with defaults (all enabled by default)
                     default_enabled = {k: True for k in DEFAULT_THRESHOLDS.keys()}
                     self.config["enabled_entities"] = {**default_enabled, **saved.get("enabled_entities", {})}
+                    # Merge enabled_integrations with defaults
+                    self.config["enabled_integrations"] = {**DEFAULT_INTEGRATIONS, **saved.get("enabled_integrations", {})}
                     self.config["created_at"] = saved.get("created_at", self.config["created_at"])
                     self.config["updated_at"] = saved.get("updated_at", self.config["updated_at"])
                     self.config["adjustment_history"] = saved.get("adjustment_history", [])
@@ -147,13 +172,30 @@ class DetectionConfig:
         self.config["enabled_entities"][entity_type] = enabled
         self.save()
 
-    def update_all(self, thresholds: Dict[str, float] = None, enabled_entities: Dict[str, bool] = None):
+    def get_enabled_integrations(self) -> Dict[str, bool]:
+        """Get all enabled integration/library settings"""
+        return self.config.get("enabled_integrations", DEFAULT_INTEGRATIONS).copy()
+
+    def set_enabled_integration(self, integration: str, enabled: bool):
+        """Set whether a detection integration/library is enabled"""
+        if "enabled_integrations" not in self.config:
+            self.config["enabled_integrations"] = DEFAULT_INTEGRATIONS.copy()
+        self.config["enabled_integrations"][integration] = enabled
+        self.save()
+
+    def is_integration_enabled(self, integration: str) -> bool:
+        """Check if a specific integration is enabled"""
+        integrations = self.config.get("enabled_integrations", DEFAULT_INTEGRATIONS)
+        return integrations.get(integration, True)
+
+    def update_all(self, thresholds: Dict[str, float] = None, enabled_entities: Dict[str, bool] = None, enabled_integrations: Dict[str, bool] = None):
         """
-        Update thresholds and/or enabled entities in bulk.
+        Update thresholds, enabled entities, and/or integrations in bulk.
 
         Args:
             thresholds: Dict of entity_type -> threshold value
             enabled_entities: Dict of entity_type -> enabled boolean
+            enabled_integrations: Dict of integration -> enabled boolean
         """
         if thresholds:
             for entity_type, threshold in thresholds.items():
@@ -164,6 +206,12 @@ class DetectionConfig:
         if enabled_entities:
             for entity_type, enabled in enabled_entities.items():
                 self.config["enabled_entities"][entity_type] = enabled
+
+        if enabled_integrations:
+            if "enabled_integrations" not in self.config:
+                self.config["enabled_integrations"] = DEFAULT_INTEGRATIONS.copy()
+            for integration, enabled in enabled_integrations.items():
+                self.config["enabled_integrations"][integration] = enabled
 
         self.save()
 
@@ -259,7 +307,8 @@ class DetectionConfig:
             "created_at": self.config["created_at"],
             "updated_at": self.config["updated_at"],
             "thresholds": self.get_all_thresholds(),
-            "enabled_entities": self.get_enabled_entities()
+            "enabled_entities": self.get_enabled_entities(),
+            "enabled_integrations": self.get_enabled_integrations()
         }
 
 

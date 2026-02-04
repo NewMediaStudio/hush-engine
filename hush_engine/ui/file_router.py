@@ -33,6 +33,122 @@ import pandas as pd
 import tempfile
 import os
 import stat
+from dataclasses import dataclass
+from typing import Tuple
+
+
+# =============================================================================
+# TEXT REGION MERGING: Merge adjacent OCR regions for better PII detection
+# =============================================================================
+
+@dataclass
+class MergedTextRegion:
+    """A merged text region combining adjacent OCR detections."""
+    text: str
+    detections: list  # Original TextDetection objects
+    char_offsets: list  # (start, end) offset in merged text for each detection
+
+
+def merge_adjacent_detections(
+    detections: list,
+    horizontal_threshold: float = 50.0,
+    vertical_threshold: float = 20.0
+) -> List[MergedTextRegion]:
+    """
+    Merge horizontally adjacent text detections into logical groups.
+
+    This helps detect PII patterns that span multiple OCR regions, like:
+    - "808921738 RT0001" (business number + program ID)
+    - "John Smith" (first name + last name as separate detections)
+    """
+    if not detections:
+        return []
+
+    # Sort by y (top to bottom), then x (left to right)
+    sorted_detections = sorted(detections, key=lambda d: (d.bbox[1], d.bbox[0]))
+
+    merged_regions = []
+    current_group = [sorted_detections[0]]
+
+    for detection in sorted_detections[1:]:
+        last_detection = current_group[-1]
+
+        # Check if on same line (vertical alignment)
+        last_y_center = (last_detection.bbox[1] + last_detection.bbox[3]) / 2
+        curr_y_center = (detection.bbox[1] + detection.bbox[3]) / 2
+        vertical_diff = abs(curr_y_center - last_y_center)
+
+        # Check horizontal gap
+        horizontal_gap = detection.bbox[0] - last_detection.bbox[2]
+
+        # Merge if on same line and close enough horizontally
+        if vertical_diff <= vertical_threshold and 0 <= horizontal_gap <= horizontal_threshold:
+            current_group.append(detection)
+        else:
+            merged_regions.append(_create_merged_region(current_group))
+            current_group = [detection]
+
+    if current_group:
+        merged_regions.append(_create_merged_region(current_group))
+
+    return merged_regions
+
+
+def _create_merged_region(detections: list) -> MergedTextRegion:
+    """Create a MergedTextRegion from a list of adjacent detections."""
+    texts = []
+    char_offsets = []
+    current_offset = 0
+
+    for detection in detections:
+        start = current_offset
+        end = start + len(detection.text)
+        char_offsets.append((start, end))
+        texts.append(detection.text)
+        current_offset = end + 1  # +1 for space separator
+
+    return MergedTextRegion(
+        text=" ".join(texts),
+        detections=detections,
+        char_offsets=char_offsets
+    )
+
+
+def get_bbox_for_entity(
+    entity_start: int,
+    entity_end: int,
+    merged_region: MergedTextRegion
+) -> Tuple[float, float, float, float]:
+    """Calculate bounding box for an entity within a merged text region."""
+    min_x, min_y = float('inf'), float('inf')
+    max_x, max_y = float('-inf'), float('-inf')
+
+    for i, (det_start, det_end) in enumerate(merged_region.char_offsets):
+        detection = merged_region.detections[i]
+
+        # Check if this detection overlaps with the entity
+        if det_start < entity_end and det_end > entity_start:
+            local_start = max(0, entity_start - det_start)
+            local_end = min(len(detection.text), entity_end - det_start)
+
+            if detection.char_boxes and len(detection.char_boxes) >= local_end:
+                for j in range(local_start, local_end):
+                    if j < len(detection.char_boxes) and detection.char_boxes[j]:
+                        box = detection.char_boxes[j]
+                        min_x = min(min_x, box[0])
+                        min_y = min(min_y, box[1])
+                        max_x = max(max_x, box[2])
+                        max_y = max(max_y, box[3])
+            else:
+                min_x = min(min_x, detection.bbox[0])
+                min_y = min(min_y, detection.bbox[1])
+                max_x = max(max_x, detection.bbox[2])
+                max_y = max(max_y, detection.bbox[3])
+
+    if min_x == float('inf'):
+        return merged_region.detections[0].bbox
+
+    return (min_x, min_y, max_x, max_y)
 
 
 # =============================================================================
@@ -294,25 +410,26 @@ class FileRouter:
             'bbox': detection.bbox
         } for detection in ocr_detections]
 
-        # Detect PII in text using user's locale preferences
+        # Merge adjacent text regions for better PII detection
+        # This helps detect patterns that span multiple OCR regions (e.g., "808921738 RT0001")
+        merged_regions = merge_adjacent_detections(ocr_detections)
+
+        # Detect PII in merged text regions using user's locale preferences
         pii_detections = []
         user_locales = self.get_user_locales()
-        for detection in ocr_detections:
+        for merged_region in merged_regions:
             entities = self.detector.analyze_text(
-                detection.text,
+                merged_region.text,
                 locales=user_locales,
                 auto_detect_locale=(user_locales is None)
             )
 
             for entity in entities:
-                # Calculate precise bounding box for just the detected entity text
-                # Uses character-level boxes if available, otherwise estimates proportionally
-                entity_bbox = VisionOCR.calculate_substring_bbox(
-                    text=detection.text,
-                    start=entity.start,
-                    end=entity.end,
-                    char_boxes=detection.char_boxes,
-                    fallback_bbox=detection.bbox
+                # Calculate bounding box spanning the relevant original detections
+                entity_bbox = get_bbox_for_entity(
+                    entity_start=entity.start,
+                    entity_end=entity.end,
+                    merged_region=merged_region
                 )
                 pii_detections.append({
                     'entity_type': entity.entity_type,
@@ -429,23 +546,24 @@ class FileRouter:
                     all_text_blocks.append(block)
                     page_text_blocks.append(block)
 
+                # Merge adjacent text regions for better PII detection
+                merged_regions = merge_adjacent_detections(ocr_detections)
+
                 # Detect PII in this page (initial pass)
                 page_detections = []
-                for detection in ocr_detections:
+                for merged_region in merged_regions:
                     entities = self.detector.analyze_text(
-                        detection.text,
+                        merged_region.text,
                         locales=user_locales,
                         auto_detect_locale=(user_locales is None)
                     )
 
                     for entity in entities:
-                        # Calculate precise bounding box for just the detected entity text
-                        entity_bbox = VisionOCR.calculate_substring_bbox(
-                            text=detection.text,
-                            start=entity.start,
-                            end=entity.end,
-                            char_boxes=detection.char_boxes,
-                            fallback_bbox=detection.bbox
+                        # Calculate bounding box spanning the relevant original detections
+                        entity_bbox = get_bbox_for_entity(
+                            entity_start=entity.start,
+                            entity_end=entity.end,
+                            merged_region=merged_region
                         )
                         page_detections.append({
                             'entity_type': entity.entity_type,
@@ -706,20 +824,28 @@ class FileRouter:
         detections = self.ocr.extract_text(input_path)
         print(f"  → Detected {len(detections)} text regions")
 
+        # Merge adjacent text regions for better PII detection
+        merged_regions = merge_adjacent_detections(detections)
+
         # Detect PII
         pii_regions = []
         pii_count = 0
 
-        for detection in detections:
+        for merged_region in merged_regions:
             entities = self.detector.analyze_text(
-                detection.text,
+                merged_region.text,
                 locales=user_locales,
                 auto_detect_locale=(user_locales is None)
             )
             if entities:
-                pii_regions.append(detection.bbox)
-                pii_count += len(entities)
                 for entity in entities:
+                    entity_bbox = get_bbox_for_entity(
+                        entity_start=entity.start,
+                        entity_end=entity.end,
+                        merged_region=merged_region
+                    )
+                    pii_regions.append(entity_bbox)
+                    pii_count += 1
                     print(f"  → Found {entity.entity_type}: '{entity.text}'")
 
         print(f"  → Total: {len(pii_regions)} regions with PII")

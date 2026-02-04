@@ -340,6 +340,38 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
     # Handles: O'Brien, D'Arcy, Jean-Claude, Mary-Jane
     name_pattern = re.compile(r"\b([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)?)\b")
 
+    # Also match ALL CAPS names (common in forms, PDFs)
+    # Requires 2+ words to avoid matching random acronyms
+    # Handles: JOHN SMITH, MARY JANE DOE
+    allcaps_pattern = re.compile(r"\b([A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){1,2})\b")
+
+    for match in allcaps_pattern.finditer(text):
+        potential_name = match.group(1)
+        # Convert to Title Case for name-dataset lookup
+        title_case_name = potential_name.title()
+        parts = title_case_name.split()
+
+        # Check each part against name-dataset
+        is_likely_name = False
+        matches_found = 0
+
+        for part in parts:
+            if len(part) < 2:
+                continue
+            result = _name_dataset.search(part)
+            if result:
+                first_name_data = result.get("first_name", {})
+                last_name_data = result.get("last_name", {})
+                first_rank = first_name_data.get("rank", {}).get("*", 0) if first_name_data else 0
+                last_rank = last_name_data.get("rank", {}).get("*", 0) if last_name_data else 0
+                if first_rank > 0 or last_rank > 0:
+                    matches_found += 1
+
+        # Require at least 2 parts match the name database for ALL CAPS
+        if matches_found >= 2:
+            confidence = 0.75 + min(0.15, matches_found * 0.05)
+            results.append((potential_name, match.start(), match.end(), confidence))
+
     for match in name_pattern.finditer(text):
         potential_name = match.group(1)
         parts = potential_name.split()
@@ -362,8 +394,8 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
 
                 if first_rank > 0 or last_rank > 0:
                     is_likely_name = True
-                    # Higher rank = more common = higher confidence (boosted from 0.60 base)
-                    part_confidence = 0.70 + min(0.25, (first_rank + last_rank) / 10000)
+                    # Higher rank = more common = higher confidence (boosted base)
+                    part_confidence = 0.75 + min(0.20, (first_rank + last_rank) / 10000)
                     confidence = max(confidence, part_confidence)
 
         if is_likely_name:
@@ -410,6 +442,60 @@ LABELED_NAME_PATTERN = re.compile(
     r"([A-Z][a-z'-]*(?:\.?\s+[A-Z][a-z'-]*){0,3})"
 )
 
+# ALL CAPS labeled name pattern for forms: "NAME: JOHN DOE", "APPLICANT: ABDUL RAHMAN"
+LABELED_NAME_CAPS_PATTERN = re.compile(
+    r"(?:NAME|CUSTOMER|CLIENT|APPLICANT|BENEFICIARY|CARDHOLDER|ACCOUNT\s*HOLDER|"
+    r"PATIENT|EMPLOYEE|CONTACT|OWNER|HOLDER|RECIPIENT|SENDER)"
+    r"\s*[:]\s*"
+    r"([A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){0,3})"
+)
+
+# Initials pattern: "A S EUSUF", "J. R. Smith", "M. L. King Jr"
+INITIALS_NAME_PATTERN = re.compile(
+    r"\b([A-Z]\.?\s+[A-Z]\.?\s+[A-Z][a-zA-Z'-]+(?:\s+(?:Jr|Sr|II|III|IV)\.?)?)\b"
+)
+
+# Document signature context patterns for PDFs
+# Handles: "Signed by: John Smith", "Authorized by John Doe", "Prepared by: Jane"
+SIGNATURE_CONTEXT_PATTERN = re.compile(
+    r"(?:Signed|Authorized|Prepared|Submitted|Approved|Reviewed|Certified|"
+    r"Witnessed|Attested|Verified|Confirmed|Acknowledged|Executed|Notarized)"
+    r"(?:\s+by)?\s*[:.]?\s*"
+    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})",
+    re.IGNORECASE
+)
+
+# ALL CAPS signature context: "SIGNED BY: JOHN DOE", "AUTHORIZED: ABDUL RAHMAN"
+SIGNATURE_CONTEXT_CAPS_PATTERN = re.compile(
+    r"(?:SIGNED|AUTHORIZED|PREPARED|SUBMITTED|APPROVED|REVIEWED|CERTIFIED|"
+    r"WITNESSED|ATTESTED|VERIFIED|CONFIRMED|ACKNOWLEDGED|EXECUTED)"
+    r"(?:\s+BY)?\s*[:.]?\s*"
+    r"([A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){0,3})"
+)
+
+# Role-based context patterns for PDFs
+# Handles: "Customer: John Smith", "Patient: Jane Doe", etc.
+ROLE_CONTEXT_PATTERN = re.compile(
+    r"(?:Customer|Client|Patient|Employee|Applicant|Beneficiary|Cardholder|"
+    r"Account\s*Holder|Policyholder|Insured|Claimant|Member|Subscriber|"
+    r"Tenant|Landlord|Buyer|Seller|Borrower|Lender|Guarantor|"
+    r"Debtor|Creditor|Payee|Payer|Sender|Recipient|"
+    r"Driver|Owner|Registrant|Respondent|Petitioner)"
+    r"\s*[:.]?\s*"
+    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})",
+    re.IGNORECASE
+)
+
+# Common international name prefixes that indicate full names follow
+# Handles: "Mohammed Ali", "Abdul Rahman", "Md. Hassan"
+INTL_NAME_PREFIX_PATTERN = re.compile(
+    r"\b((?:Mohammed|Mohammad|Muhammad|Mohamed|Md\.?|Abdul|Abu|"
+    r"Sri|Shri|Smt\.?|Kumar|Devi|Bai|"
+    r"Van|Von|De|Del|La|Le|El|Al-?|Ibn|Bin|Binti|"
+    r"Mac|Mc|O'|D'|St\.?)"
+    r"\s+[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){0,2})\b"
+)
+
 
 def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
     """
@@ -431,6 +517,42 @@ def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
     for match in LABELED_NAME_PATTERN.finditer(text):
         name = match.group(1)
         results.append((match.group(0), match.start(), match.end(), 0.90))
+
+    # ALL CAPS labeled patterns (NAME: JOHN DOE)
+    for match in LABELED_NAME_CAPS_PATTERN.finditer(text):
+        name = match.group(1)
+        # Only accept if name has 2+ parts (to avoid single word matches)
+        if len(name.split()) >= 2:
+            results.append((match.group(0), match.start(), match.end(), 0.90))
+
+    # Initials patterns (A S Eusuf, J. R. Smith)
+    for match in INITIALS_NAME_PATTERN.finditer(text):
+        name = match.group(1)
+        results.append((name, match.start(), match.end(), 0.85))
+
+    # Signature context patterns (Signed by: John Smith)
+    for match in SIGNATURE_CONTEXT_PATTERN.finditer(text):
+        name = match.group(1)
+        if len(name.split()) >= 1 and len(name) >= 3:
+            results.append((match.group(0), match.start(), match.end(), 0.92))
+
+    # ALL CAPS signature context (SIGNED BY: JOHN DOE)
+    for match in SIGNATURE_CONTEXT_CAPS_PATTERN.finditer(text):
+        name = match.group(1)
+        if len(name.split()) >= 2:
+            results.append((match.group(0), match.start(), match.end(), 0.90))
+
+    # Role context patterns (Customer: John Smith)
+    for match in ROLE_CONTEXT_PATTERN.finditer(text):
+        name = match.group(1)
+        if len(name.split()) >= 1 and len(name) >= 3:
+            results.append((match.group(0), match.start(), match.end(), 0.90))
+
+    # International name prefix patterns (Mohammed Ali, Abdul Rahman)
+    for match in INTL_NAME_PREFIX_PATTERN.finditer(text):
+        name = match.group(1)
+        if len(name.split()) >= 2:
+            results.append((name, match.start(), match.end(), 0.88))
 
     return results
 
@@ -464,7 +586,7 @@ class PersonRecognizer(EntityRecognizer):
         use_transformers: bool = False,
         use_name_dataset: bool = True,
         use_patterns: bool = True,
-        min_confidence: float = 0.60,
+        min_confidence: float = 0.55,
         early_exit_confidence: float = 0.85,
         spreadsheet_mode: bool = False,
     ):
@@ -553,7 +675,11 @@ class PersonRecognizer(EntityRecognizer):
         nlp_artifacts=None,
     ) -> List[RecognizerResult]:
         """
-        Analyze text for PERSON entities using smart cascade.
+        Analyze text for PERSON entities using smart cascade with ensemble scoring.
+
+        Uses ensemble scoring: when multiple engines detect overlapping spans,
+        their scores are aggregated for higher confidence. This improves both
+        precision (multiple engines agreeing) and recall (lower threshold works).
 
         Args:
             text: Text to analyze
@@ -569,6 +695,7 @@ class PersonRecognizer(EntityRecognizer):
         # Preprocess text to handle hyphenated line breaks
         processed_text, _ = self._preprocess_text(text)
 
+        # Collect ALL detections from all engines for ensemble scoring
         all_detections: List[Tuple[str, int, int, float, str]] = []
 
         # Step 1: Pattern matching (fastest, highest precision)
@@ -579,15 +706,12 @@ class PersonRecognizer(EntityRecognizer):
         # Step 2: Dictionary lookup (good for spreadsheets)
         if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 100):
             for text_match, start, end, score in lookup_with_name_dataset(processed_text):
-                # Only add if not already found by patterns
-                if not self._overlaps_existing(start, end, all_detections):
-                    all_detections.append((text_match, start, end, score, "name_dataset"))
+                all_detections.append((text_match, start, end, score, "name_dataset"))
 
         # Step 3: Standard NER (spaCy - fast, reliable)
         if self.use_spacy:
             for text_match, start, end, score in detect_with_spacy(processed_text):
-                if not self._overlaps_existing(start, end, all_detections):
-                    all_detections.append((text_match, start, end, score, "spacy"))
+                all_detections.append((text_match, start, end, score, "spacy"))
 
         # Step 4: Advanced NER for low-confidence or missed spans
         # Use configurable early-exit threshold to skip expensive models
@@ -600,8 +724,7 @@ class PersonRecognizer(EntityRecognizer):
             # Try GLiNER
             if self.use_gliner:
                 for text_match, start, end, score in detect_with_gliner(processed_text):
-                    if not self._overlaps_existing(start, end, all_detections):
-                        all_detections.append((text_match, start, end, score, "gliner"))
+                    all_detections.append((text_match, start, end, score, "gliner"))
 
                 # Check again after GLiNER - skip Flair/Transformers if confident
                 found_high_conf = any(
@@ -611,8 +734,7 @@ class PersonRecognizer(EntityRecognizer):
             # Try Flair for highest accuracy (only if still not confident)
             if self.use_flair and not found_high_conf:
                 for text_match, start, end, score in detect_with_flair(processed_text):
-                    if not self._overlaps_existing(start, end, all_detections):
-                        all_detections.append((text_match, start, end, score, "flair"))
+                    all_detections.append((text_match, start, end, score, "flair"))
 
                 # Check again after Flair
                 found_high_conf = any(
@@ -622,12 +744,14 @@ class PersonRecognizer(EntityRecognizer):
             # Try Transformers BERT NER (high precision, only if still not confident)
             if self.use_transformers and not found_high_conf:
                 for text_match, start, end, score in detect_with_transformers(processed_text):
-                    if not self._overlaps_existing(start, end, all_detections):
-                        all_detections.append((text_match, start, end, score, "transformers"))
+                    all_detections.append((text_match, start, end, score, "transformers"))
+
+        # Ensemble scoring: aggregate overlapping detections
+        merged_detections = self._merge_overlapping_detections(all_detections)
 
         # Convert to RecognizerResults
         results = []
-        for text_match, start, end, score, source in all_detections:
+        for text_match, start, end, score, sources in merged_detections:
             if score < self.min_confidence:
                 continue
 
@@ -638,7 +762,7 @@ class PersonRecognizer(EntityRecognizer):
             explanation = AnalysisExplanation(
                 recognizer=self.name,
                 original_score=score,
-                pattern_name=f"person_{source}",
+                pattern_name=f"person_ensemble_{'+'.join(sources)}",
                 pattern=None,
                 validation_result=None,
             )
@@ -652,12 +776,113 @@ class PersonRecognizer(EntityRecognizer):
                     analysis_explanation=explanation,
                     recognition_metadata={
                         "recognizer_name": self.name,
-                        "detection_source": source,
+                        "detection_source": "+".join(sources),
+                        "engine_count": len(sources),
                     },
                 )
             )
 
         return results
+
+    def _merge_overlapping_detections(
+        self, detections: List[Tuple[str, int, int, float, str]]
+    ) -> List[Tuple[str, int, int, float, List[str]]]:
+        """
+        Merge overlapping detections and aggregate their scores (ensemble scoring).
+
+        When multiple engines detect overlapping spans, this method:
+        1. Groups overlapping detections together
+        2. Uses the span with the best coverage (longest match)
+        3. Aggregates scores: max_score + bonus for each additional engine
+
+        This improves confidence when multiple engines agree while avoiding
+        inflating scores unreasonably.
+
+        Returns:
+            List of (text, start, end, aggregated_score, list_of_sources)
+        """
+        if not detections:
+            return []
+
+        # Sort by start position, then by length (longest first)
+        sorted_dets = sorted(detections, key=lambda x: (x[1], -(x[2] - x[1])))
+
+        merged = []
+        i = 0
+
+        while i < len(sorted_dets):
+            text_match, start, end, score, source = sorted_dets[i]
+            sources = [source]
+            scores = [score]
+
+            # Find all overlapping detections
+            j = i + 1
+            while j < len(sorted_dets):
+                _, other_start, other_end, other_score, other_source = sorted_dets[j]
+
+                # Check for overlap (not disjoint)
+                if not (other_end <= start or other_start >= end):
+                    # Overlapping - extend the span to cover both if needed
+                    if other_start < start:
+                        start = other_start
+                    if other_end > end:
+                        end = other_end
+                        text_match = sorted_dets[j][0]  # Use longer match's text
+                    sources.append(other_source)
+                    scores.append(other_score)
+                    j += 1
+                elif other_start < end:
+                    # Continue checking nearby spans
+                    j += 1
+                else:
+                    # No more overlaps possible
+                    break
+
+            # Tiered confidence scoring model
+            # Tier 1: High confidence (any model > 0.85) → accept directly
+            # Tier 2: Ensemble check (multiple models 0.40-0.85) → aggregate
+            # Tier 3: Context boost (0.30-0.40 with pattern context) → boost
+            max_score = max(scores)
+            unique_sources = list(dict.fromkeys(sources))  # Preserve order, remove dups
+            num_engines = len(unique_sources)
+
+            # Tier 1: High confidence from any single model
+            if max_score >= 0.85:
+                final_score = max_score
+            # Tier 2: Multiple models in mid-range - aggregate scores
+            elif num_engines > 1:
+                mid_range_scores = [s for s in scores if 0.40 <= s < 0.85]
+                if len(mid_range_scores) >= 2:
+                    # Sum mid-range scores and check cumulative threshold
+                    cumulative = sum(mid_range_scores)
+                    if cumulative >= 1.2:  # At least 2 models with decent confidence
+                        # Boost based on agreement
+                        agreement_bonus = min(0.20, (num_engines - 1) * 0.07)
+                        final_score = min(0.95, max_score + agreement_bonus)
+                    else:
+                        # Standard bonus for agreement
+                        agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
+                        final_score = min(0.95, max_score + agreement_bonus)
+                else:
+                    # Single engine or low scores
+                    agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
+                    final_score = min(0.95, max_score + agreement_bonus)
+            # Tier 3: Low confidence single model - check if pattern source
+            elif 0.30 <= max_score < 0.85:
+                # Pattern-based detections (titles, labels) get context boost
+                if any(s in ('patterns', 'name_dataset') for s in unique_sources):
+                    final_score = min(0.90, max_score + 0.10)  # Modest boost
+                else:
+                    final_score = max_score
+            else:
+                final_score = max_score
+
+            merged.append((text_match, start, end, final_score, unique_sources))
+
+            # Move past all processed detections
+            i = j if j > i + 1 else i + 1
+
+        return merged
 
     def _overlaps_existing(
         self, start: int, end: int, detections: List[Tuple]
@@ -671,9 +896,10 @@ class PersonRecognizer(EntityRecognizer):
     def _is_false_positive(self, text: str) -> bool:
         """Filter out common false positives."""
         text_lower = text.lower().strip()
+        text_stripped = text.strip()
 
         # Skip if too short (likely abbreviation)
-        if len(text) <= 2:
+        if len(text_stripped) <= 2:
             return True
 
         # Skip if contains numbers
@@ -685,21 +911,73 @@ class PersonRecognizer(EntityRecognizer):
             return True
 
         # Skip if too long (likely a phrase, not a name)
-        if len(text) > 40:
+        if len(text_stripped) > 40:
             return True
 
-        # Common false positives from UI/navigation
+        # OCR artifact patterns - common from PDF extraction
+        # Ends with hyphen (line break artifact): "MOHAMMED ALDAK-"
+        if text_stripped.endswith('-'):
+            return True
+
+        # Starts with punctuation (likely fragment): ": John", "- Smith"
+        if text_stripped and text_stripped[0] in ':;,.-!?':
+            return True
+
+        # Contains unusual punctuation sequences
+        if any(seq in text for seq in ['--', '..', '__', '//', '\\\\', '||']):
+            return True
+
+        # All uppercase single word less than 4 chars (likely acronym, not name)
+        if text_stripped.isupper() and ' ' not in text_stripped and len(text_stripped) < 4:
+            return True
+
+        # Common false positives from UI/navigation/documents
         false_positives = {
+            # UI/Navigation
             "home", "back", "next", "previous", "submit", "cancel", "ok", "yes", "no",
             "save", "edit", "delete", "view", "search", "filter", "sort", "settings",
             "menu", "file", "help", "tools", "window", "close", "open", "print",
             "copy", "paste", "cut", "undo", "redo", "select", "all", "none",
+            "click", "tap", "press", "enter", "exit", "logout", "login", "signin",
+            "signup", "register", "subscribe", "unsubscribe", "download", "upload",
+            "attach", "attachment", "browse", "refresh", "reload", "update",
+
+            # Days and months
             "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
             "january", "february", "march", "april", "may", "june", "july",
             "august", "september", "october", "november", "december",
+
+            # Document/form labels
+            "label", "field", "form", "input", "output", "value", "data", "info",
+            "name", "address", "phone", "email", "date", "time", "number", "amount",
+            "total", "subtotal", "balance", "payment", "invoice", "invoices", "receipt",
+            "document", "attachment", "signature", "required", "optional", "mandatory",
+            "photo", "image", "picture", "scan", "copy", "original", "duplicate",
+
+            # Common phrases from OCR
+            "adhere", "affix", "apply", "attach", "here", "this", "that", "each",
+            "every", "unique", "please", "thank", "thanks", "regards", "sincerely",
+
+            # Action phrases
+            "do not", "must not", "cannot", "should not", "will not",
+
+            # Software/tech terms
+            "error", "warning", "success", "failed", "loading", "processing",
+            "pending", "completed", "approved", "rejected", "denied", "confirmed",
+            "version", "update", "upgrade", "install", "uninstall", "configure",
         }
         if text_lower in false_positives:
             return True
+
+        # Multi-word phrase patterns that are commonly flagged
+        phrase_patterns = [
+            "do not", "must not", "please note", "click here", "tap here",
+            "each click", "label is", "adhere your", "affix your", "apply here",
+            "open invoices", "see attached", "per attached", "as attached",
+        ]
+        for pattern in phrase_patterns:
+            if pattern in text_lower:
+                return True
 
         return False
 
@@ -743,6 +1021,7 @@ def get_person_recognizer(
             use_transformers=True,
             use_name_dataset=True,
             use_patterns=True,
+            early_exit_confidence=0.80,  # Lower threshold to allow more cascade
             spreadsheet_mode=spreadsheet_mode,
         )
     else:  # balanced

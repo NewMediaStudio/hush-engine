@@ -5,6 +5,68 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-04
+
+### Added
+- **Cities database** - ~500 major world cities for improved LOCATION detection
+  - US major metros, state capitals, and top 50 cities
+  - Canadian, European, Asian, African, South American, and Oceanian cities
+  - City lookup with country and population data
+- **Countries database** - Complete country name recognition
+  - Official names, common names, and demonyms
+  - ISO country codes mapping
+- **Text preprocessing module** - New preprocessing pipeline
+  - Text normalization for improved detection consistency
+  - OCR text cleanup and standardization
+
+### Changed
+- **PERSON detection improvements** - Recall improved to 74%
+  - Enhanced multi-NER cascade with better name matching
+  - Improved title + name detection (Dr., Mr., Mrs., etc.)
+  - Better handling of names with middle initials
+- **ADDRESS/LOCATION detection** - Recall improved to 65%
+  - Cities database integration for context-aware detection
+  - Improved international address format recognition
+  - Better street name and postal code matching
+- **OCR bounding box padding** - More accurate text region extraction
+  - Reduced edge clipping for better text capture
+  - Improved alignment for redaction
+
+### Performance
+- PERSON recall: 74% (up from previous baseline)
+- ADDRESS recall: 65% (up from previous baseline)
+- Overall detection accuracy improved across all entity types
+
+## [1.2.0] - 2026-02-02
+
+### Added
+- **AGE detection** - Detects age mentions in various formats
+  - Patterns: "25 years old", "Age: 45", "aged 30", "32-year-old"
+  - Contextual detection with entity type `AGE`
+- **SWIFT/BIC code labels** - Improved financial entity detection
+  - Better labeling for SWIFT codes in `FINANCIAL` entity type
+  - BIC code pattern recognition
+- **Currency detection improvements** - Enhanced financial patterns
+  - Currency with spaces after symbol ($100, €50)
+  - International currency formats (INR, GBP, EUR, USD)
+- **Body part medical terms** - Expanded medical NER
+  - Anatomical terms for medical document processing
+- **Title + name detection** - Better person recognition
+  - Professional titles (Dr., Prof., Rev., etc.)
+  - Honorifics combined with names
+- **Training infrastructure** - New feedback analysis system
+  - `tools/feedback_analyzer.py` for analyzing user feedback
+  - Automated recommendations for detection improvements
+  - Claude-actionable JSON output for iterative improvements
+- **Benchmark system** - Accuracy testing framework
+  - `tests/benchmark_accuracy.py` for measuring detection accuracy
+  - Historical benchmark tracking
+  - Ground truth caching
+
+### Changed
+- Detection thresholds tuned based on feedback analysis
+- Improved false positive filtering across all entity types
+
 ## [1.1.1] - 2026-02-02
 
 ### Added
@@ -145,6 +207,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File routing for images, PDFs, spreadsheets
 - RPC server for inter-process communication
 
+[1.3.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.1.1...v1.2.0
+[1.1.1]: https://github.com/NewMediaStudio/hush-engine/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/NewMediaStudio/hush-engine/compare/v1.0.0...v1.0.2
