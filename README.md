@@ -6,16 +6,31 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ## Features
 
+### Core Detection
 - **Multi-format support**: Images (PNG, JPEG, HEIC), PDFs, Spreadsheets (Excel, CSV)
 - **Comprehensive PII detection**: Names, emails, phone numbers, SSN, credit cards, API keys, crypto wallets, IBAN, age, and more
-- **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
-- **Locale-aware detection**: User-configurable locale preferences with automatic document locale detection
-- **Table detection**: Context-aware PII detection in structured data (headers boost confidence)
-- **Medical NER**: Biomedical entity recognition using scispaCy models
-- **Face detection**: OpenCV Haar cascade face detection in images
-- **Apple Vision OCR**: Native macOS optical character recognition
+- **Apple Vision OCR**: Native macOS optical character recognition with 400 DPI processing
 - **Privacy-first**: All processing happens locally, no data leaves your machine
+
+### Advanced NER
+- **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (74% recall)
+- **Medical NER**: Biomedical entity recognition using scispaCy models
+- **Company NER**: Dictionary-based company name detection
+- **Address parsing**: libpostal integration for 99.45% accuracy address detection (65% recall)
+
+### International Support
+- **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
+- **Cities database**: ~500 major world cities for improved LOCATION detection
+- **Countries database**: Complete country name and demonym recognition
+- **Locale-aware detection**: User-configurable locale preferences with automatic document locale detection
+
+### Validation & Precision
 - **Checksum validation**: Luhn, Verhoeff, Mod-11, Mod-97 algorithms for ID validation
+- **Optional LLM verification**: MLX-based local LLM verification for precision (Apple Silicon)
+- **Table detection**: Context-aware PII detection in structured data (headers boost confidence)
+
+### Additional Features
+- **Face detection**: OpenCV Haar cascade face detection in images
 - **Lightweight name database**: Curated 1,400+ names across 13 languages for fast lookup
 - **Library management**: Optional libraries (phonenumbers, spaCy, etc.) can be enabled/disabled
 - **Extensible**: Easy to add custom PII recognizers
@@ -26,7 +41,7 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 pip install hush-engine
 ```
 
-### Additional Setup
+### Required Setup
 
 The engine requires the spaCy language model:
 
@@ -34,10 +49,31 @@ The engine requires the spaCy language model:
 python -m spacy download en_core_web_lg
 ```
 
-For PDF processing, you'll need Poppler:
+For PDF processing, install Poppler:
 
 ```bash
 brew install poppler  # macOS
+```
+
+### Optional: High-Accuracy Address Detection
+
+For best address detection accuracy (99.45%), install libpostal:
+
+```bash
+brew install libpostal
+pip install postal
+```
+
+### Optional: Additional NER Models
+
+The engine automatically downloads NER models on first use. For offline setup:
+
+```bash
+# Flair NER model (~420MB)
+python -c "from flair.models import SequenceTagger; SequenceTagger.load('ner')"
+
+# GLiNER PII model (~500MB)
+python -c "from gliner import GLiNER; GLiNER.from_pretrained('urchade/gliner_multi_pii-v1')"
 ```
 
 ## Quick Start
@@ -92,28 +128,49 @@ for detection in detections:
 
 ## Supported PII Types
 
-- **Personal**: Names (PERSON), Email addresses, Phone numbers (150+ countries), Dates of birth, Age
-- **Financial**: Credit card numbers (Luhn validated), IBAN (116 countries), BIC/SWIFT, Crypto wallets
-- **Government**: SSN, National IDs (35+ countries), Passport numbers, Driver's license
-- **Medical**: Diagnoses, Medications, Lab results, ICD-10 codes, Biomedical entities
-- **Technical**: API keys, AWS keys, Stripe keys, IP addresses, MAC addresses, URLs
-- **Location**: Street addresses (international), ZIP/postal codes, GPS coordinates
-- **Biometric**: Face detection in images
-- **Demographics**: Gender identity, Age (e.g., "25 years old", "Age: 45")
+| Category | Entity Types | Notes |
+|----------|-------------|-------|
+| **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (74% recall) |
+| **Financial** | CREDIT_CARD, IBAN_CODE, FINANCIAL (SWIFT/BIC), crypto wallets | Luhn/Mod-97 validated |
+| **Government** | US_SSN, NATIONAL_ID, PASSPORT, DRIVERS_LICENSE | 35+ countries via python-stdnum |
+| **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | scispaCy biomedical NER |
+| **Technical** | AWS_ACCESS_KEY, STRIPE_KEY, IP_ADDRESS, URL, DEVICE_ID | MAC address, IMEI, UUID |
+| **Location** | LOCATION (addresses, cities, countries, coordinates) | Cities/countries databases, libpostal |
+| **Biometric** | FACE | OpenCV Haar cascade |
+| **Demographics** | GENDER, AGE | "25 years old", "Age: 45" |
+| **Organization** | COMPANY, ORGANIZATION | Dictionary + NER based |
+
+See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documentation with regulatory context (HIPAA, GDPR, CCPA).
 
 ## Architecture
 
 ### Core Components
 
-- **FileRouter**: High-level API for processing different file types
-- **PIIDetector**: Text-based PII detection using Presidio with 50+ custom recognizers
-- **TableDetector**: Context-aware detection for structured data (spreadsheets, tables)
-- **VisionOCR**: Apple Vision-powered OCR
-- **PDFProcessor**: PDF to image conversion (400 DPI for accuracy)
-- **ImageAnonymizer**: Apply red censor bars to detected areas
-- **SpreadsheetAnonymizer**: Redact PII in Excel/CSV files
-- **FaceDetector**: OpenCV Haar cascade face detection
-- **Validators**: Industry-standard validation using python-stdnum and phonenumbers
+| Component | Purpose |
+|-----------|---------|
+| **FileRouter** | High-level API for processing different file types |
+| **PIIDetector** | Text-based PII detection using Presidio with 50+ custom recognizers |
+| **PersonRecognizer** | Multi-NER cascade: spaCy, Flair, Transformers, GLiNER |
+| **TableDetector** | Context-aware detection for structured data (spreadsheets, tables) |
+| **VisionOCR** | Apple Vision-powered OCR (400 DPI) |
+| **PDFProcessor** | PDF to image conversion (400 DPI for accuracy) |
+| **ImageAnonymizer** | Apply red censor bars to detected areas |
+| **SpreadsheetAnonymizer** | Redact PII in Excel/CSV files |
+| **FaceDetector** | OpenCV Haar cascade face detection |
+| **Validators** | Industry-standard validation using python-stdnum and phonenumbers |
+| **DetectionConfig** | Runtime configuration with threshold adjustment |
+
+### NER Model Cascade
+
+The PersonRecognizer uses a consensus-based multi-model approach for high recall:
+
+1. **spaCy** (`en_core_web_lg`) - Fast, reliable baseline
+2. **Flair** (`ner`) - High accuracy sequence labeling
+3. **Transformers** (`dslim/bert-base-NER`) - BERT-based NER
+4. **GLiNER** (`urchade/gliner_multi_pii-v1`) - Zero-shot PII detection
+5. **Names Database** - Dictionary lookup for first/last names
+
+Models can be enabled/disabled via `DetectionConfig.set_enabled_integration()`.
 
 ## Custom PII Recognizers
 
@@ -195,16 +252,39 @@ text_blocks = ocr.extract_text(image_path: str) -> list[dict]
 
 ## Configuration
 
-Detection thresholds can be customized in `detection_config.py`:
+### Detection Thresholds
+
+Thresholds are stored in `~/.hush/detection_config.json` and can be customized:
 
 ```python
-CONFIDENCE_THRESHOLDS = {
-    "PERSON": 0.6,
-    "EMAIL_ADDRESS": 0.7,
-    "CREDIT_CARD": 0.8,
-    # ... customize per entity type
-}
+from hush_engine import DetectionConfig
+
+config = DetectionConfig()
+
+# Get/set thresholds
+config.set_threshold("PERSON", 0.6)
+config.set_threshold("EMAIL_ADDRESS", 0.5)
+
+# Enable/disable entity types
+config.set_enabled_entity("FACE", False)
 ```
+
+### Integration Toggles
+
+Enable/disable NER backends for performance tuning:
+
+```python
+config = DetectionConfig()
+
+# Disable heavyweight models for faster processing
+config.set_enabled_integration("flair", False)
+config.set_enabled_integration("transformers", False)
+
+# Enable LLM verification (Apple Silicon only)
+config.set_enabled_integration("mlx_verifier", True)
+```
+
+Available integrations: `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `scispacy`, `phonenumbers`, `mlx_verifier`
 
 ## Platform Requirements
 
@@ -254,22 +334,36 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 ## Roadmap
 
-- [ ] Windows/Linux support (alternative OCR engines)
+### Completed (v1.3.0)
 - [x] International PII validation (116 IBAN countries, 150+ phone patterns)
 - [x] Medical/biomedical NER (scispaCy integration)
-- [x] Face detection in images
+- [x] Face detection in images (OpenCV Haar cascade)
 - [x] Table/structured data detection
 - [x] Age detection ("25 years old", "Age: 45")
 - [x] Library management (enable/disable optional libraries)
-- [x] Locale configuration (11 locales supported)
+- [x] Locale configuration (30+ locales supported)
 - [x] Lightweight names database (1,400+ names, 13 languages)
+- [x] Multi-NER cascade for PERSON (74% recall)
+- [x] Cities database (~500 world cities)
+- [x] Countries database (complete country/demonym recognition)
+- [x] libpostal address parsing (99.45% accuracy)
+- [x] Optional LLM verification (MLX, Apple Silicon)
+
+### Planned
+- [ ] Windows/Linux support (alternative OCR engines)
 - [ ] Custom local model training
 - [ ] Batch processing optimizations
 - [ ] Video frame processing
+- [ ] GDPR Article 9 special categories (racial origin, political opinions, religious beliefs)
 
 ## Acknowledgments
 
 Built on top of:
-- Microsoft Presidio
-- Apple Vision Framework
-- spaCy NLP
+- [Microsoft Presidio](https://github.com/microsoft/presidio) - PII detection framework
+- [Apple Vision Framework](https://developer.apple.com/documentation/vision) - OCR
+- [spaCy](https://spacy.io/) - Industrial-strength NLP
+- [Flair](https://github.com/flairNLP/flair) - State-of-the-art NER
+- [GLiNER](https://github.com/urchade/GLiNER) - Zero-shot NER
+- [scispaCy](https://allenai.github.io/scispacy/) - Biomedical NER
+- [libpostal](https://github.com/openvenues/libpostal) - Address parsing
+- [python-stdnum](https://github.com/arthurdejong/python-stdnum) - ID validation

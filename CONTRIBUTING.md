@@ -17,6 +17,7 @@ Thank you for your interest in contributing to Hush Engine! This document provid
 - Python 3.10 or higher
 - macOS 10.15+ (for Apple Vision OCR)
 - Poppler (for PDF processing): `brew install poppler`
+- Optional: libpostal for high-accuracy address detection: `brew install libpostal && pip install postal`
 
 ### Installation
 
@@ -53,6 +54,22 @@ python -m pytest tests/
 - Add tests for new features
 - Ensure all tests pass before submitting PR
 - Aim for high test coverage on core detection logic
+
+### Benchmarking
+
+Run accuracy benchmarks after detection changes:
+
+```bash
+# Quick test (100 samples)
+python tests/benchmark_accuracy.py --samples 100
+
+# Full test (1000 samples)
+python tests/benchmark_accuracy.py --samples 1000
+```
+
+Current metrics (v1.3.0):
+- PERSON recall: 74%
+- ADDRESS recall: 65%
 
 ### Commits
 
@@ -128,11 +145,21 @@ def test_your_entity_detection():
 
 We especially welcome contributions for:
 
-- **International PII**: Non-US government IDs, tax numbers, etc.
+- **International PII**: Non-US government IDs, tax numbers, passport formats
 - **Domain-specific patterns**: Healthcare, legal, financial industry identifiers
 - **API keys and tokens**: New services and authentication patterns
 - **Blockchain identifiers**: Additional crypto wallet formats
+- **GDPR Article 9 categories**: Racial/ethnic origin, political opinions, religious beliefs, trade union membership
 - **Performance improvements**: Faster detection or reduced false positives
+- **False positive fixes**: Better filtering for common misclassifications
+
+### Current Priorities
+
+See [CHANGELOG.md](CHANGELOG.md) for recent improvements. Areas where we need help:
+
+1. **PERSON detection false negatives** - Unusual name formats, non-Western names
+2. **ADDRESS detection** - International address formats not covered by libpostal
+3. **Windows/Linux OCR** - Alternative to Apple Vision OCR for cross-platform support
 
 ## Code of Conduct
 

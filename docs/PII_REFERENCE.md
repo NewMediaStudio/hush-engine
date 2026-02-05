@@ -230,5 +230,5 @@ These patterns may cause false positives and should be validated:
 
 ---
 
-*Last updated: 2026-02-04*
-*Document version: 1.4 - Added cities database, countries database, preprocessing module, improved PERSON and ADDRESS recall*
+*Last updated: 2026-02-05*
+*Document version: 1.5 - Aligns with hush-engine v1.3.0. Cities database, countries database, multi-NER cascade (74% PERSON recall, 65% ADDRESS recall)*
