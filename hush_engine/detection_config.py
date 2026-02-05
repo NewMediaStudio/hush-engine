@@ -4,9 +4,12 @@ Detection Config - Manages PII detection thresholds with auto-adjustment
 """
 
 import json
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 # Engine version - single source of truth
 VERSION = "1.3.0"
@@ -28,12 +31,24 @@ DEFAULT_INTEGRATIONS = {
     "scispacy": True,        # scispaCy biomedical NER
     # Other integrations
     "phonenumbers": True,    # Google libphonenumber validation
+    # Precision verification
+    "mlx_verifier": False,   # MLX LLM verification for precision (requires: pip install hush-engine[mlx])
+}
+
+# Precision improvement feature flags (v1.4.0)
+# These control new precision enhancements and can be toggled for gradual rollout
+PRECISION_FEATURES = {
+    "spatial_filtering": True,       # Form label detection and zone penalties
+    "negative_gazetteer": True,      # Common word false positive filtering
+    "version_disambiguation": True,  # IP address vs version string filtering
+    "llm_cot_prompts": True,         # Chain-of-Thought LLM verification prompts
+    "ivw_calibration": False,        # Inverse-variance weighted calibration (requires feedback data)
 }
 
 
 # Default confidence thresholds per entity type
 DEFAULT_THRESHOLDS = {
-    "PERSON": 0.5,
+    "PERSON": 0.55,  # Base threshold - precision controlled by consensus logic
     "EMAIL_ADDRESS": 0.5,
     "PHONE_NUMBER": 0.5,
     "LOCATION": 0.5,
@@ -85,6 +100,8 @@ class DetectionConfig:
             "thresholds": DEFAULT_THRESHOLDS.copy(),
             "enabled_entities": {k: True for k in DEFAULT_THRESHOLDS.keys()},  # All enabled by default
             "enabled_integrations": DEFAULT_INTEGRATIONS.copy(),  # Detection library toggles
+            "calibrated_weights": {},  # IVW calibrated model weights
+            "calibrated_thresholds": {},  # Per-entity calibrated thresholds
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "adjustment_history": []
@@ -252,6 +269,96 @@ class DetectionConfig:
                 adjustments_made.append((entity_type, current, new_threshold, fp_rate))
 
         return adjustments_made
+
+    def get_calibrated_weights(self) -> Dict[str, float]:
+        """
+        Get calibrated model weights for NER ensemble.
+
+        Returns IVW-calibrated weights if available, otherwise returns None.
+        Callers should fall back to DEFAULT_MODEL_WEIGHTS if None.
+        """
+        return self.config.get("calibrated_weights", {}) or None
+
+    def set_calibrated_weights(self, weights: Dict[str, float]):
+        """
+        Set calibrated model weights.
+
+        Args:
+            weights: Dict mapping model names to weights (0.0 - 1.0)
+        """
+        self.config["calibrated_weights"] = weights
+        self.config["updated_at"] = datetime.now().isoformat()
+        self.save()
+        logger.info(f"Calibrated weights updated: {weights}")
+
+    def get_calibrated_threshold(self, entity_type: str) -> Optional[float]:
+        """
+        Get calibrated threshold for a specific entity type.
+
+        Returns the calibrated threshold if available, otherwise None.
+        Callers should fall back to the standard threshold if None.
+        """
+        calibrated = self.config.get("calibrated_thresholds", {})
+        return calibrated.get(entity_type)
+
+    def set_calibrated_thresholds(self, thresholds: Dict[str, float]):
+        """
+        Set calibrated thresholds per entity type.
+
+        Args:
+            thresholds: Dict mapping entity types to calibrated thresholds
+        """
+        self.config["calibrated_thresholds"] = thresholds
+        self.config["updated_at"] = datetime.now().isoformat()
+        self.save()
+        logger.info(f"Calibrated thresholds updated for {len(thresholds)} entity types")
+
+    def recalibrate(self, feedback_path: str = None) -> bool:
+        """
+        Recalibrate weights and thresholds from feedback data.
+
+        Uses the WeightCalibrator to compute IVW weights and optimal thresholds.
+
+        Args:
+            feedback_path: Path to feedback directory (default: training/feedback)
+
+        Returns:
+            True if calibration succeeded, False otherwise
+        """
+        try:
+            from hush_engine.calibration import WeightCalibrator
+        except ImportError:
+            try:
+                from .calibration import WeightCalibrator
+            except ImportError:
+                logger.warning("WeightCalibrator not available")
+                return False
+
+        if feedback_path is None:
+            # Default to training/feedback in the repo
+            feedback_path = Path(__file__).parent.parent / "training" / "feedback"
+        else:
+            feedback_path = Path(feedback_path)
+
+        if not feedback_path.exists():
+            logger.warning(f"Feedback path does not exist: {feedback_path}")
+            return False
+
+        calibrator = WeightCalibrator()
+        weights, thresholds = calibrator.calibrate(feedback_path)
+
+        # Store calibrated values
+        self.set_calibrated_weights(weights)
+
+        # Convert EntityThreshold objects to simple threshold dict
+        threshold_dict = {k: v.threshold for k, v in thresholds.items()}
+        self.set_calibrated_thresholds(threshold_dict)
+
+        # Save calibration to a separate file for inspection
+        calibration_file = self.config_path.parent / "calibration.json"
+        calibrator.save_calibration(calibration_file)
+
+        return True
 
     def reset(self):
         """Reset all thresholds to defaults"""

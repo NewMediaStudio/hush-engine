@@ -7,11 +7,13 @@ Supports Code 128, Code 39, EAN-13, EAN-8, UPC-A, UPC-E, and more.
 License: MIT (pyzbar)
 """
 
-import sys
+import logging
 from typing import List, Optional
 from dataclasses import dataclass
 import numpy as np
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 try:
     from pyzbar import pyzbar
@@ -19,7 +21,7 @@ try:
     PYZBAR_AVAILABLE = True
 except ImportError:
     PYZBAR_AVAILABLE = False
-    sys.stderr.write("[BarcodeDetector] Warning: pyzbar not installed. Barcode detection disabled.\n")
+    logger.debug("[BarcodeDetector] pyzbar not installed - barcode detection disabled")
 
 
 @dataclass

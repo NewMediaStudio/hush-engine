@@ -457,12 +457,12 @@ INITIALS_NAME_PATTERN = re.compile(
 
 # Document signature context patterns for PDFs
 # Handles: "Signed by: John Smith", "Authorized by John Doe", "Prepared by: Jane"
+# NOTE: Capture group requires uppercase start to avoid matching sentences like "Reviewed all pending"
 SIGNATURE_CONTEXT_PATTERN = re.compile(
-    r"(?:Signed|Authorized|Prepared|Submitted|Approved|Reviewed|Certified|"
-    r"Witnessed|Attested|Verified|Confirmed|Acknowledged|Executed|Notarized)"
-    r"(?:\s+by)?\s*[:.]?\s*"
-    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})",
-    re.IGNORECASE
+    r"(?:[Ss]igned|[Aa]uthorized|[Pp]repared|[Ss]ubmitted|[Aa]pproved|[Rr]eviewed|[Cc]ertified|"
+    r"[Ww]itnessed|[Aa]ttested|[Vv]erified|[Cc]onfirmed|[Aa]cknowledged|[Ee]xecuted|[Nn]otarized)"
+    r"(?:\s+[Bb]y)?\s*[:.]?\s*"
+    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})"
 )
 
 # ALL CAPS signature context: "SIGNED BY: JOHN DOE", "AUTHORIZED: ABDUL RAHMAN"
@@ -475,15 +475,15 @@ SIGNATURE_CONTEXT_CAPS_PATTERN = re.compile(
 
 # Role-based context patterns for PDFs
 # Handles: "Customer: John Smith", "Patient: Jane Doe", etc.
+# NOTE: Requires colon/period to avoid matching sentences like "Customer was notified"
 ROLE_CONTEXT_PATTERN = re.compile(
-    r"(?:Customer|Client|Patient|Employee|Applicant|Beneficiary|Cardholder|"
-    r"Account\s*Holder|Policyholder|Insured|Claimant|Member|Subscriber|"
-    r"Tenant|Landlord|Buyer|Seller|Borrower|Lender|Guarantor|"
-    r"Debtor|Creditor|Payee|Payer|Sender|Recipient|"
-    r"Driver|Owner|Registrant|Respondent|Petitioner)"
-    r"\s*[:.]?\s*"
-    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})",
-    re.IGNORECASE
+    r"(?:[Cc]ustomer|[Cc]lient|[Pp]atient|[Ee]mployee|[Aa]pplicant|[Bb]eneficiary|[Cc]ardholder|"
+    r"[Aa]ccount\s*[Hh]older|[Pp]olicyholder|[Ii]nsured|[Cc]laimant|[Mm]ember|[Ss]ubscriber|"
+    r"[Tt]enant|[Ll]andlord|[Bb]uyer|[Ss]eller|[Bb]orrower|[Ll]ender|[Gg]uarantor|"
+    r"[Dd]ebtor|[Cc]reditor|[Pp]ayee|[Pp]ayer|[Ss]ender|[Rr]ecipient|"
+    r"[Dd]river|[Oo]wner|[Rr]egistrant|[Rr]espondent|[Pp]etitioner)"
+    r"\s*[:.]\s*"  # REQUIRE colon or period (no longer optional)
+    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})"
 )
 
 # Common international name prefixes that indicate full names follow
@@ -784,8 +784,50 @@ class PersonRecognizer(EntityRecognizer):
 
         return results
 
+    # Default model accuracy weights for weighted voting (based on F1 scores)
+    # These can be overridden by IVW-calibrated weights from detection_config
+    DEFAULT_MODEL_WEIGHTS = {
+        "patterns": 1.0,       # Pattern matching has highest precision
+        "flair": 0.93,         # ~93% F1 on CoNLL-03
+        "spacy": 0.90,         # ~90% F1
+        "transformers": 0.88,  # BERT NER
+        "gliner": 0.82,        # Zero-shot ~82% F1
+        "name_dataset": 0.70,  # Dictionary lookup (high recall, lower precision)
+    }
+
+    # Alias for backward compatibility
+    MODEL_WEIGHTS = DEFAULT_MODEL_WEIGHTS
+
+    @classmethod
+    def get_model_weights(cls) -> Dict[str, float]:
+        """
+        Get model weights, preferring IVW-calibrated weights if available.
+
+        Returns calibrated weights from detection_config if set,
+        otherwise falls back to DEFAULT_MODEL_WEIGHTS.
+        """
+        try:
+            from hush_engine.detection_config import get_config
+        except ImportError:
+            try:
+                from ..detection_config import get_config
+            except ImportError:
+                return cls.DEFAULT_MODEL_WEIGHTS.copy()
+
+        config = get_config()
+        calibrated = config.get_calibrated_weights()
+
+        if calibrated:
+            # Merge calibrated with defaults (calibrated takes precedence)
+            weights = cls.DEFAULT_MODEL_WEIGHTS.copy()
+            weights.update(calibrated)
+            return weights
+
+        return cls.DEFAULT_MODEL_WEIGHTS.copy()
+
     def _merge_overlapping_detections(
-        self, detections: List[Tuple[str, int, int, float, str]]
+        self, detections: List[Tuple[str, int, int, float, str]],
+        return_decision_process: bool = False
     ) -> List[Tuple[str, int, int, float, List[str]]]:
         """
         Merge overlapping detections and aggregate their scores (ensemble scoring).
@@ -793,21 +835,25 @@ class PersonRecognizer(EntityRecognizer):
         When multiple engines detect overlapping spans, this method:
         1. Groups overlapping detections together
         2. Uses the span with the best coverage (longest match)
-        3. Aggregates scores: max_score + bonus for each additional engine
+        3. Aggregates scores with majority-vote ensemble (2+ models required)
+        4. Applies weighted voting based on model accuracy
 
-        This improves confidence when multiple engines agree while avoiding
-        inflating scores unreasonably.
+        Args:
+            detections: List of (text, start, end, score, source)
+            return_decision_process: If True, return decision log for debugging
 
         Returns:
             List of (text, start, end, aggregated_score, list_of_sources)
+            If return_decision_process=True, also returns decision_log list
         """
         if not detections:
-            return []
+            return [] if not return_decision_process else ([], [])
 
         # Sort by start position, then by length (longest first)
         sorted_dets = sorted(detections, key=lambda x: (x[1], -(x[2] - x[1])))
 
         merged = []
+        decision_log = [] if return_decision_process else None
         i = 0
 
         while i < len(sorted_dets):
@@ -838,7 +884,7 @@ class PersonRecognizer(EntityRecognizer):
                     # No more overlaps possible
                     break
 
-            # Tiered confidence scoring model
+            # Tiered confidence scoring model (original logic)
             # Tier 1: High confidence (any model > 0.85) → accept directly
             # Tier 2: Ensemble check (multiple models 0.40-0.85) → aggregate
             # Tier 3: Context boost (0.30-0.40 with pattern context) → boost
@@ -846,9 +892,24 @@ class PersonRecognizer(EntityRecognizer):
             unique_sources = list(dict.fromkeys(sources))  # Preserve order, remove dups
             num_engines = len(unique_sources)
 
+            # Apply weighted voting: weight scores by model accuracy
+            # Uses IVW-calibrated weights if available, otherwise defaults
+            model_weights = self.get_model_weights()
+            weighted_scores = []
+            for s, src in zip(scores, sources):
+                weight = model_weights.get(src, 0.80)
+                weighted_scores.append(s * weight)
+            max_weighted_score = max(weighted_scores) if weighted_scores else max_score
+
+            # Initialize for decision logging
+            tier_used = "default"
+            agreement_bonus = 0.0
+            accepted = True  # Original logic: always accept, filter by threshold later
+
             # Tier 1: High confidence from any single model
             if max_score >= 0.85:
                 final_score = max_score
+                tier_used = "tier1_high_confidence"
             # Tier 2: Multiple models in mid-range - aggregate scores
             elif num_engines > 1:
                 mid_range_scores = [s for s in scores if 0.40 <= s < 0.85]
@@ -859,29 +920,62 @@ class PersonRecognizer(EntityRecognizer):
                         # Boost based on agreement
                         agreement_bonus = min(0.20, (num_engines - 1) * 0.07)
                         final_score = min(0.95, max_score + agreement_bonus)
+                        tier_used = "tier2_strong_consensus"
                     else:
                         # Standard bonus for agreement
                         agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
                         final_score = min(0.95, max_score + agreement_bonus)
+                        tier_used = "tier2_weak_consensus"
                 else:
                     # Single engine or low scores
                     agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
                     final_score = min(0.95, max_score + agreement_bonus)
+                    tier_used = "tier2_sparse"
             # Tier 3: Low confidence single model - check if pattern source
             elif 0.30 <= max_score < 0.85:
                 # Pattern-based detections (titles, labels) get context boost
                 if any(s in ('patterns', 'name_dataset') for s in unique_sources):
                     final_score = min(0.90, max_score + 0.10)  # Modest boost
+                    tier_used = "tier3_pattern_boost"
+                elif num_engines == 1:
+                    # Single NER model below 0.85 - reject for precision
+                    # This is the main source of false positives
+                    final_score = max_score
+                    tier_used = "tier3_single_ner_rejected"
+                    accepted = False
                 else:
                     final_score = max_score
+                    tier_used = "tier3_single_low"
             else:
                 final_score = max_score
+                tier_used = "tier4_very_low"
+                accepted = False
 
-            merged.append((text_match, start, end, final_score, unique_sources))
+            # Log decision process if requested
+            if decision_log is not None:
+                decision_log.append({
+                    "text": text_match,
+                    "sources": unique_sources,
+                    "raw_scores": list(scores),
+                    "weighted_scores": weighted_scores,
+                    "max_score": max_score,
+                    "max_weighted_score": max_weighted_score,
+                    "num_engines": num_engines,
+                    "tier": tier_used,
+                    "agreement_bonus": agreement_bonus,
+                    "final_score": final_score,
+                    "accepted": accepted
+                })
+
+            # Only add detection if it was accepted by the tier logic
+            if accepted:
+                merged.append((text_match, start, end, final_score, unique_sources))
 
             # Move past all processed detections
             i = j if j > i + 1 else i + 1
 
+        if return_decision_process:
+            return merged, decision_log
         return merged
 
     def _overlaps_existing(
@@ -978,6 +1072,30 @@ class PersonRecognizer(EntityRecognizer):
         for pattern in phrase_patterns:
             if pattern in text_lower:
                 return True
+
+        # Single words that look like names but aren't (common FPs)
+        # These are words that NER models often misclassify as person names
+        name_like_words = {
+            # Food items often detected as names
+            'caesar', 'napoleon', 'benedict', 'wellington',
+            # Places commonly detected as names
+            'america', 'american', 'asia', 'asian', 'africa', 'african',
+            'europe', 'european', 'austin', 'boston', 'denver', 'phoenix',
+            # Common words misdetected as names
+            'customer', 'client', 'patient', 'member', 'agent',
+            'manager', 'director', 'president', 'chairman', 'secretary',
+            # Status words
+            'active', 'inactive', 'pending', 'approved', 'denied',
+            # Document sections
+            'summary', 'details', 'notes', 'comments', 'history',
+        }
+        if text_lower.strip() in name_like_words:
+            return True
+
+        # Single word starting with lowercase is not a name
+        # (Unless it's a known name from name_dataset)
+        if ' ' not in text_stripped and text_stripped[0].islower():
+            return True
 
         return False
 

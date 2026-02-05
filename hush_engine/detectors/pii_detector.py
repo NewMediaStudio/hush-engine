@@ -85,9 +85,36 @@ except ImportError:
 
 # Package version - import from central config
 try:
-    from hush_engine.detection_config import VERSION
+    from hush_engine.detection_config import VERSION, get_config
 except ImportError:
-    from ..detection_config import VERSION
+    from ..detection_config import VERSION, get_config
+
+# LLM Verifier for precision improvement (Apple Silicon only)
+try:
+    from hush_engine.detectors.llm_verifier import get_verifier, LLMVerifier
+    LLM_VERIFIER_AVAILABLE = True
+except ImportError:
+    try:
+        from .llm_verifier import get_verifier, LLMVerifier
+        LLM_VERIFIER_AVAILABLE = True
+    except ImportError:
+        LLM_VERIFIER_AVAILABLE = False
+        get_verifier = None
+        LLMVerifier = None
+
+# Negative gazetteer for false positive suppression
+try:
+    from hush_engine.data.negative_gazetteer import is_negative_match, is_single_common_word
+    NEGATIVE_GAZETTEER_AVAILABLE = True
+except ImportError:
+    try:
+        from ..data.negative_gazetteer import is_negative_match, is_single_common_word
+        NEGATIVE_GAZETTEER_AVAILABLE = True
+    except ImportError:
+        NEGATIVE_GAZETTEER_AVAILABLE = False
+        is_negative_match = lambda text, entity_type: False
+        is_single_common_word = lambda text, entity_type: False
+
 __version__ = VERSION
 
 # Import locale support
@@ -113,7 +140,8 @@ except ImportError:
 try:
     from company_named_entity_recognition import find_companies
     COMPANY_NER_AVAILABLE = True
-except ImportError:
+except (ImportError, FileNotFoundError, Exception) as e:
+    # Package may be missing or have missing data files
     COMPANY_NER_AVAILABLE = False
     find_companies = None
 
@@ -4226,11 +4254,15 @@ class PIIDetector:
         """
         Detect likely OCR garbage that should be filtered from PII detection.
 
-        OCR artifacts often have:
+        Uses LARVPC (Low Alphanumeric Ratio, Vowel-Poor Characters) rules:
         - Random mixed case within words (not acronyms): "biRshday", "mea bYut"
         - Unusual punctuation or underscores within text
         - Incomplete words ending with dash
         - Very short fragments
+        - Low alphanumeric density (<50% for tokens >5 chars)
+        - Extreme consonant/vowel ratio (<10% vowels in alphabetic strings)
+        - Multiple distinct punctuation marks (OCR noise)
+        - Repeated identical characters (4+ consecutive)
 
         Args:
             text: The detected text to check
@@ -4256,6 +4288,32 @@ class PIIDetector:
 
         # Contains newlines or excessive whitespace (OCR line breaks)
         if '\n' in text or '\r' in text or '  ' in text:
+            return True
+
+        # LARVPC Rule 1: Alphanumeric density < 50% for tokens > 5 chars
+        if len(text) > 5:
+            alnum_count = sum(1 for c in text if c.isalnum())
+            if alnum_count / len(text) < 0.50:
+                return True
+
+        # LARVPC Rule 2: 4+ identical consecutive characters (e.g., "XXXX", "----")
+        if re.search(r'(.)\1{3,}', text):
+            return True
+
+        # LARVPC Rule 3: Consonant/vowel ratio for alphabetic strings
+        # If < 10% vowels in a purely alphabetic string, likely garbage
+        alpha_only = ''.join(c for c in text.lower() if c.isalpha())
+        if len(alpha_only) > 5:
+            vowels = set('aeiou')
+            vowel_count = sum(1 for c in alpha_only if c in vowels)
+            vowel_ratio = vowel_count / len(alpha_only)
+            if vowel_ratio < 0.10:
+                return True
+
+        # LARVPC Rule 4: Multiple distinct punctuation marks (>2 types)
+        # Common in OCR misinterpretation of graphical elements
+        punct_chars = set(c for c in text if c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
+        if len(punct_chars) > 2:
             return True
 
         # Check for words with random capitalization in the middle
@@ -4292,6 +4350,15 @@ class PIIDetector:
 
         for entity in entities:
             entity_text = entity.text.strip()
+
+            # Filter using negative gazetteer (common words, brand names, etc.)
+            # This catches high-frequency false positives for PERSON, COMPANY, LOCATION
+            if entity.entity_type in ("PERSON", "COMPANY", "LOCATION", "ADDRESS"):
+                if is_negative_match(entity_text, entity.entity_type):
+                    continue
+                # For COMPANY: filter single common words without corporate suffix
+                if is_single_common_word(entity_text, entity.entity_type):
+                    continue
 
             # Filter NATIONAL_ID false positives
             if entity.entity_type == "NATIONAL_ID":
@@ -4364,6 +4431,10 @@ class PIIDetector:
                 # Skip "X years" patterns - these are durations, not dates
                 # Examples: "12 years", "over 10 years", "19 years", "18 years"
                 if re.match(r'^(?:over\s+)?(\d+)\s*years?$', entity_text.lower()):
+                    continue
+                # Skip other duration patterns: hours, days, weeks, months, etc.
+                # Examples: "48 hours", "3 months", "6 months", "60 credit hours", "7 business days"
+                if re.match(r'^(?:over\s+)?(\d+)\s*(?:credit\s+)?(?:hours?|minutes?|seconds?|days?|weeks?|months?|business\s+days?)$', entity_text.lower()):
                     continue
                 # Skip decade references like "the 1920s", "the 1990s"
                 if re.match(r'^the\s+\d{4}s$', entity_text.lower()):
@@ -4454,8 +4525,12 @@ class PIIDetector:
                 if len(digits) == 15 and digits[:2] in ('35', '86', '49', '01', '45', '36', '87', '46'):
                     continue
 
-            # Filter MEDICAL false positives (from name patterns)
+            # Filter MEDICAL false positives (from name patterns and OCR artifacts)
             if entity.entity_type == "MEDICAL":
+                # Skip OCR artifacts (random case, underscores, incomplete words)
+                # Examples: "clTse", "Askreffect", "cqNtain", "Americsn", "CRuSe betetr"
+                if self._is_ocr_artifact(entity_text):
+                    continue
                 # Skip if it looks like a person name (Title Case, no medical keywords)
                 if entity.confidence < 0.6:
                     # Check if it's a person name pattern
@@ -4512,6 +4587,41 @@ class PIIDetector:
                             pattern_name=entity.pattern_name,
                             locale=entity.locale
                         )
+
+            # Filter IP_ADDRESS false positives (version strings like "v1.2.3.4", "Chrome 110.0.5481.77")
+            if entity.entity_type == "IP_ADDRESS":
+                # Check for version context in preceding text (30 chars)
+                context_start = max(0, entity.start - 30)
+                preceding_text = text[context_start:entity.start].lower()
+
+                version_indicators = [
+                    'v', 'version', 'build', 'release', 'os', 'chrome', 'firefox',
+                    'safari', 'edge', 'node', 'python', 'java', 'php', 'ruby',
+                    'macos', 'windows', 'linux', 'ios', 'android', 'sdk', 'api',
+                    'ver', 'rev', 'revision', 'update', 'patch', 'hotfix'
+                ]
+
+                # Check if preceded by version indicator
+                preceding_words = preceding_text.split()[-2:] if preceding_text else []
+                if any(indicator in preceding_words for indicator in version_indicators):
+                    continue
+
+                # Also check for version pattern immediately before (v1.2.3.4, version 1.2.3.4)
+                if re.search(r'(?:^|[\s(])v?\d+\.\d+\.', preceding_text):
+                    continue
+
+                # Check for identical-octet patterns (e.g., 1.1.1.1, 0.0.0.0)
+                # Filter if in tabular context (3+ IP-like patterns nearby)
+                octets = entity_text.split('.')
+                if len(octets) == 4 and len(set(octets)) == 1:
+                    # All octets identical - check if in tabular/list context
+                    window_start = max(0, entity.start - 200)
+                    window_end = min(len(text), entity.end + 200)
+                    window = text[window_start:window_end]
+                    ip_count = len(re.findall(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', window))
+                    if ip_count >= 3:
+                        # Multiple similar patterns suggest tabular data or placeholders
+                        continue
 
             # Filter ADDRESS/LOCATION false positives
             if entity.entity_type in ("LOCATION", "ADDRESS"):
@@ -4593,6 +4703,18 @@ class PIIDetector:
                 sentence_indicators = ['i am', "i'm", 'we are', 'they are', 'you are', 'my name is', 'about me']
                 if any(indicator in text_lower for indicator in sentence_indicators):
                     continue
+                # Skip medium-length text (10-20 chars) that looks like a sentence fragment
+                # These often lack address indicators but are picked up by NER
+                # Examples: "focus on sales", "work in IT", "based in London" (without street/zip)
+                if 10 <= len(entity_text) <= 20:
+                    # Require at least one address-like indicator
+                    has_number_prefix = re.match(r'^\d+\s+', entity_text)  # Street number
+                    has_comma_separator = ',' in entity_text  # City, State format
+                    has_street_suffix = re.search(r'\b(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|way|ct|court)\b', text_lower)
+                    if not (has_number_prefix or has_comma_separator or has_street_suffix):
+                        # This looks like a phrase, not an address
+                        if entity.confidence < 0.70:
+                            continue
                 # Skip single words that are likely city/country names used in non-address contexts
                 words = entity_text.split()
                 if len(words) == 1 and len(entity_text) < 15:
@@ -4857,6 +4979,15 @@ class PIIDetector:
                 # Skip OCR artifacts (random case, underscores, incomplete words)
                 if self._is_ocr_artifact(entity_text):
                     continue
+                # Skip form labels ending with colon (e.g., " Name: L", "Patient Name:")
+                if entity_text.strip().endswith(':') and len(entity_text) < 20:
+                    continue
+                # Skip patterns with pipe characters (table fragments)
+                if '|' in entity_text:
+                    continue
+                # Skip text with spaces in the middle of words (OCR artifacts like "mu Nt")
+                if re.search(r'\b[a-z]\s[a-z]\b', entity_text.lower()):
+                    continue
                 # Skip very short text (allow 3-letter names like Roy, Tom, Amy)
                 if len(entity_text) <= 2:
                     continue
@@ -4991,6 +5122,22 @@ class PIIDetector:
                 }
                 if text_lower in occupation_phrases:
                     continue
+                # Skip sentence-like phrases containing auxiliary verb + noun/verb patterns
+                # Examples: "customer was notified", "patient is scheduled", "applicant has submitted"
+                # These are sentences describing actions, not person names
+                # Pattern: word + (is|are|was|were|has|have|had|will|would|can|could) + word
+                if re.search(r'\b(?:is|are|was|were|has|have|had|will|would|can|could|should|must|may|might)\s+(?:not\s+)?\w+', text_lower):
+                    # Only filter if there are 3+ words (to avoid filtering "Smith was" type partial names)
+                    if len(entity_text.split()) >= 3:
+                        continue
+                # Skip text starting with common article + noun patterns (not names)
+                # Examples: "the customer", "a patient", "the applicant", "an employee"
+                if re.match(r'^(?:the|a|an)\s+(?:customer|patient|applicant|employee|user|client|member|recipient|subscriber|participant|beneficiary|holder|owner|borrower|tenant|landlord|vendor|supplier|buyer|seller)s?\b', text_lower):
+                    continue
+                # Skip phrases ending with preposition (incomplete sentence fragments)
+                # Examples: "responded to", "applied for", "submitted by"
+                if len(entity_text.split()) >= 2 and re.search(r'\s(?:to|for|by|with|from|in|at|on|of|about|after|before|during|through|between|among|under|over|into|onto|upon)$', text_lower):
+                    continue
 
             # Filter COORDINATES false positives
             if entity.entity_type == "COORDINATES":
@@ -5002,6 +5149,15 @@ class PIIDetector:
             if entity.entity_type == "COMPANY":
                 # Skip OCR artifacts (random case, underscores, incomplete words)
                 if self._is_ocr_artifact(entity_text):
+                    continue
+                # Skip IP address label patterns: "IPV4_29.217.74.44", "IP: 192.168.1.1"
+                if re.match(r'^(?:IPV?[46]?[_:\s]|IP[_:\s])', entity_text, re.IGNORECASE):
+                    continue
+                # Skip sentences (contain period followed by space and capital or end of text)
+                if re.search(r'\.\s+[A-Z]', entity_text) or entity_text.count('.') > 1:
+                    continue
+                # Skip patterns with pipe characters (table fragments)
+                if '|' in entity_text:
                     continue
                 # Skip number-ID patterns: "897-1647 ID", "200 annually"
                 # Pattern: numbers followed by ID/annually/monthly/weekly/daily
@@ -5143,6 +5299,12 @@ class PIIDetector:
 
             # Filter DATE_TIME false positives (dates are not PII in most contexts)
             if entity.entity_type == "DATE_TIME":
+                # Skip OCR artifacts with pipe characters (table fragments)
+                if '|' in entity_text:
+                    continue
+                # Skip patterns with excessive whitespace (table artifacts)
+                if re.search(r'\s{3,}', entity_text):
+                    continue
                 # Skip generic date phrases (fiscal year, month names, etc.)
                 date_false_positives = {
                     'the fiscal year', 'fiscal year ending', 'fiscal year ended',
@@ -5164,6 +5326,12 @@ class PIIDetector:
 
             # Filter FINANCIAL false positives
             if entity.entity_type == "FINANCIAL":
+                # Skip OCR artifacts with pipe characters (table fragments)
+                if '|' in entity_text:
+                    continue
+                # Skip OCR artifacts (random case, underscores, incomplete words)
+                if self._is_ocr_artifact(entity_text):
+                    continue
                 # Skip standalone negative numbers without currency symbol (e.g., "-50", "-6286")
                 # These are typically IDs, offsets, or numeric data, not financial amounts
                 if re.match(r'^-\d+$', entity_text):
@@ -5322,6 +5490,9 @@ class PIIDetector:
                             locale=None
                         ))
 
+        # Pass 8: LLM verification for precision (if enabled)
+        entities = self._verify_with_llm(entities, text)
+
         return entities
 
     def _deduplicate_entities(self, entities: List[PIIEntity]) -> List[PIIEntity]:
@@ -5349,6 +5520,114 @@ class PIIDetector:
                 deduplicated.append(entity)
 
         return deduplicated
+
+    def _verify_with_llm(
+        self,
+        entities: List[PIIEntity],
+        text: str
+    ) -> List[PIIEntity]:
+        """
+        Verify mid-confidence detections using local LLM (Apple Silicon only).
+
+        Uses MLX-based Llama model to assess surrounding context and filter
+        false positives. Only verifies detections in the 0.40-0.80 confidence
+        range to balance precision gains with latency.
+
+        Args:
+            entities: List of detected PII entities
+            text: Original text for context extraction
+
+        Returns:
+            List of entities with false positives removed
+        """
+        if not LLM_VERIFIER_AVAILABLE:
+            return entities
+
+        # Check if LLM verification is enabled in config
+        config = get_config()
+        if not config.is_integration_enabled("mlx_verifier"):
+            return entities
+
+        try:
+            verifier = get_verifier(enabled=True)
+            if not verifier.is_available():
+                return entities
+        except Exception:
+            return entities
+
+        verified_entities = []
+        for entity in entities:
+            # High confidence (>=0.85): skip verification, keep entity
+            if entity.confidence >= 0.85:
+                verified_entities.append(entity)
+                continue
+
+            # Low confidence (<0.40): skip verification, keep entity
+            # (already filtered by threshold)
+            if entity.confidence < 0.40:
+                verified_entities.append(entity)
+                continue
+
+            # Mid-range confidence (0.40-0.85): verify with LLM
+            # Extract 5-word context on each side
+            context = self._extract_context(text, entity.start, entity.end, window=5)
+
+            try:
+                is_confirmed = verifier.verify_pii(
+                    candidate_text=entity.text,
+                    entity_type=entity.entity_type,
+                    context=context
+                )
+
+                if is_confirmed:
+                    verified_entities.append(entity)
+                # else: drop the entity (LLM said NO)
+
+            except Exception:
+                # On error, keep the entity
+                verified_entities.append(entity)
+
+        return verified_entities
+
+    def _extract_context(
+        self,
+        text: str,
+        start: int,
+        end: int,
+        window: int = 5
+    ) -> str:
+        """
+        Extract surrounding context words for LLM verification.
+
+        Args:
+            text: Full text
+            start: Entity start position
+            end: Entity end position
+            window: Number of words on each side
+
+        Returns:
+            Context string with entity highlighted
+        """
+        # Get text before and after entity
+        before_text = text[:start]
+        after_text = text[end:]
+        entity_text = text[start:end]
+
+        # Extract last N words before
+        before_words = before_text.split()[-window:] if before_text else []
+
+        # Extract first N words after
+        after_words = after_text.split()[:window] if after_text else []
+
+        # Build context with entity in brackets
+        context_parts = []
+        if before_words:
+            context_parts.append(" ".join(before_words))
+        context_parts.append(f"[{entity_text}]")
+        if after_words:
+            context_parts.append(" ".join(after_words))
+
+        return " ".join(context_parts)
 
     def _validate_entities(
         self,

@@ -18,6 +18,15 @@ from detectors import PIIDetector, TableDetector, ContextAwarePIIDetector
 from detectors.face_detector import FaceDetector
 from detectors.qr_detector import QRDetector
 from detectors.barcode_detector import BarcodeDetector
+
+# Spatial filtering for precision improvement
+try:
+    from detectors.spatial_filter import apply_spatial_filtering, create_spatial_context
+    SPATIAL_FILTER_AVAILABLE = True
+except ImportError:
+    SPATIAL_FILTER_AVAILABLE = False
+    apply_spatial_filtering = None
+    create_spatial_context = None
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
 from image_optimizer import optimize_image
@@ -495,6 +504,31 @@ class FileRouter:
         except Exception as e:
             print(f"Barcode detection error: {e}", file=sys.stderr)
 
+        # Apply spatial filtering for improved precision
+        if SPATIAL_FILTER_AVAILABLE and pii_detections and all_text_blocks:
+            try:
+                # Get image dimensions for spatial context
+                from PIL import Image
+                img = Image.open(input_path)
+                page_width, page_height = img.size
+
+                # Create spatial context with all text detections
+                spatial_context = create_spatial_context(
+                    page_width=float(page_width),
+                    page_height=float(page_height),
+                    text_blocks=all_text_blocks
+                )
+
+                # Apply spatial filtering to text-based PII detections only
+                # (Face, QR, Barcode don't need form label filtering)
+                text_pii = [d for d in pii_detections if d['entity_type'] not in ('FACE', 'QR_CODE', 'BARCODE')]
+                other_pii = [d for d in pii_detections if d['entity_type'] in ('FACE', 'QR_CODE', 'BARCODE')]
+
+                filtered_text_pii = apply_spatial_filtering(text_pii, spatial_context)
+                pii_detections = filtered_text_pii + other_pii
+            except Exception as e:
+                print(f"Spatial filtering error (continuing without): {e}", file=sys.stderr)
+
         return {
             'detections': pii_detections,
             'all_text_blocks': all_text_blocks
@@ -653,12 +687,62 @@ class FileRouter:
                 # Clean up temporary file
                 os.unlink(temp_path)
 
+        # Apply spatial filtering for improved precision (per page)
+        if SPATIAL_FILTER_AVAILABLE and all_detections and all_text_blocks:
+            try:
+                # Group detections and text blocks by page
+                from collections import defaultdict
+                detections_by_page = defaultdict(list)
+                text_blocks_by_page = defaultdict(list)
+
+                for det in all_detections:
+                    page = det.get('page', 1)
+                    detections_by_page[page].append(det)
+
+                for block in all_text_blocks:
+                    page = block.get('page', 1)
+                    text_blocks_by_page[page].append(block)
+
+                # Apply spatial filtering per page
+                filtered_all = []
+                for page_num in sorted(detections_by_page.keys()):
+                    page_dets = detections_by_page[page_num]
+                    page_blocks = text_blocks_by_page.get(page_num, [])
+
+                    if not page_blocks:
+                        filtered_all.extend(page_dets)
+                        continue
+
+                    # Get page dimensions from first text block bbox
+                    # (or use a default - will be improved when we track page dimensions)
+                    page_width = 612.0  # Standard letter width in pixels (approximate)
+                    page_height = 792.0  # Standard letter height in pixels (approximate)
+
+                    # Create spatial context
+                    spatial_context = create_spatial_context(
+                        page_width=page_width,
+                        page_height=page_height,
+                        text_blocks=page_blocks
+                    )
+
+                    # Apply spatial filtering to text-based PII only
+                    text_pii = [d for d in page_dets if d['entity_type'] not in ('FACE', 'QR_CODE', 'BARCODE')]
+                    other_pii = [d for d in page_dets if d['entity_type'] in ('FACE', 'QR_CODE', 'BARCODE')]
+
+                    filtered_text_pii = apply_spatial_filtering(text_pii, spatial_context)
+                    filtered_all.extend(filtered_text_pii)
+                    filtered_all.extend(other_pii)
+
+                all_detections = filtered_all
+            except Exception as e:
+                print(f"Spatial filtering error (continuing without): {e}", file=sys.stderr)
+
         return {
             'detections': all_detections,
             'all_text_blocks': all_text_blocks,
             'total_pages': total_pages
         }
-    
+
     def get_pdf_page_image(self, input_path: str, page_number: int, optimize: bool = False) -> Dict[str, str]:
         """
         Get a specific page from a PDF as a JPG image (optimized for preview)

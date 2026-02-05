@@ -15,14 +15,13 @@ from datetime import datetime
 from collections import defaultdict
 from typing import List, Dict, Any, Optional
 
-# Add hush_engine to path
-HUSH_ENGINE_PATH = Path(__file__).parent.parent / "hush_engine"
-sys.path.insert(0, str(HUSH_ENGINE_PATH))
+# Add repo root to path for hush_engine imports
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
-from detectors.pii_detector import PIIDetector
+from hush_engine.detectors.pii_detector import PIIDetector
 
 # Paths - use repo-relative paths
-REPO_ROOT = Path(__file__).parent.parent
 FEEDBACK_DIR = REPO_ROOT / "training" / "feedback"
 OUTPUT_DIR = REPO_ROOT / "training" / "analysis"
 
@@ -30,10 +29,19 @@ OUTPUT_DIR = REPO_ROOT / "training" / "analysis"
 class FeedbackAnalyzer:
     """Analyzes user feedback to identify detection improvements."""
 
-    def __init__(self):
-        self.detector = PIIDetector()
+    def __init__(self, skip_reanalysis: bool = False):
+        self._detector = None
+        self._skip_reanalysis = skip_reanalysis
         self.feedback_items: List[Dict] = []
         self.analysis_results: Dict[str, Any] = {}
+
+    @property
+    def detector(self):
+        """Lazy-load detector only when needed."""
+        if self._detector is None:
+            print("Loading PII detector for verification...")
+            self._detector = PIIDetector()
+        return self._detector
 
     def load_feedback(self) -> int:
         """Load all feedback files from the feedback directory."""
@@ -149,20 +157,35 @@ class FeedbackAnalyzer:
 
         return patterns
 
-    def re_analyze_texts(self, categories: Dict[str, List[Dict]]) -> Dict[str, Any]:
-        """Re-run detection on feedback texts to verify current behavior."""
+    def re_analyze_texts(self, categories: Dict[str, List[Dict]], max_samples: int = 30) -> Dict[str, Any]:
+        """Re-run detection on a sample of feedback texts to verify current behavior.
+
+        Args:
+            categories: Categorized feedback items
+            max_samples: Maximum items to re-analyze per category (default 30)
+        """
+        import random
+
         verification = {
             'still_false_positives': [],
             'now_detected': [],
             'still_missed': [],
+            'samples_checked': 0,
         }
 
-        # Check if false positives are still being detected
-        for item in categories['false_positives']:
+        # Sample false positives for re-analysis
+        fp_items = categories['false_positives']
+        fp_sample = random.sample(fp_items, min(len(fp_items), max_samples)) if fp_items else []
+
+        print(f"  Re-analyzing {len(fp_sample)} false positive samples...")
+        for i, item in enumerate(fp_sample):
+            if i > 0 and i % 10 == 0:
+                print(f"    Progress: {i}/{len(fp_sample)}")
             text = item.get('detectedText', '')
             if text:
                 entities = self.detector.analyze_text(text)
                 detected_types = [e.entity_type for e in entities]
+                verification['samples_checked'] += 1
                 if item.get('detectedEntityType') in detected_types:
                     verification['still_false_positives'].append({
                         'text': text,
@@ -170,13 +193,20 @@ class FeedbackAnalyzer:
                         'current_detections': detected_types,
                     })
 
-        # Check if missed detections are now caught
-        for item in categories['missed_detections']:
+        # Sample missed detections for re-analysis
+        md_items = categories['missed_detections']
+        md_sample = random.sample(md_items, min(len(md_items), max_samples)) if md_items else []
+
+        print(f"  Re-analyzing {len(md_sample)} missed detection samples...")
+        for i, item in enumerate(md_sample):
+            if i > 0 and i % 10 == 0:
+                print(f"    Progress: {i}/{len(md_sample)}")
             text = item.get('detectedText', '')
             suggested = item.get('suggestedEntityTypes', [])
             if text:
                 entities = self.detector.analyze_text(text)
                 detected_types = [e.entity_type for e in entities]
+                verification['samples_checked'] += 1
                 if any(s in detected_types for s in suggested):
                     verification['now_detected'].append({
                         'text': text,
@@ -272,12 +302,23 @@ class FeedbackAnalyzer:
         # Analyze patterns
         patterns = self.analyze_patterns(categories)
 
-        # Re-analyze with current detector
-        print("\nVerifying with current detector...")
-        verification = self.re_analyze_texts(categories)
-        print(f"  - Still false positives: {len(verification['still_false_positives'])}")
-        print(f"  - Now detected: {len(verification['now_detected'])}")
-        print(f"  - Still missed: {len(verification['still_missed'])}")
+        # Re-analyze with current detector (unless skipped)
+        if self._skip_reanalysis:
+            print("\nSkipping re-analysis verification (--skip-reanalysis)")
+            verification = {
+                'still_false_positives': [],
+                'now_detected': [],
+                'still_missed': [],
+                'samples_checked': 0,
+                'skipped': True,
+            }
+        else:
+            print("\nVerifying sample with current detector...")
+            verification = self.re_analyze_texts(categories)
+            print(f"  - Samples checked: {verification.get('samples_checked', 0)}")
+            print(f"  - Still false positives: {len(verification['still_false_positives'])}")
+            print(f"  - Now detected: {len(verification['now_detected'])}")
+            print(f"  - Still missed: {len(verification['still_missed'])}")
 
         # Generate action items
         action_items = self.generate_action_items(categories, patterns, verification)
@@ -435,6 +476,8 @@ def main():
                        help='Only clear feedback without analysis')
     parser.add_argument('--mark-processed', action='store_true',
                        help='Mark current feedback as processed (after implementing fixes)')
+    parser.add_argument('--skip-reanalysis', action='store_true',
+                       help='Skip re-analysis verification (faster, uses cached patterns only)')
     args = parser.parse_args()
 
     if args.clear_only:
@@ -450,7 +493,7 @@ def main():
             print("No feedback files to mark as processed.")
         return
 
-    analyzer = FeedbackAnalyzer()
+    analyzer = FeedbackAnalyzer(skip_reanalysis=args.skip_reanalysis)
     results = analyzer.run_analysis()
 
     if 'error' not in results:

@@ -11,9 +11,11 @@ Usage:
     optimize_image("/path/to/image.jpg", "/path/to/output.jpg")  # To different file
 """
 
-import sys
+import logging
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # Optional imports - optimization is best-effort
 try:
@@ -21,14 +23,14 @@ try:
     ZOPFLI_AVAILABLE = True
 except ImportError:
     ZOPFLI_AVAILABLE = False
-    sys.stderr.write("[ImageOptimizer] zopfli not installed, PNG optimization disabled\n")
+    logger.debug("[ImageOptimizer] zopfli not installed - PNG optimization disabled")
 
 try:
     from mozjpeg_lossless_optimization import optimize as mozjpeg_optimize
     MOZJPEG_AVAILABLE = True
 except ImportError:
     MOZJPEG_AVAILABLE = False
-    sys.stderr.write("[ImageOptimizer] mozjpeg-lossless-optimization not installed, JPEG optimization disabled\n")
+    logger.debug("[ImageOptimizer] mozjpeg-lossless-optimization not installed - JPEG optimization disabled")
 
 
 def optimize_png(input_path: str, output_path: Optional[str] = None) -> str:
