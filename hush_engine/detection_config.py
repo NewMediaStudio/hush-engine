@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 # Engine version - single source of truth
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 
 # Detection library/integration toggles
 # These control which detection backends are enabled

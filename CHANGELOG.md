@@ -5,6 +5,39 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-06
+
+### Added
+- **LightGBM NER classifiers** - Fast, lightweight token classification
+  - 5-10x faster than transformer-based models
+  - ~10MB total model size (vs 1GB+ for BERT/GLiNER)
+  - Classifiers for PERSON, LOCATION, ORGANIZATION, DATE_TIME
+  - Feature extraction based on token context, POS tags, and character patterns
+  - `tools/train_lgbm_ner.py` for training custom classifiers
+- **New entity types** for comprehensive PII coverage
+  - `BIOMETRIC` - Fingerprints, facial recognition, iris scans
+  - `CREDENTIAL` - Passwords, PINs, API keys (consolidates AWS_ACCESS_KEY, STRIPE_KEY)
+  - `ID` - Customer ID, Employee ID, generic identifiers
+  - `NATIONAL_ID` - SSN, passport, driver's license (consolidates country-specific IDs)
+  - `NETWORK` - MAC addresses, device IDs, cookies, IMEI
+  - `VEHICLE` - VIN, license plates
+- **Precision improvement features**
+  - Spatial filtering for form label detection and zone penalties
+  - Negative gazetteer for common word false positive filtering
+  - Version string disambiguation for IP addresses
+  - Optional IVW calibration from feedback data
+
+### Changed
+- **NER model defaults** - Optimized for speed/accuracy balance
+  - LightGBM NER now enabled by default
+  - Heavy models (Flair, Transformers, GLiNER) disabled by default
+  - Install with `pip install hush-engine[accurate]` for high-accuracy mode
+
+### Removed
+- **LLM verifier** - Removed MLX-based LLM verification
+  - Replaced by more efficient LightGBM classifiers
+  - Removes ~1GB model download requirement
+
 ## [1.3.0] - 2026-02-04
 
 ### Added
@@ -207,6 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File routing for images, PDFs, spreadsheets
 - RPC server for inter-process communication
 
+[1.4.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/NewMediaStudio/hush-engine/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/NewMediaStudio/hush-engine/compare/v1.1.0...v1.1.1

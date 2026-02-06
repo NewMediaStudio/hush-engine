@@ -13,6 +13,7 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 - **Privacy-first**: All processing happens locally, no data leaves your machine
 
 ### Advanced NER
+- **LightGBM NER classifiers**: Fast, lightweight token classification (5-10x faster, ~10MB models)
 - **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (74% recall)
 - **Medical NER**: Disease and drug detection using Fast Data Science libraries (MIT, zero dependencies)
 - **Company NER**: Dictionary-based company name detection
@@ -26,7 +27,7 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ### Validation & Precision
 - **Checksum validation**: Luhn, Verhoeff, Mod-11, Mod-97 algorithms for ID validation
-- **Optional LLM verification**: MLX-based local LLM verification for precision (Apple Silicon)
+- **Spatial filtering**: Form label detection and zone penalties for precision
 - **Table detection**: Context-aware PII detection in structured data (headers boost confidence)
 
 ### Additional Features
@@ -132,13 +133,16 @@ for detection in detections:
 |----------|-------------|-------|
 | **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (74% recall) |
 | **Financial** | CREDIT_CARD, IBAN_CODE, FINANCIAL (SWIFT/BIC), crypto wallets | Luhn/Mod-97 validated |
-| **Government** | US_SSN, NATIONAL_ID, PASSPORT, DRIVERS_LICENSE | 35+ countries via python-stdnum |
+| **Government** | NATIONAL_ID (SSN, passport, driver's license) | 35+ countries via python-stdnum |
 | **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | Fast Data Science NER |
-| **Technical** | AWS_ACCESS_KEY, STRIPE_KEY, IP_ADDRESS, URL, DEVICE_ID | MAC address, IMEI, UUID |
+| **Technical** | CREDENTIAL (API keys, tokens), IP_ADDRESS, URL | AWS, Stripe, GitHub tokens |
+| **Network** | NETWORK (MAC, IMEI, UUID, cookies, device IDs) | Device identifiers |
 | **Location** | LOCATION (addresses, cities, countries, coordinates) | Cities/countries databases, libpostal |
-| **Biometric** | FACE | OpenCV Haar cascade |
+| **Biometric** | BIOMETRIC, FACE | Fingerprint IDs, facial recognition, OpenCV |
 | **Demographics** | GENDER, AGE | "25 years old", "Age: 45" |
 | **Organization** | COMPANY, ORGANIZATION | Dictionary + NER based |
+| **Vehicle** | VEHICLE (VIN, license plates) | VIN validation |
+| **Generic** | ID (customer ID, employee ID, generic IDs) | Pattern-based |
 
 See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documentation with regulatory context (HIPAA, GDPR, CCPA).
 
@@ -162,13 +166,19 @@ See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documenta
 
 ### NER Model Cascade
 
-The PersonRecognizer uses a consensus-based multi-model approach for high recall:
+The PersonRecognizer uses a tiered approach balancing speed and accuracy:
 
-1. **spaCy** (`en_core_web_lg`) - Fast, reliable baseline
-2. **Flair** (`ner`) - High accuracy sequence labeling
-3. **Transformers** (`dslim/bert-base-NER`) - BERT-based NER
-4. **GLiNER** (`urchade/gliner_multi_pii-v1`) - Zero-shot PII detection
-5. **Names Database** - Dictionary lookup for first/last names
+**Lightweight (default, fast)**:
+1. **LightGBM NER** - Fast token classifiers (~10MB, 5-10x faster than transformers)
+2. **spaCy** (`en_core_web_lg`) - Fast, reliable baseline
+3. **Names Database** - Dictionary lookup for first/last names
+
+**Heavyweight (optional, high accuracy)**:
+4. **Flair** (`ner`) - High accuracy sequence labeling
+5. **Transformers** (`dslim/bert-base-NER`) - BERT-based NER
+6. **GLiNER** (`urchade/gliner_multi_pii-v1`) - Zero-shot PII detection
+
+Install heavyweight models: `pip install hush-engine[accurate]`
 
 Models can be enabled/disabled via `DetectionConfig.set_enabled_integration()`.
 
@@ -284,7 +294,7 @@ config.set_enabled_integration("transformers", False)
 config.set_enabled_integration("mlx_verifier", True)
 ```
 
-Available integrations: `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`, `mlx_verifier`
+Available integrations: `lgbm_ner`, `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`
 
 ## Platform Requirements
 
@@ -334,6 +344,12 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 ## Roadmap
 
+### Completed (v1.4.0)
+- [x] LightGBM NER classifiers (5-10x faster, ~10MB models)
+- [x] New entity types (BIOMETRIC, CREDENTIAL, ID, NATIONAL_ID, NETWORK, VEHICLE)
+- [x] Precision improvements (spatial filtering, negative gazetteers)
+- [x] IVW calibration from feedback data
+
 ### Completed (v1.3.0)
 - [x] International PII validation (116 IBAN countries, 150+ phone patterns)
 - [x] Medical/biomedical NER (Fast Data Science libraries)
@@ -347,7 +363,6 @@ For security issues, please email security@newmediastudio.com instead of using t
 - [x] Cities database (~500 world cities)
 - [x] Countries database (complete country/demonym recognition)
 - [x] libpostal address parsing (99.45% accuracy)
-- [x] Optional LLM verification (MLX, Apple Silicon)
 
 ### Planned
 - [ ] Windows/Linux support (alternative OCR engines)
