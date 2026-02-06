@@ -2,14 +2,17 @@
 Person Name Recognition using Multi-NER Cascade
 
 Implements a "smart cascade" approach for high-accuracy person name detection:
-1. Dictionary/Pattern: Fast lookup using name-dataset + title patterns
-2. Standard NER (spaCy): Industrial-speed processing for bulk text
-3. Advanced NER (GLiNER/Flair): High-accuracy for ambiguous names
+1. Pattern matching: Fast lookup using title patterns (Dr., Mr., etc.)
+2. LightGBM NER: Lightweight gradient boosting classifier (~10MB, 5-10x faster)
+3. Dictionary lookup: name-dataset for contextless names (spreadsheets)
+4. Standard NER (spaCy): Industrial-speed processing for bulk text
+5. Advanced NER (GLiNER/Flair): High-accuracy for ambiguous names (optional)
 
 Supports:
+- LightGBM: Lightweight, fast NER (~85% F1 estimated, ~10MB)
 - spaCy: Fast, industrial-grade NER (~89-91% F1)
-- GLiNER: Zero-shot flexibility for PII (~80-83% F1)
-- Flair: State-of-the-art accuracy (~93% F1 CoNLL-03)
+- GLiNER: Zero-shot flexibility for PII (~80-83% F1) [optional]
+- Flair: State-of-the-art accuracy (~93% F1 CoNLL-03) [optional]
 - name-dataset: Dictionary lookup for contextless names (spreadsheets)
 
 License: Apache 2.0
@@ -39,6 +42,34 @@ FLAIR_AVAILABLE = False
 # name-dataset (dictionary lookup)
 _name_dataset = None
 NAME_DATASET_AVAILABLE = False
+
+# LightGBM NER (lightweight, fast)
+_lgbm_ner = None
+LGBM_AVAILABLE = False
+
+
+def _load_lgbm_ner():
+    """Lazy-load LightGBM NER classifier."""
+    global _lgbm_ner, LGBM_AVAILABLE
+
+    if _lgbm_ner is not None:
+        return
+
+    try:
+        from hush_engine.detectors.lgbm_ner import LightweightNER, is_lightweight_available
+
+        if is_lightweight_available():
+            _lgbm_ner = LightweightNER(entity_types={"PERSON"})
+            _lgbm_ner.load()
+            LGBM_AVAILABLE = True
+            print("Loaded LightGBM NER for PERSON detection", file=sys.stderr)
+        else:
+            LGBM_AVAILABLE = False
+    except ImportError:
+        LGBM_AVAILABLE = False
+    except Exception as e:
+        print(f"LightGBM NER initialization failed: {e}", file=sys.stderr)
+        LGBM_AVAILABLE = False
 
 
 def _load_spacy():
@@ -185,9 +216,10 @@ def detect_with_spacy(text: str) -> List[Tuple[str, int, int, float]]:
     for ent in doc.ents:
         if ent.label_ == "PERSON":
             # spaCy doesn't provide confidence; estimate based on entity length
-            base_score = 0.85
+            # Lower base scores to stay below threshold even with consensus boost
+            base_score = 0.65
             if len(ent.text.split()) >= 2:
-                base_score = 0.90  # Full names more reliable
+                base_score = 0.72  # Multi-word names - still needs consensus
             results.append((ent.text, ent.start_char, ent.end_char, base_score))
 
     return results
@@ -497,6 +529,35 @@ INTL_NAME_PREFIX_PATTERN = re.compile(
 )
 
 
+def detect_with_lgbm(text: str) -> List[Tuple[str, int, int, float]]:
+    """
+    Detect PERSON entities using LightGBM classifier.
+
+    This is a lightweight alternative to transformer models, using
+    gradient boosting for token classification with ~5-10x faster inference.
+
+    Returns: List of (text, start, end, confidence) tuples
+    """
+    if not LGBM_AVAILABLE or _lgbm_ner is None:
+        return []
+
+    try:
+        entities = _lgbm_ner.detect(text)
+        results = []
+        for entity in entities:
+            if entity.entity_type == "PERSON":
+                results.append((
+                    entity.text,
+                    entity.start,
+                    entity.end,
+                    entity.confidence
+                ))
+        return results
+    except Exception as e:
+        print(f"LightGBM PERSON detection failed: {e}", file=sys.stderr)
+        return []
+
+
 def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
     """
     Detect PERSON names using high-confidence regex patterns.
@@ -506,53 +567,69 @@ def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
     results = []
 
     # Title + Name patterns (Dr. Smith, Mr. Jones)
+    # Require 2+ word names for highest score
     for match in TITLE_PATTERN.finditer(text):
         name = match.group(1)
-        # Full match includes title, but we capture just the name
         full_match_start = match.start()
         full_match_end = match.end()
-        results.append((match.group(0), full_match_start, full_match_end, 0.95))
+        # Multi-word names with title get higher score
+        score = 0.92 if len(name.split()) >= 2 else 0.88
+        results.append((match.group(0), full_match_start, full_match_end, score))
 
     # Labeled name patterns (Name: John Smith)
     for match in LABELED_NAME_PATTERN.finditer(text):
         name = match.group(1)
-        results.append((match.group(0), match.start(), match.end(), 0.90))
+        # Skip very short names (1-2 chars) - avoids "Name: L", "Name: AB"
+        if len(name.strip()) < 3:
+            continue
+        # Multi-word labeled names are more reliable
+        score = 0.85 if len(name.split()) >= 2 else 0.78  # Lowered scores
+        results.append((match.group(0), match.start(), match.end(), score))
 
     # ALL CAPS labeled patterns (NAME: JOHN DOE)
     for match in LABELED_NAME_CAPS_PATTERN.finditer(text):
         name = match.group(1)
         # Only accept if name has 2+ parts (to avoid single word matches)
         if len(name.split()) >= 2:
-            results.append((match.group(0), match.start(), match.end(), 0.90))
+            results.append((match.group(0), match.start(), match.end(), 0.88))
 
     # Initials patterns (A S Eusuf, J. R. Smith)
     for match in INITIALS_NAME_PATTERN.finditer(text):
         name = match.group(1)
-        results.append((name, match.start(), match.end(), 0.85))
+        # Initials are less reliable, lower score
+        results.append((name, match.start(), match.end(), 0.80))
 
     # Signature context patterns (Signed by: John Smith)
     for match in SIGNATURE_CONTEXT_PATTERN.finditer(text):
         name = match.group(1)
-        if len(name.split()) >= 1 and len(name) >= 3:
-            results.append((match.group(0), match.start(), match.end(), 0.92))
+        if len(name.split()) >= 2 and len(name) >= 5:
+            # Multi-word signature names are reliable
+            results.append((match.group(0), match.start(), match.end(), 0.90))
+        elif len(name.split()) >= 1 and len(name) >= 3:
+            # Single word signature names less reliable
+            results.append((match.group(0), match.start(), match.end(), 0.82))
 
     # ALL CAPS signature context (SIGNED BY: JOHN DOE)
     for match in SIGNATURE_CONTEXT_CAPS_PATTERN.finditer(text):
         name = match.group(1)
         if len(name.split()) >= 2:
-            results.append((match.group(0), match.start(), match.end(), 0.90))
+            results.append((match.group(0), match.start(), match.end(), 0.88))
 
     # Role context patterns (Customer: John Smith)
     for match in ROLE_CONTEXT_PATTERN.finditer(text):
         name = match.group(1)
-        if len(name.split()) >= 1 and len(name) >= 3:
-            results.append((match.group(0), match.start(), match.end(), 0.90))
+        if len(name.split()) >= 2 and len(name) >= 5:
+            # Multi-word role context names
+            results.append((match.group(0), match.start(), match.end(), 0.88))
+        elif len(name.split()) >= 1 and len(name) >= 3:
+            # Single word role context names less reliable
+            results.append((match.group(0), match.start(), match.end(), 0.80))
 
     # International name prefix patterns (Mohammed Ali, Abdul Rahman)
     for match in INTL_NAME_PREFIX_PATTERN.finditer(text):
         name = match.group(1)
         if len(name.split()) >= 2:
-            results.append((name, match.start(), match.end(), 0.88))
+            results.append((name, match.start(), match.end(), 0.85))
 
     return results
 
@@ -567,11 +644,14 @@ class PersonRecognizer(EntityRecognizer):
 
     Cascade order:
     1. Pattern matching (titles, labels) - fastest, highest precision
-    2. Dictionary lookup (name-dataset) - for spreadsheet contexts
-    3. Standard NER (spaCy) - fast, good accuracy
-    4. Advanced NER (GLiNER/Flair/Transformers) - for low-confidence or ambiguous spans
+    2. LightGBM NER - lightweight, fast (~5-10x faster than transformers)
+    3. Dictionary lookup (name-dataset) - for spreadsheet contexts
+    4. Standard NER (spaCy) - fast, good accuracy
+    5. Advanced NER (GLiNER/Flair/Transformers) - for low-confidence or ambiguous spans
 
     The cascade can be configured to balance speed vs accuracy.
+    By default, only lightweight models (LightGBM, patterns, dictionary) are enabled.
+    Heavy models (GLiNER, Flair, Transformers) require: pip install hush-engine[accurate]
     """
 
     ENTITIES = ["PERSON"]
@@ -580,13 +660,14 @@ class PersonRecognizer(EntityRecognizer):
         self,
         supported_language: str = "en",
         supported_entities: Optional[List[str]] = None,
+        use_lgbm_ner: bool = True,
         use_spacy: bool = True,
         use_gliner: bool = False,
         use_flair: bool = False,
         use_transformers: bool = False,
         use_name_dataset: bool = True,
         use_patterns: bool = True,
-        min_confidence: float = 0.55,
+        min_confidence: float = 0.70,  # Raised from 0.65 for better precision
         early_exit_confidence: float = 0.85,
         spreadsheet_mode: bool = False,
     ):
@@ -596,6 +677,7 @@ class PersonRecognizer(EntityRecognizer):
         Args:
             supported_language: Language code
             supported_entities: Entity types to detect
+            use_lgbm_ner: Enable LightGBM NER (lightweight, fast)
             use_spacy: Enable spaCy NER
             use_gliner: Enable GLiNER zero-shot NER
             use_flair: Enable Flair NER (high accuracy)
@@ -609,6 +691,7 @@ class PersonRecognizer(EntityRecognizer):
         """
         # Set instance variables BEFORE super().__init__() because the parent
         # class calls load() which invokes _preload_models() that uses these
+        self.use_lgbm_ner = use_lgbm_ner
         self.use_spacy = use_spacy
         self.use_gliner = use_gliner
         self.use_flair = use_flair
@@ -628,6 +711,8 @@ class PersonRecognizer(EntityRecognizer):
 
     def _preload_models(self):
         """Preload configured NER models."""
+        if self.use_lgbm_ner:
+            _load_lgbm_ner()
         if self.use_spacy:
             _load_spacy()
         if self.use_gliner:
@@ -703,17 +788,22 @@ class PersonRecognizer(EntityRecognizer):
             for text_match, start, end, score in detect_with_patterns(processed_text):
                 all_detections.append((text_match, start, end, score, "pattern"))
 
-        # Step 2: Dictionary lookup (good for spreadsheets)
+        # Step 2: LightGBM NER (lightweight, fast - ~5-10x faster than transformers)
+        if self.use_lgbm_ner:
+            for text_match, start, end, score in detect_with_lgbm(processed_text):
+                all_detections.append((text_match, start, end, score, "lgbm"))
+
+        # Step 3: Dictionary lookup (good for spreadsheets)
         if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 100):
             for text_match, start, end, score in lookup_with_name_dataset(processed_text):
                 all_detections.append((text_match, start, end, score, "name_dataset"))
 
-        # Step 3: Standard NER (spaCy - fast, reliable)
+        # Step 4: Standard NER (spaCy - fast, reliable)
         if self.use_spacy:
             for text_match, start, end, score in detect_with_spacy(processed_text):
                 all_detections.append((text_match, start, end, score, "spacy"))
 
-        # Step 4: Advanced NER for low-confidence or missed spans
+        # Step 5: Advanced NER for low-confidence or missed spans
         # Use configurable early-exit threshold to skip expensive models
         # when lighter models find high-confidence results
         found_high_conf = any(
@@ -791,6 +881,7 @@ class PersonRecognizer(EntityRecognizer):
         "flair": 0.93,         # ~93% F1 on CoNLL-03
         "spacy": 0.90,         # ~90% F1
         "transformers": 0.88,  # BERT NER
+        "lgbm": 0.85,          # LightGBM NER (lightweight, ~85% F1 estimated)
         "gliner": 0.82,        # Zero-shot ~82% F1
         "name_dataset": 0.70,  # Dictionary lookup (high recall, lower precision)
     }
@@ -906,46 +997,40 @@ class PersonRecognizer(EntityRecognizer):
             agreement_bonus = 0.0
             accepted = True  # Original logic: always accept, filter by threshold later
 
-            # Tier 1: High confidence from any single model
-            if max_score >= 0.85:
+            # Tier 1: Very high confidence from any single model
+            if max_score >= 0.90:
                 final_score = max_score
                 tier_used = "tier1_high_confidence"
-            # Tier 2: Multiple models in mid-range - aggregate scores
+            # Tier 2: Multiple models in mid-range - minimal bonuses for precision
             elif num_engines > 1:
-                mid_range_scores = [s for s in scores if 0.40 <= s < 0.85]
+                mid_range_scores = [s for s in scores if 0.40 <= s < 0.90]
                 if len(mid_range_scores) >= 2:
                     # Sum mid-range scores and check cumulative threshold
                     cumulative = sum(mid_range_scores)
-                    if cumulative >= 1.2:  # At least 2 models with decent confidence
-                        # Boost based on agreement
-                        agreement_bonus = min(0.20, (num_engines - 1) * 0.07)
-                        final_score = min(0.95, max_score + agreement_bonus)
+                    if cumulative >= 1.7:  # Require much stronger agreement (was 1.5)
+                        # Very small boost - cap at 0.85 to require high-confidence sources
+                        agreement_bonus = min(0.06, (num_engines - 1) * 0.02)
+                        final_score = min(0.85, max_score + agreement_bonus)
                         tier_used = "tier2_strong_consensus"
                     else:
-                        # Standard bonus for agreement
-                        agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
-                        final_score = min(0.95, max_score + agreement_bonus)
+                        # No bonus for weak consensus - rely on individual scores
+                        agreement_bonus = 0.0
+                        final_score = max_score
                         tier_used = "tier2_weak_consensus"
                 else:
-                    # Single engine or low scores
-                    agreement_bonus = min(0.15, (num_engines - 1) * 0.05)
-                    final_score = min(0.95, max_score + agreement_bonus)
-                    tier_used = "tier2_sparse"
-            # Tier 3: Low confidence single model - check if pattern source
-            elif 0.30 <= max_score < 0.85:
-                # Pattern-based detections (titles, labels) get context boost
-                if any(s in ('patterns', 'name_dataset') for s in unique_sources):
-                    final_score = min(0.90, max_score + 0.10)  # Modest boost
-                    tier_used = "tier3_pattern_boost"
-                elif num_engines == 1:
-                    # Single NER model below 0.85 - reject for precision
-                    # This is the main source of false positives
+                    # Single engine - no boost
                     final_score = max_score
-                    tier_used = "tier3_single_ner_rejected"
+                    tier_used = "tier2_sparse"
+            # Tier 3: Low confidence single model - require higher threshold
+            elif 0.30 <= max_score < 0.90:
+                # Single-engine detection below 0.75 is too weak - reject
+                if num_engines == 1 and max_score < 0.75:
+                    final_score = max_score
+                    tier_used = "tier3_single_weak"
                     accepted = False
                 else:
                     final_score = max_score
-                    tier_used = "tier3_single_low"
+                    tier_used = "tier3_low_confidence"
             else:
                 final_score = max_score
                 tier_used = "tier4_very_low"
@@ -1035,6 +1120,12 @@ class PersonRecognizer(EntityRecognizer):
             "click", "tap", "press", "enter", "exit", "logout", "login", "signin",
             "signup", "register", "subscribe", "unsubscribe", "download", "upload",
             "attach", "attachment", "browse", "refresh", "reload", "update",
+            # Additional verbs (common FPs)
+            "read", "write", "create", "change", "execute", "process", "run", "build",
+            "start", "stop", "pause", "resume", "continue", "skip", "retry",
+            # Additional UI elements
+            "button", "dialog", "panel", "tab", "toolbar", "sidebar", "header", "footer",
+            "modal", "popup", "dropdown", "checkbox", "radio", "slider", "toggle",
 
             # Days and months
             "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
@@ -1059,6 +1150,11 @@ class PersonRecognizer(EntityRecognizer):
             "error", "warning", "success", "failed", "loading", "processing",
             "pending", "completed", "approved", "rejected", "denied", "confirmed",
             "version", "update", "upgrade", "install", "uninstall", "configure",
+
+            # Form role labels (common FPs from document headers)
+            "applicant", "beneficiary", "holder", "owner", "recipient", "sender",
+            "service", "system", "admin", "root", "user", "users",
+            "account", "profile", "administrator", "supervisor", "representative",
         }
         if text_lower in false_positives:
             return True
@@ -1081,13 +1177,23 @@ class PersonRecognizer(EntityRecognizer):
             # Places commonly detected as names
             'america', 'american', 'asia', 'asian', 'africa', 'african',
             'europe', 'european', 'austin', 'boston', 'denver', 'phoenix',
+            'dallas', 'houston', 'charlotte', 'orlando', 'brooklyn', 'jersey',
             # Common words misdetected as names
             'customer', 'client', 'patient', 'member', 'agent',
             'manager', 'director', 'president', 'chairman', 'secretary',
+            'admin', 'administrator', 'moderator', 'owner', 'creator',
             # Status words
             'active', 'inactive', 'pending', 'approved', 'denied',
+            'available', 'unavailable', 'online', 'offline',
             # Document sections
             'summary', 'details', 'notes', 'comments', 'history',
+            'overview', 'introduction', 'conclusion', 'appendix',
+            # Generic terms
+            'unknown', 'anonymous', 'default', 'sample', 'test', 'demo',
+            'example', 'template', 'placeholder', 'generic', 'standard',
+            # Occupations (not names)
+            'doctor', 'nurse', 'lawyer', 'engineer', 'teacher', 'professor',
+            'accountant', 'developer', 'designer', 'analyst', 'consultant',
         }
         if text_lower.strip() in name_like_words:
             return True

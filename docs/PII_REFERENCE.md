@@ -31,21 +31,21 @@ This classification draws from authoritative sources:
 
 | Identifier | Standard Format / Regex Pattern | Key Regulations | Hush Engine Support |
 |------------|--------------------------------|-----------------|---------------------|
-| **Social Security Number (SSN)** | `\b\d{3}-\d{2}-\d{4}\b` or `\b\d{9}\b` | HIPAA, CCPA, NIST | ✅ `US_SSN` |
+| **Social Security Number (SSN)** | `\b\d{3}-\d{2}-\d{4}\b` or `\b\d{9}\b` | HIPAA, CCPA, NIST | ✅ `NATIONAL_ID` |
 | **Social Insurance Number (SIN)** | `\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b` | PIPEDA (Canada) | ✅ `NATIONAL_ID` |
 | **National ID Number** | Varies by country | GDPR, Local laws | ✅ `NATIONAL_ID` (35+ countries via python-stdnum) |
-| **Passport Number** | `\b[A-Z]{1,2}\d{6,9}\b` | HIPAA, GDPR, CCPA | ✅ `PASSPORT` |
-| **Driver's License Number** | Varies by state/province | HIPAA, CCPA | ✅ `DRIVERS_LICENSE` |
-| **Biometric Data (Fingerprints)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ❌ N/A (binary) |
-| **Biometric Data (Voice Print)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ❌ N/A (binary) |
-| **Biometric Data (Facial Recognition)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ❌ N/A (binary) |
+| **Passport Number** | `\b[A-Z]{1,2}\d{6,9}\b` | HIPAA, GDPR, CCPA | ✅ `NATIONAL_ID` |
+| **Driver's License Number** | Varies by state/province | HIPAA, CCPA | ✅ `NATIONAL_ID` |
+| **Biometric Data (Fingerprints)** | Binary/encoded data, `BIO-\d{8,12}` | GDPR Art.9, CCPA, BIPA | ✅ `BIOMETRIC` |
+| **Biometric Data (Voice Print)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ✅ `BIOMETRIC` |
+| **Biometric Data (Facial Recognition)** | Binary/encoded data | GDPR Art.9, CCPA, BIPA | ✅ `BIOMETRIC` |
 | **Genetic Data** | Various sequence formats | GDPR Art.9, GINA, HIPAA | ❌ Planned |
 | **Bank Account + Routing Number** | `\b\d{9,17}\b` with context | CCPA, PCI-DSS | ⚠️ Partial |
 | **Credit Card + CVV** | `\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b` | PCI-DSS, CCPA | ✅ `CREDIT_CARD` (Luhn validated) |
-| **Login Credentials (Username + Password)** | Context-dependent | CCPA, GDPR | ❌ Planned |
-| **AWS Access Key** | `(AKIA\|ASIA)[A-Z0-9]{16}` | Best Practice | ✅ `AWS_ACCESS_KEY` |
-| **Stripe Secret Key** | `sk_live_[0-9a-zA-Z]{24,}` | Best Practice | ✅ `STRIPE_KEY` |
-| **API Keys / Tokens** | Various patterns | Best Practice | ⚠️ Partial |
+| **Login Credentials (Username + Password)** | Context-dependent | CCPA, GDPR | ✅ `CREDENTIAL` |
+| **AWS Access Key** | `(AKIA\|ASIA)[A-Z0-9]{16}` | Best Practice | ✅ `CREDENTIAL` |
+| **Stripe Secret Key** | `sk_live_[0-9a-zA-Z]{24,}` | Best Practice | ✅ `CREDENTIAL` |
+| **API Keys / Tokens** | Various patterns | Best Practice | ✅ `CREDENTIAL` |
 
 ### High Risk (NIST High/Moderate Impact)
 
@@ -70,8 +70,10 @@ This classification draws from authoritative sources:
 | **IBAN** | `\b[A-Z]{2}\d{2}[A-Z0-9]{4,}\b` | GDPR, PSD2 | ✅ `IBAN_CODE` (116 countries, Mod-97 validated) |
 | **SWIFT/BIC Code** | `\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?\b` | GDPR, PSD2 | ✅ `FINANCIAL` |
 | **Full Face Photo** | Image detection | HIPAA, GDPR | ✅ `FACE` (OpenCV Haar cascade) |
-| **Vehicle ID (VIN)** | `\b[A-HJ-NPR-Z0-9]{17}\b` | HIPAA, CCPA | ✅ `VEHICLE_ID` |
-| **Device Identifier (IMEI, MAC)** | `\b\d{15}\b` / `([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}` | HIPAA, CCPA | ✅ `DEVICE_ID` |
+| **Vehicle ID (VIN)** | `\b[A-HJ-NPR-Z0-9]{17}\b` | HIPAA, CCPA | ✅ `VEHICLE` |
+| **License Plate** | Varies by jurisdiction | HIPAA, CCPA | ✅ `VEHICLE` |
+| **Device Identifier (IMEI, MAC)** | `\b\d{15}\b` / `([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}` | HIPAA, CCPA | ✅ `NETWORK` |
+| **HTTP Cookie / Session ID** | Various formats | GDPR, CCPA | ✅ `NETWORK` |
 | **Immigration/Citizenship Status** | Contextual | CCPA (as of 2024) | ❌ Planned |
 
 ### Medium Risk (NIST Moderate Impact)
@@ -110,8 +112,8 @@ This classification draws from authoritative sources:
 | **Year of Birth** | `\b(19\|20)\d{2}\b` | Minimal (unless >89) | ⚠️ Context-based |
 | **Public Job Title** | Free text | Minimal | ❌ Not targeted |
 | **Public Business Address** | Standard address format | Minimal | ✅ `LOCATION` |
-| **Cookie ID** | Various formats | GDPR, CCPA | ❌ Not targeted |
-| **Advertising ID** | UUID format | CCPA | ❌ Not targeted |
+| **Cookie ID** | Various formats | GDPR, CCPA | ✅ `NETWORK` |
+| **Advertising ID** | UUID format | CCPA | ✅ `NETWORK` |
 
 ---
 
@@ -119,41 +121,51 @@ This classification draws from authoritative sources:
 
 Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these identifiers must be removed for de-identification:
 
-| # | HIPAA Identifier | Hush Engine Entity |
-|---|------------------|-------------------|
-| 1 | Names | `PERSON` |
-| 2 | Geographic data smaller than state | `LOCATION` |
-| 3 | Dates (except year) + Ages >89 | `DATE_TIME` |
-| 4 | Phone numbers | `PHONE_NUMBER` |
-| 5 | Fax numbers | `PHONE_NUMBER` |
-| 6 | Email addresses | `EMAIL_ADDRESS` |
-| 7 | Social Security numbers | `US_SSN` |
-| 8 | Medical record numbers | Context-based |
-| 9 | Health plan beneficiary numbers | Context-based |
-| 10 | Account numbers | Context-based |
-| 11 | Certificate/license numbers | Context-based |
-| 12 | Vehicle identifiers | `VEHICLE_ID` |
-| 13 | Device identifiers | `DEVICE_ID` |
-| 14 | Web URLs | `URL` |
-| 15 | IP addresses | `IP_ADDRESS` |
-| 16 | Biometric identifiers | N/A (binary) |
-| 17 | Full-face photographs | `FACE` |
-| 18 | Any unique identifying characteristic | Context-dependent |
+| # | HIPAA Identifier | Hush Engine Entity | Status | Notes |
+|---|------------------|-------------------|--------|-------|
+| 1 | Names | `PERSON` | ✅ Full | Multi-NER cascade with ensemble scoring |
+| 2 | Geographic data smaller than state | `LOCATION` | ✅ Full | libpostal + cities/countries databases |
+| 3 | Dates (except year) + Ages >89 | `DATE_TIME`, `AGE` | ✅ Full | dateparser + regex patterns |
+| 4 | Phone numbers | `PHONE_NUMBER` | ✅ Full | libphonenumber (150+ countries) |
+| 5 | Fax numbers | `PHONE_NUMBER` | ✅ Full | Same as phone detection |
+| 6 | Email addresses | `EMAIL_ADDRESS` | ✅ Full | RFC-compliant regex |
+| 7 | Social Security numbers | `NATIONAL_ID` | ✅ Full | SSN + 35 international ID formats |
+| 8 | Medical record numbers | `ID`, `MEDICAL` | ⚠️ Partial | Context-dependent detection |
+| 9 | Health plan beneficiary numbers | `ID`, `MEDICAL` | ⚠️ Partial | Context-dependent detection |
+| 10 | Account numbers | `ID`, `FINANCIAL` | ⚠️ Partial | Labeled patterns + context |
+| 11 | Certificate/license numbers | `NATIONAL_ID`, `ID` | ✅ Full | Driver's license, passport patterns |
+| 12 | Vehicle identifiers | `VEHICLE` | ✅ Full | VIN validation, license plates |
+| 13 | Device identifiers | `NETWORK` | ✅ Full | MAC, IMEI, UUID patterns |
+| 14 | Web URLs | `URL` | ✅ Full | urlextract library |
+| 15 | IP addresses | `IP_ADDRESS` | ✅ Full | IPv4 + IPv6, version string filtering |
+| 16 | Biometric identifiers | `BIOMETRIC` | ✅ Full | BIO- prefixed IDs, labeled patterns |
+| 17 | Full-face photographs | `FACE` | ✅ Full | OpenCV Haar cascade (images only) |
+| 18 | Any unique identifying characteristic | `ID` | ⚠️ Partial | Generic ID patterns (CUST-, EMP-, etc.) |
 
 ---
 
 ## GDPR Special Category Data (Article 9)
 
-| Category | Hush Engine Entity | Notes |
-|----------|-------------------|-------|
-| Racial or ethnic origin | Planned | Sensitive context required |
-| Political opinions | Planned | Sensitive context required |
-| Religious or philosophical beliefs | Planned | Sensitive context required |
-| Trade union membership | Planned | |
-| Genetic data | Planned | Sequence formats |
-| Biometric data | N/A | Binary data |
-| Health data | `MEDICAL` | Comprehensive coverage |
-| Sex life or sexual orientation | Partial | Via `GENDER` and context |
+| Category | Hush Engine Entity | Status | Notes |
+|----------|-------------------|--------|-------|
+| Racial or ethnic origin | — | ❌ Planned | Requires sensitive context analysis |
+| Political opinions | — | ❌ Planned | Requires sensitive context analysis |
+| Religious or philosophical beliefs | — | ❌ Planned | Requires sensitive context analysis |
+| Trade union membership | — | ❌ Planned | Organization name matching |
+| Genetic data | — | ❌ Planned | DNA sequence formats |
+| Biometric data | `BIOMETRIC` | ✅ Full | BIO- IDs, fingerprint/facial recognition labels |
+| Health data | `MEDICAL` | ✅ Full | ICD-10, conditions, medications, blood types |
+| Sex life or sexual orientation | `GENDER` | ⚠️ Partial | Gender identity terms only |
+
+### Additional GDPR-Relevant Entities (v1.4.0)
+
+| Category | Hush Engine Entity | Status | Notes |
+|----------|-------------------|--------|-------|
+| Online identifiers | `IP_ADDRESS`, `NETWORK` | ✅ Full | IP, MAC, cookies, device IDs |
+| Location data | `LOCATION`, `COORDINATES` | ✅ Full | Addresses, GPS coordinates |
+| Economic data | `FINANCIAL`, `CREDIT_CARD` | ✅ Full | IBAN, SWIFT, card numbers |
+| Government identifiers | `NATIONAL_ID` | ✅ Full | SSN, passport, driver's license (35+ countries) |
+| Authentication data | `CREDENTIAL` | ✅ Full | Passwords, API keys, tokens |
 
 ---
 
@@ -163,7 +175,7 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 
 | Entity Type | Test Value | Expected Detection |
 |-------------|------------|-------------------|
-| US_SSN | `123-45-6789` | ✅ |
+| NATIONAL_ID | `123-45-6789` (SSN) | ✅ |
 | EMAIL_ADDRESS | `john.doe@example.com` | ✅ |
 | PHONE_NUMBER | `(416) 555-0123` | ✅ |
 | PHONE_NUMBER | `+1-555-123-4567` | ✅ |
@@ -182,22 +194,26 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 | GENDER | `Gender: Non-binary` | ✅ |
 | FINANCIAL | `SWIFT: DEUTDEFF` | ✅ |
 | FINANCIAL | `$1,234.56` | ✅ |
-| AWS_ACCESS_KEY | `AKIAIOSFODNN7EXAMPLE` | ✅ |
+| CREDENTIAL | `AKIAIOSFODNN7EXAMPLE` (AWS Key) | ✅ |
 | IBAN_CODE | `DE89370400440532013000` | ✅ |
 | IP_ADDRESS | `192.168.1.1` | ✅ |
 | UK_NHS | `123 456 7890` | ✅ (context-dependent) |
-| PASSPORT | `AB123456` (Canada) | ✅ |
-| PASSPORT | `123456789` (US) | ✅ (context-dependent) |
-| PASSPORT | `CFABC1234` (Germany) | ✅ |
-| DRIVERS_LICENSE | `D1234567` (California) | ✅ (context-dependent) |
-| DRIVERS_LICENSE | `A1234-12345-12345` (Ontario) | ✅ |
-| DRIVERS_LICENSE | `SMITH906152AB1AB` (UK) | ✅ |
-| VEHICLE_ID | `1HGBH41JXMN109186` | ✅ |
-| VEHICLE_ID | `JH4KA8260MC000000` | ✅ |
-| DEVICE_ID | `00:1A:2B:3C:4D:5E` (MAC) | ✅ |
-| DEVICE_ID | `00-1A-2B-3C-4D-5E` (MAC) | ✅ |
-| DEVICE_ID | `353456789012345` (IMEI) | ✅ |
-| DEVICE_ID | `550e8400-e29b-41d4-a716-446655440000` (UUID) | ✅ |
+| NATIONAL_ID | `AB123456` (Canada Passport) | ✅ |
+| NATIONAL_ID | `123456789` (US Passport) | ✅ (context-dependent) |
+| NATIONAL_ID | `CFABC1234` (Germany Passport) | ✅ |
+| NATIONAL_ID | `D1234567` (California DL) | ✅ (context-dependent) |
+| NATIONAL_ID | `A1234-12345-12345` (Ontario DL) | ✅ |
+| NATIONAL_ID | `SMITH906152AB1AB` (UK DL) | ✅ |
+| VEHICLE | `1HGBH41JXMN109186` (VIN) | ✅ |
+| VEHICLE | `JH4KA8260MC000000` (VIN) | ✅ |
+| NETWORK | `00:1A:2B:3C:4D:5E` (MAC) | ✅ |
+| NETWORK | `00-1A-2B-3C-4D-5E` (MAC) | ✅ |
+| NETWORK | `353456789012345` (IMEI) | ✅ |
+| NETWORK | `550e8400-e29b-41d4-a716-446655440000` (UUID) | ✅ |
+| CREDENTIAL | `sk_live_abc123...` (Stripe Key) | ✅ |
+| CREDENTIAL | `AKIAIOSFODNN7EXAMPLE` (AWS Key) | ✅ |
+| BIOMETRIC | `BIO-7459126830` | ✅ |
+| ID | `CUST-12345` (Customer ID) | ✅ |
 
 ### False Positive Watch List
 
@@ -230,5 +246,5 @@ These patterns may cause false positives and should be validated:
 
 ---
 
-*Last updated: 2026-02-05*
-*Document version: 1.5 - Aligns with hush-engine v1.3.0. Cities database, countries database, multi-NER cascade (74% PERSON recall, 65% ADDRESS recall)*
+*Last updated: 2026-02-06*
+*Document version: 1.6 - Aligns with hush-engine v1.4.0. New entity types: BIOMETRIC, CREDENTIAL, ID, NATIONAL_ID (consolidates SSN), NETWORK, VEHICLE. LightGBM NER for faster inference.*

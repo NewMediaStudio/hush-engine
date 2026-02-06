@@ -127,7 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Spreadsheet column analysis
 
 - **Medical NER**
-  - Biomedical entity recognition using scispaCy
+  - Biomedical entity recognition using Fast Data Science libraries
   - ICD-10 code detection
   - Medication, diagnosis, and lab result detection
 

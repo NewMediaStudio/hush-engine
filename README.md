@@ -14,7 +14,7 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ### Advanced NER
 - **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (74% recall)
-- **Medical NER**: Biomedical entity recognition using scispaCy models
+- **Medical NER**: Disease and drug detection using Fast Data Science libraries (MIT, zero dependencies)
 - **Company NER**: Dictionary-based company name detection
 - **Address parsing**: libpostal integration for 99.45% accuracy address detection (65% recall)
 
@@ -133,7 +133,7 @@ for detection in detections:
 | **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (74% recall) |
 | **Financial** | CREDIT_CARD, IBAN_CODE, FINANCIAL (SWIFT/BIC), crypto wallets | Luhn/Mod-97 validated |
 | **Government** | US_SSN, NATIONAL_ID, PASSPORT, DRIVERS_LICENSE | 35+ countries via python-stdnum |
-| **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | scispaCy biomedical NER |
+| **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | Fast Data Science NER |
 | **Technical** | AWS_ACCESS_KEY, STRIPE_KEY, IP_ADDRESS, URL, DEVICE_ID | MAC address, IMEI, UUID |
 | **Location** | LOCATION (addresses, cities, countries, coordinates) | Cities/countries databases, libpostal |
 | **Biometric** | FACE | OpenCV Haar cascade |
@@ -284,7 +284,7 @@ config.set_enabled_integration("transformers", False)
 config.set_enabled_integration("mlx_verifier", True)
 ```
 
-Available integrations: `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `scispacy`, `phonenumbers`, `mlx_verifier`
+Available integrations: `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`, `mlx_verifier`
 
 ## Platform Requirements
 
@@ -336,7 +336,7 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 ### Completed (v1.3.0)
 - [x] International PII validation (116 IBAN countries, 150+ phone patterns)
-- [x] Medical/biomedical NER (scispaCy integration)
+- [x] Medical/biomedical NER (Fast Data Science libraries)
 - [x] Face detection in images (OpenCV Haar cascade)
 - [x] Table/structured data detection
 - [x] Age detection ("25 years old", "Age: 45")
@@ -364,6 +364,6 @@ Built on top of:
 - [spaCy](https://spacy.io/) - Industrial-strength NLP
 - [Flair](https://github.com/flairNLP/flair) - State-of-the-art NER
 - [GLiNER](https://github.com/urchade/GLiNER) - Zero-shot NER
-- [scispaCy](https://allenai.github.io/scispacy/) - Biomedical NER
+- [Fast Data Science](https://fastdatascience.com/) - Medical NER
 - [libpostal](https://github.com/openvenues/libpostal) - Address parsing
 - [python-stdnum](https://github.com/arthurdejong/python-stdnum) - ID validation

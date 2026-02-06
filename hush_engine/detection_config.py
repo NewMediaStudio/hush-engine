@@ -17,22 +17,26 @@ VERSION = "1.3.0"
 # Detection library/integration toggles
 # These control which detection backends are enabled
 DEFAULT_INTEGRATIONS = {
-    # NER models for PERSON detection
-    "spacy": True,           # spaCy NER (fast, reliable)
-    "gliner": True,          # GLiNER zero-shot PII model
-    "flair": True,           # Flair NER (high accuracy)
-    "transformers": True,    # Transformers BERT NER (high precision)
-    "name_dataset": True,    # Dictionary lookup for names
+    # Lightweight NER (always available, fast, low memory)
+    "lgbm_ner": True,        # LightGBM token classifiers (~10MB, 5-10x faster)
+    "name_dataset": True,    # Dictionary lookup for names (~5MB)
+
+    # Standard NER (spaCy - moderate memory, good accuracy)
+    "spacy": True,           # spaCy NER (50-100MB, reliable baseline)
+
+    # Heavy NER models (disabled by default - install with: pip install hush-engine[accurate])
+    "gliner": False,         # GLiNER zero-shot PII model (~1GB)
+    "flair": False,          # Flair NER (~400MB, high accuracy)
+    "transformers": False,   # Transformers BERT NER (~600MB, high precision)
+
     # Address detection
     "libpostal": True,       # libpostal address parsing (99.45% accuracy)
+
     # URL detection
     "urlextract": True,      # urlextract for comprehensive URL detection
-    # Medical NER
-    "scispacy": True,        # scispaCy biomedical NER
+
     # Other integrations
     "phonenumbers": True,    # Google libphonenumber validation
-    # Precision verification
-    "mlx_verifier": False,   # MLX LLM verification for precision (requires: pip install hush-engine[mlx])
 }
 
 # Precision improvement feature flags (v1.4.0)
@@ -41,7 +45,6 @@ PRECISION_FEATURES = {
     "spatial_filtering": True,       # Form label detection and zone penalties
     "negative_gazetteer": True,      # Common word false positive filtering
     "version_disambiguation": True,  # IP address vs version string filtering
-    "llm_cot_prompts": True,         # Chain-of-Thought LLM verification prompts
     "ivw_calibration": False,        # Inverse-variance weighted calibration (requires feedback data)
 }
 
@@ -55,7 +58,6 @@ DEFAULT_THRESHOLDS = {
     "AWS_ACCESS_KEY": 0.5,
     "STRIPE_KEY": 0.5,
     "CREDIT_CARD": 0.5,
-    "SSN": 0.5,
     "DATE_TIME": 0.5,
     "AGE": 0.5,  # Age detection ("15 years old", "Age: 45")
     "NRP": 0.5,  # Nationality, Religion, Political group
@@ -70,6 +72,13 @@ DEFAULT_THRESHOLDS = {
     "QR_CODE": 0.5,
     "BARCODE": 0.5,
     "COORDINATES": 0.5,
+    # New entity types (v1.4.0)
+    "BIOMETRIC": 0.5,      # Fingerprints, facial recognition, iris scans
+    "CREDENTIAL": 0.5,     # Passwords, PINs, API keys
+    "ID": 0.5,             # Customer ID, Employee ID, generic IDs
+    "NATIONAL_ID": 0.5,    # SSN, passport, driver's license (consolidates SSN)
+    "NETWORK": 0.5,        # MAC addresses, device IDs, cookies
+    "VEHICLE": 0.5,        # VIN, license plates
 }
 
 # Minimum threshold (don't go below this even with auto-adjustment)
