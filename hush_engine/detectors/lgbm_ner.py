@@ -54,11 +54,13 @@ SUPPORTED_ENTITIES = {
 }
 
 # Default confidence thresholds per entity type (tuned during training)
+# Updated 2026-02-07 for ai4privacy sentence-level models
 DEFAULT_THRESHOLDS = {
-    "PERSON": 0.6,        # F1=0.977 at this threshold
-    "LOCATION": 0.7,      # F1=0.948 at this threshold
-    "ORGANIZATION": 0.7,  # F1=0.992 at this threshold
-    "DATE_TIME": 0.6,     # F1=0.961 at this threshold
+    "PERSON": 0.6,        # F1=0.672 at this threshold (ai4privacy)
+    "LOCATION": 0.5,      # F1=0.765 at this threshold (ai4privacy)
+    "ORGANIZATION": 0.7,  # F1=0.959 at this threshold (synthetic)
+    "DATE_TIME": 0.6,     # F1=0.857 at this threshold (ai4privacy)
+    "ADDRESS": 0.5,       # F1=0.762 at this threshold (ai4privacy)
     "EMAIL_ADDRESS": 0.7,
     "PHONE_NUMBER": 0.6,
 }

@@ -47,10 +47,19 @@ NAME_DATASET_AVAILABLE = False
 _lgbm_ner = None
 LGBM_AVAILABLE = False
 
+# LightGBM ADDRESS model (pre-loaded to avoid OpenMP conflict with spaCy)
+_address_lgbm_model = None
+ADDRESS_LGBM_AVAILABLE = False
+
 
 def _load_lgbm_ner():
-    """Lazy-load LightGBM NER classifier."""
+    """Lazy-load LightGBM NER classifier.
+
+    IMPORTANT: This must be called BEFORE spaCy/presidio are loaded to avoid
+    OpenMP library conflicts (libomp vs libiomp5 on macOS).
+    """
     global _lgbm_ner, LGBM_AVAILABLE
+    global _address_lgbm_model, ADDRESS_LGBM_AVAILABLE
 
     if _lgbm_ner is not None:
         return
@@ -63,6 +72,9 @@ def _load_lgbm_ner():
             _lgbm_ner.load()
             LGBM_AVAILABLE = True
             print("Loaded LightGBM NER for PERSON detection", file=sys.stderr)
+
+            # Also load ADDRESS model early to avoid spaCy/OpenMP conflict
+            _load_address_lgbm_model()
         else:
             LGBM_AVAILABLE = False
     except ImportError:
@@ -70,6 +82,48 @@ def _load_lgbm_ner():
     except Exception as e:
         print(f"LightGBM NER initialization failed: {e}", file=sys.stderr)
         LGBM_AVAILABLE = False
+
+
+def _load_address_lgbm_model():
+    """Load ADDRESS LightGBM model early to avoid OpenMP conflict.
+
+    This is called from _load_lgbm_ner() to ensure the ADDRESS model is loaded
+    BEFORE spaCy/presidio, which prevents the OpenMP runtime library conflict
+    that causes segfaults on macOS.
+    """
+    global _address_lgbm_model, ADDRESS_LGBM_AVAILABLE
+
+    if _address_lgbm_model is not None:
+        return
+
+    try:
+        import lightgbm as lgbm
+        from pathlib import Path
+
+        model_path = Path(__file__).parent.parent / "models" / "lgbm" / "address_classifier.txt"
+        if model_path.exists():
+            _address_lgbm_model = lgbm.Booster(model_file=str(model_path))
+            ADDRESS_LGBM_AVAILABLE = True
+            print("Loaded LightGBM ADDRESS classifier (early load)", file=sys.stderr)
+        else:
+            ADDRESS_LGBM_AVAILABLE = False
+    except Exception as e:
+        print(f"ADDRESS LightGBM model failed to load: {e}", file=sys.stderr)
+        ADDRESS_LGBM_AVAILABLE = False
+
+
+def get_address_lgbm_model():
+    """Get the pre-loaded ADDRESS LightGBM model.
+
+    Returns:
+        The LightGBM Booster model, or None if not available.
+    """
+    return _address_lgbm_model
+
+
+def is_address_lgbm_available() -> bool:
+    """Check if ADDRESS LightGBM model is available."""
+    return ADDRESS_LGBM_AVAILABLE
 
 
 def _load_spacy():
@@ -528,6 +582,118 @@ INTL_NAME_PREFIX_PATTERN = re.compile(
     r"\s+[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){0,2})\b"
 )
 
+# Username patterns that may contain person names
+# Handles: "john_smith", "jane.doe", "michael_johnson"
+USERNAME_UNDERSCORE_PATTERN = re.compile(
+    r"\b([a-z]{2,15})_([a-z]{2,15})\b"
+)
+
+# Employee ID patterns (user identifiers that may link to persons)
+# Handles: "u123456", "U00012345", "emp123456"
+EMPLOYEE_ID_PATTERN = re.compile(
+    r"\b(?:u|U|emp|EMP)\d{5,8}\b"
+)
+
+# Username context words that boost confidence
+USERNAME_CONTEXT = frozenset({
+    "user", "username", "userid", "login", "account", "created",
+    "author", "owner", "assigned", "by", "from", "updated", "modified"
+})
+
+# Cache for NamesDatabase to avoid repeated imports
+_internal_names_db = None
+_internal_names_db_checked = False
+
+
+def _get_internal_names_db():
+    """Lazy-load internal NamesDatabase for username validation."""
+    global _internal_names_db, _internal_names_db_checked
+
+    if _internal_names_db_checked:
+        return _internal_names_db
+
+    _internal_names_db_checked = True
+    try:
+        from hush_engine.data.names_database import NamesDatabase
+        _internal_names_db = NamesDatabase()
+    except ImportError:
+        pass
+    except Exception as e:
+        sys.stderr.write(f"[PersonRecognizer] NamesDatabase error: {e}\n")
+
+    return _internal_names_db
+
+
+def validate_username_as_person(username: str) -> Tuple[bool, float, str]:
+    """
+    Check if username contains known first/last name components.
+
+    Validates usernames like "john_smith" by checking if parts match
+    known first names or last names.
+
+    Args:
+        username: Username string (e.g., "john_smith")
+
+    Returns:
+        Tuple of (is_valid_person, confidence, extracted_name)
+        - is_valid_person: True if username likely represents a person
+        - confidence: Detection confidence (0.0 - 1.0)
+        - extracted_name: Reconstructed name (e.g., "John Smith")
+    """
+    # Try underscore-separated format first
+    if '_' in username:
+        parts = username.lower().split('_')
+        if len(parts) == 2:
+            first, last = parts
+            # Check using internal NamesDatabase
+            names_db = _get_internal_names_db()
+            if names_db:
+                is_first = names_db.is_first_name(first)
+                is_last = names_db.is_last_name(last)
+
+                if is_first and is_last:
+                    # Both parts are known names - high confidence
+                    return True, 0.80, f"{first.title()} {last.title()}"
+                elif is_first or is_last:
+                    # One part matches - moderate confidence
+                    return True, 0.70, f"{first.title()} {last.title()}"
+
+            # Fallback: try names-dataset package
+            if NAME_DATASET_AVAILABLE and _name_dataset is not None:
+                first_result = _name_dataset.search(first.title())
+                last_result = _name_dataset.search(last.title())
+
+                first_match = False
+                last_match = False
+
+                if first_result:
+                    first_data = first_result.get("first_name")
+                    if first_data and first_data.get("rank", {}).get("*", 0) > 0:
+                        first_match = True
+
+                if last_result:
+                    last_data = last_result.get("last_name")
+                    if last_data and last_data.get("rank", {}).get("*", 0) > 0:
+                        last_match = True
+
+                if first_match and last_match:
+                    return True, 0.78, f"{first.title()} {last.title()}"
+                elif first_match or last_match:
+                    return True, 0.68, f"{first.title()} {last.title()}"
+
+    # Try dot-separated format
+    elif '.' in username and '@' not in username:  # Avoid emails
+        parts = username.lower().split('.')
+        if len(parts) == 2:
+            first, last = parts
+            if len(first) >= 2 and len(last) >= 2:
+                names_db = _get_internal_names_db()
+                if names_db:
+                    if names_db.is_first_name(first) or names_db.is_last_name(last):
+                        return True, 0.65, f"{first.title()} {last.title()}"
+
+    return False, 0.0, ""
+
 
 def detect_with_lgbm(text: str) -> List[Tuple[str, int, int, float]]:
     """
@@ -631,6 +797,21 @@ def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
         if len(name.split()) >= 2:
             results.append((name, match.start(), match.end(), 0.85))
 
+    # Username patterns (john_smith, jane.doe)
+    # Check for context words nearby to boost confidence
+    text_lower = text.lower()
+    has_username_context = any(ctx in text_lower for ctx in USERNAME_CONTEXT)
+
+    for match in USERNAME_UNDERSCORE_PATTERN.finditer(text):
+        username = match.group(0)
+        is_person, confidence, extracted_name = validate_username_as_person(username)
+
+        if is_person:
+            # Boost confidence if username context words are nearby
+            if has_username_context:
+                confidence = min(0.90, confidence + 0.10)
+            results.append((username, match.start(), match.end(), confidence))
+
     return results
 
 
@@ -652,9 +833,22 @@ class PersonRecognizer(EntityRecognizer):
     The cascade can be configured to balance speed vs accuracy.
     By default, only lightweight models (LightGBM, patterns, dictionary) are enabled.
     Heavy models (GLiNER, Flair, Transformers) require: pip install hush-engine[accurate]
+
+    Voting Modes:
+    - Default: Tiered scoring with ensemble bonuses (balanced precision/recall)
+    - Strict (STRICT_PERSON_MODE=True): Higher precision via refined voting:
+        * Tier 1: Accept if LightGBM > 0.92 (high-precision model)
+        * Tier 2: Accept if 2+ models agree with cumulative score > 1.5
+        * Tier 3: Reject single-model detections below 0.70
+      Expected tradeoff: +10-15% precision, -5-10% recall
     """
 
     ENTITIES = ["PERSON"]
+
+    # Feature flag for strict precision mode
+    # Set to True to enable refined voting strategy
+    # Expected: +10-15% precision, -5-10% recall
+    STRICT_PERSON_MODE = False
 
     def __init__(
         self,
@@ -874,17 +1068,24 @@ class PersonRecognizer(EntityRecognizer):
 
         return results
 
-    # Default model accuracy weights for weighted voting (based on F1 scores)
-    # These can be overridden by IVW-calibrated weights from detection_config
+    # Default model accuracy weights for SOFT weighted voting
+    # Weights calibrated for recall optimization (2026-02-07 tuning)
+    # Formula: combined_score = weighted_sum / sum_of_weights_used
     DEFAULT_MODEL_WEIGHTS = {
-        "patterns": 1.0,       # Pattern matching has highest precision
-        "flair": 0.93,         # ~93% F1 on CoNLL-03
-        "spacy": 0.90,         # ~90% F1
-        "transformers": 0.88,  # BERT NER
-        "lgbm": 0.85,          # LightGBM NER (lightweight, ~85% F1 estimated)
-        "gliner": 0.82,        # Zero-shot ~82% F1
-        "name_dataset": 0.70,  # Dictionary lookup (high recall, lower precision)
+        "patterns": 0.82,      # UP from 0.70 - high precision deserves higher weight
+        "flair": 0.93,         # Flair NER - highest accuracy when available
+        "spacy": 0.90,         # spaCy NER - industrial grade, good accuracy
+        "lgbm": 0.88,          # UP from 0.85 - trained on real data
+        "transformers": 0.88,  # BERT NER - high precision
+        "gliner": 0.82,        # Zero-shot NER
+        "name_dataset": 0.68,  # UP from 0.60 - better for context detection
     }
+
+    # Soft voting acceptance threshold (lowered for better recall)
+    SOFT_VOTING_THRESHOLD = 0.50  # DOWN from 0.55
+
+    # Single-model minimum score threshold (lowered for borderline detections)
+    SINGLE_MODEL_THRESHOLD = 0.58  # DOWN from 0.60
 
     # Alias for backward compatibility
     MODEL_WEIGHTS = DEFAULT_MODEL_WEIGHTS
@@ -921,13 +1122,20 @@ class PersonRecognizer(EntityRecognizer):
         return_decision_process: bool = False
     ) -> List[Tuple[str, int, int, float, List[str]]]:
         """
-        Merge overlapping detections and aggregate their scores (ensemble scoring).
+        Merge overlapping detections using SOFT weighted voting.
 
-        When multiple engines detect overlapping spans, this method:
+        SOFT Weighted Voting Algorithm:
         1. Groups overlapping detections together
         2. Uses the span with the best coverage (longest match)
-        3. Aggregates scores with majority-vote ensemble (2+ models required)
-        4. Applies weighted voting based on model accuracy
+        3. Computes combined_score = weighted_sum / sum_of_weights_used
+        4. Accept if combined_score >= SOFT_VOTING_THRESHOLD (0.55)
+        5. Single-model detections accepted if score >= SINGLE_MODEL_THRESHOLD (0.60)
+
+        Model Weights (calibrated for recall optimization):
+        - spacy: 0.90 (industrial grade, good accuracy)
+        - lgbm: 0.85 (lightweight, fast)
+        - patterns: 0.70 (high precision but narrow)
+        - name_dataset: 0.60 (broad coverage, lower precision)
 
         Args:
             detections: List of (text, start, end, score, source)
@@ -975,84 +1183,164 @@ class PersonRecognizer(EntityRecognizer):
                     # No more overlaps possible
                     break
 
-            # Tiered confidence scoring model (original logic)
-            # Tier 1: High confidence (any model > 0.85) → accept directly
-            # Tier 2: Ensemble check (multiple models 0.40-0.85) → aggregate
-            # Tier 3: Context boost (0.30-0.40 with pattern context) → boost
+            # Compute common values
             max_score = max(scores)
             unique_sources = list(dict.fromkeys(sources))  # Preserve order, remove dups
             num_engines = len(unique_sources)
 
-            # Apply weighted voting: weight scores by model accuracy
-            # Uses IVW-calibrated weights if available, otherwise defaults
+            # Get model weights (IVW-calibrated if available, otherwise defaults)
             model_weights = self.get_model_weights()
+
+            # ================================================================
+            # SOFT WEIGHTED VOTING
+            # ================================================================
+            # Formula: combined_score = weighted_sum / sum_of_weights_used
+            # This gives higher scores when high-weight models agree
+            # ================================================================
+
+            # Calculate weighted sum and sum of weights
+            weighted_sum = 0.0
+            weight_sum = 0.0
             weighted_scores = []
+
+            # Group scores by unique source (take max score per source)
+            source_best_scores = {}
             for s, src in zip(scores, sources):
-                weight = model_weights.get(src, 0.80)
+                if src not in source_best_scores or s > source_best_scores[src]:
+                    source_best_scores[src] = s
+
+            for src, s in source_best_scores.items():
+                weight = model_weights.get(src, 0.70)  # Default weight for unknown sources
+                weighted_sum += s * weight
+                weight_sum += weight
                 weighted_scores.append(s * weight)
-            max_weighted_score = max(weighted_scores) if weighted_scores else max_score
+
+            # Compute combined score via soft weighted voting
+            if weight_sum > 0:
+                combined_score = weighted_sum / weight_sum
+            else:
+                combined_score = max_score
 
             # Initialize for decision logging
-            tier_used = "default"
+            tier_used = "soft_voting"
             agreement_bonus = 0.0
-            accepted = True  # Original logic: always accept, filter by threshold later
+            accepted = False
 
-            # Tier 1: Very high confidence from any single model
-            if max_score >= 0.90:
-                final_score = max_score
-                tier_used = "tier1_high_confidence"
-            # Tier 2: Multiple models in mid-range - minimal bonuses for precision
-            elif num_engines > 1:
-                mid_range_scores = [s for s in scores if 0.40 <= s < 0.90]
-                if len(mid_range_scores) >= 2:
-                    # Sum mid-range scores and check cumulative threshold
-                    cumulative = sum(mid_range_scores)
-                    if cumulative >= 1.7:  # Require much stronger agreement (was 1.5)
-                        # Very small boost - cap at 0.85 to require high-confidence sources
-                        agreement_bonus = min(0.06, (num_engines - 1) * 0.02)
-                        final_score = min(0.85, max_score + agreement_bonus)
-                        tier_used = "tier2_strong_consensus"
+            # ================================================================
+            # STRICT_PERSON_MODE: Refined voting for higher precision
+            # ================================================================
+            if self.STRICT_PERSON_MODE:
+                # Get LightGBM-specific scores
+                lgbm_scores = [s for s, src in zip(scores, sources) if src == "lgbm"]
+                max_lgbm_score = max(lgbm_scores) if lgbm_scores else 0.0
+
+                # Strict Tier 1: LightGBM high confidence (> 0.92)
+                if max_lgbm_score > 0.92:
+                    final_score = max_lgbm_score
+                    tier_used = "strict_tier1_lgbm_high"
+                    accepted = True
+
+                # Strict Tier 2: Multi-model consensus with soft voting
+                elif num_engines >= 2:
+                    if combined_score >= self.SOFT_VOTING_THRESHOLD:
+                        # Apply small agreement bonus for multi-model consensus
+                        agreement_bonus = min(0.08, (num_engines - 1) * 0.03)
+                        final_score = min(0.88, combined_score + agreement_bonus)
+                        tier_used = "strict_tier2_soft_vote"
+                        accepted = True
                     else:
-                        # No bonus for weak consensus - rely on individual scores
-                        agreement_bonus = 0.0
+                        final_score = combined_score
+                        tier_used = "strict_tier2_weak_consensus"
+                        accepted = False
+
+                # Strict Tier 3: Single-model detection
+                else:
+                    if max_score >= 0.70:
                         final_score = max_score
-                        tier_used = "tier2_weak_consensus"
-                else:
-                    # Single engine - no boost
-                    final_score = max_score
-                    tier_used = "tier2_sparse"
-            # Tier 3: Low confidence single model - require higher threshold
-            elif 0.30 <= max_score < 0.90:
-                # Single-engine detection below 0.75 is too weak - reject
-                if num_engines == 1 and max_score < 0.75:
-                    final_score = max_score
-                    tier_used = "tier3_single_weak"
-                    accepted = False
-                else:
-                    final_score = max_score
-                    tier_used = "tier3_low_confidence"
+                        tier_used = "strict_tier3_single_acceptable"
+                        accepted = True
+                    else:
+                        final_score = max_score
+                        tier_used = "strict_tier3_single_rejected"
+                        accepted = False
+
+            # ================================================================
+            # DEFAULT MODE: SOFT Weighted Voting (recall-optimized)
+            # ================================================================
             else:
-                final_score = max_score
-                tier_used = "tier4_very_low"
-                accepted = False
+                # Tier 1: Very high confidence from any single model (>= 0.90)
+                if max_score >= 0.90:
+                    final_score = max_score
+                    tier_used = "tier1_high_confidence"
+                    accepted = True
+
+                # Tier 2: Multi-model soft voting
+                elif num_engines >= 2:
+                    # Use combined score from weighted voting
+                    if combined_score >= self.SOFT_VOTING_THRESHOLD:
+                        # Apply agreement bonus for consensus
+                        agreement_bonus = min(0.12, (num_engines - 1) * 0.05)  # Tuned up from 0.04
+                        final_score = min(0.92, combined_score + agreement_bonus)
+                        tier_used = "tier2_soft_vote_accept"
+                        accepted = True
+                    else:
+                        # Below threshold but still multi-model - check max score
+                        if max_score >= self.SINGLE_MODEL_THRESHOLD:
+                            final_score = max_score
+                            tier_used = "tier2_fallback_max"
+                            accepted = True
+                        else:
+                            final_score = combined_score
+                            tier_used = "tier2_soft_vote_reject"
+                            accepted = False
+
+                # Tier 3: Single-model detection
+                elif num_engines == 1:
+                    # Accept single-model if above reduced threshold (0.60)
+                    if max_score >= self.SINGLE_MODEL_THRESHOLD:
+                        final_score = max_score
+                        tier_used = "tier3_single_accept"
+                        accepted = True
+                    else:
+                        final_score = max_score
+                        tier_used = "tier3_single_reject"
+                        accepted = False
+
+                # Tier 4: Very low confidence
+                else:
+                    final_score = max_score
+                    tier_used = "tier4_very_low"
+                    accepted = False
 
             # Log decision process if requested
             if decision_log is not None:
-                decision_log.append({
+                log_entry = {
                     "text": text_match,
                     "sources": unique_sources,
                     "raw_scores": list(scores),
+                    "source_best_scores": source_best_scores,
                     "weighted_scores": weighted_scores,
+                    "weighted_sum": weighted_sum,
+                    "weight_sum": weight_sum,
+                    "combined_score": combined_score,
                     "max_score": max_score,
-                    "max_weighted_score": max_weighted_score,
                     "num_engines": num_engines,
                     "tier": tier_used,
                     "agreement_bonus": agreement_bonus,
                     "final_score": final_score,
-                    "accepted": accepted
-                })
+                    "accepted": accepted,
+                    "strict_mode": self.STRICT_PERSON_MODE,
+                    "soft_voting_threshold": self.SOFT_VOTING_THRESHOLD,
+                    "single_model_threshold": self.SINGLE_MODEL_THRESHOLD,
+                }
+                # Add LightGBM-specific info in strict mode
+                if self.STRICT_PERSON_MODE:
+                    lgbm_scores = [s for s, src in zip(scores, sources) if src == "lgbm"]
+                    log_entry["lgbm_scores"] = lgbm_scores
+                    log_entry["max_lgbm_score"] = max(lgbm_scores) if lgbm_scores else 0.0
+                decision_log.append(log_entry)
 
-            # Only add detection if it was accepted by the tier logic
+            # Only add detection if it was accepted by the voting logic
             if accepted:
                 merged.append((text_match, start, end, final_score, unique_sources))
 

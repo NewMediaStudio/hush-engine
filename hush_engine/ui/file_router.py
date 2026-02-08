@@ -7,7 +7,8 @@ import sys
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import mimetypes
 
 # Add parent directory to path for imports
@@ -43,7 +44,10 @@ import tempfile
 import os
 import stat
 from dataclasses import dataclass
-from typing import Tuple
+
+# Maximum number of parallel workers for PDF page processing
+# Limit to avoid memory pressure (each page is ~10-20MB at 400 DPI)
+MAX_PDF_WORKERS = min(4, os.cpu_count() or 2)
 
 
 # =============================================================================
@@ -534,13 +538,166 @@ class FileRouter:
             'all_text_blocks': all_text_blocks
         }
 
-    def detect_pii_pdf(self, input_path: str, detect_faces: bool = True) -> Dict[str, Any]:
+    def _process_pdf_page(
+        self,
+        page_num: int,
+        page_image: "Image.Image",
+        user_locales: Optional[List[str]],
+        detect_faces: bool,
+        detect_qr: bool,
+        detect_barcodes: bool
+    ) -> Tuple[int, List[Dict], List[Dict], Tuple[float, float]]:
         """
-        Detect PII in a PDF without saving
+        Process a single PDF page for PII detection.
+
+        This method is designed to be called in parallel from ThreadPoolExecutor.
+        Uses in-memory OCR to avoid disk I/O overhead.
+
+        Args:
+            page_num: 1-indexed page number
+            page_image: PIL Image of the page
+            user_locales: User's locale preferences for detection
+            detect_faces: Whether to detect faces
+            detect_qr: Whether to detect QR codes
+            detect_barcodes: Whether to detect barcodes
+
+        Returns:
+            Tuple of (page_num, page_detections, page_text_blocks, page_dimensions)
+        """
+        page_dimensions = (float(page_image.width), float(page_image.height))
+        page_detections = []
+        page_text_blocks = []
+
+        # Extract text from this page using in-memory OCR (no temp file I/O)
+        ocr_detections = self.ocr.extract_text_from_image(page_image)
+
+        # Convert OCR detections to text blocks with page number
+        for detection in ocr_detections:
+            block = {
+                'text': detection.text,
+                'bbox': detection.bbox,
+                'page': page_num
+            }
+            page_text_blocks.append(block)
+
+        # Merge adjacent text regions for better PII detection
+        merged_regions = merge_adjacent_detections(ocr_detections)
+
+        # Detect PII in this page (initial pass)
+        for merged_region in merged_regions:
+            entities = self.detector.analyze_text(
+                merged_region.text,
+                locales=user_locales,
+                auto_detect_locale=(user_locales is None)
+            )
+
+            for entity in entities:
+                # Calculate bounding box spanning the relevant original detections
+                entity_bbox = get_bbox_for_entity(
+                    entity_start=entity.start,
+                    entity_end=entity.end,
+                    merged_region=merged_region
+                )
+                page_detections.append({
+                    'entity_type': entity.entity_type,
+                    'text': entity.text,
+                    'confidence': entity.confidence,
+                    'bbox': entity_bbox,
+                    'page': page_num
+                })
+
+        # Apply context-aware detection (table structure + header context)
+        try:
+            # Enhance detections using table context
+            page_detections = self.context_aware_detector.detect_with_context(
+                page_text_blocks, page_detections
+            )
+            # Fill in missing detections based on header context
+            page_detections = self.context_aware_detector.fill_missing_detections(
+                page_text_blocks, page_detections
+            )
+            # Add page number to any new detections
+            for det in page_detections:
+                if 'page' not in det:
+                    det['page'] = page_num
+        except Exception as e:
+            print(f"Page {page_num}: Context-aware detection error: {e}", file=sys.stderr)
+
+        # Detect faces in this page if enabled
+        if detect_faces:
+            try:
+                face_detections = self.face_detector.detect_faces(page_image)
+                for face in face_detections:
+                    x, y, w, h = face.bbox
+                    page_detections.append({
+                        'entity_type': 'FACE',
+                        'text': '[Face]',
+                        'confidence': face.confidence,
+                        'bbox': [float(x), float(y), float(x + w), float(y + h)],
+                        'page': page_num
+                    })
+                if face_detections:
+                    print(f"Page {page_num}: Detected {len(face_detections)} face(s)", file=sys.stderr)
+            except Exception as e:
+                print(f"Page {page_num}: Face detection error: {e}", file=sys.stderr)
+
+        # Detect QR codes in this page if enabled
+        if detect_qr:
+            try:
+                qr_detections = self.qr_detector.detect_qr_codes(page_image)
+                for qr in qr_detections:
+                    x, y, w, h = qr.bbox
+                    page_detections.append({
+                        'entity_type': 'QR_CODE',
+                        'text': qr.data if qr.data else '[QR Code]',
+                        'confidence': qr.confidence,
+                        'bbox': [float(x), float(y), float(x + w), float(y + h)],
+                        'page': page_num
+                    })
+                if qr_detections:
+                    print(f"Page {page_num}: Detected {len(qr_detections)} QR code(s)", file=sys.stderr)
+            except Exception as e:
+                print(f"Page {page_num}: QR code detection error: {e}", file=sys.stderr)
+
+        # Detect barcodes in this page if enabled
+        if detect_barcodes:
+            try:
+                barcode_detections = self.barcode_detector.detect_barcodes(page_image)
+                for barcode in barcode_detections:
+                    x, y, w, h = barcode.bbox
+                    page_detections.append({
+                        'entity_type': 'BARCODE',
+                        'text': f"[{barcode.barcode_type}] {barcode.data}" if barcode.data else f'[{barcode.barcode_type}]',
+                        'confidence': barcode.confidence,
+                        'bbox': [float(x), float(y), float(x + w), float(y + h)],
+                        'page': page_num
+                    })
+                if barcode_detections:
+                    print(f"Page {page_num}: Detected {len(barcode_detections)} barcode(s)", file=sys.stderr)
+            except Exception as e:
+                print(f"Page {page_num}: Barcode detection error: {e}", file=sys.stderr)
+
+        print(f"Page {page_num}: Found {len(page_detections)} total detections", file=sys.stderr)
+
+        return (page_num, page_detections, page_text_blocks, page_dimensions)
+
+    def detect_pii_pdf(
+        self,
+        input_path: str,
+        detect_faces: bool = True,
+        detect_qr: bool = True,
+        detect_barcodes: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Detect PII in a PDF without saving.
+
+        Uses parallel processing across pages for improved performance on multi-core systems.
 
         Args:
             input_path: Path to PDF file
             detect_faces: Whether to detect faces (default True)
+            detect_qr: Whether to detect QR codes (default True)
+            detect_barcodes: Whether to detect barcodes (default True)
 
         Returns:
             Dictionary with 'detections' (PII with page numbers), 'all_text_blocks', and 'total_pages'
@@ -552,140 +709,38 @@ class FileRouter:
         page_images = self.pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
 
-        print(f"Processing {total_pages} page(s) from PDF", file=sys.stderr)
+        print(f"Processing {total_pages} page(s) from PDF using {MAX_PDF_WORKERS} workers", file=sys.stderr)
 
         all_detections = []
         all_text_blocks = []
+        page_dimensions = {}  # Track actual page dimensions for spatial filtering
 
-        # Process each page
-        for page_num, page_image in enumerate(page_images, start=1):
-            # Save page image temporarily for OCR processing
-            # CRITICAL: Must preserve DPI metadata for accurate OCR
-            # SECURITY: Use secure temp file with restrictive permissions
-            temp_path = create_secure_temp_file(suffix='.png')
-            page_image.save(temp_path, dpi=(self.pdf_processor.dpi, self.pdf_processor.dpi))
+        # Process pages in parallel for better performance
+        with ThreadPoolExecutor(max_workers=MAX_PDF_WORKERS) as executor:
+            # Submit all page processing tasks
+            futures = {
+                executor.submit(
+                    self._process_pdf_page,
+                    page_num,
+                    page_image,
+                    user_locales,
+                    detect_faces,
+                    detect_qr,
+                    detect_barcodes
+                ): page_num
+                for page_num, page_image in enumerate(page_images, start=1)
+            }
 
-            try:
-                # Extract text from this page
-                ocr_detections = self.ocr.extract_text(temp_path)
-
-                # Convert OCR detections to text blocks with page number
-                page_text_blocks = []
-                for detection in ocr_detections:
-                    block = {
-                        'text': detection.text,
-                        'bbox': detection.bbox,
-                        'page': page_num
-                    }
-                    all_text_blocks.append(block)
-                    page_text_blocks.append(block)
-
-                # Merge adjacent text regions for better PII detection
-                merged_regions = merge_adjacent_detections(ocr_detections)
-
-                # Detect PII in this page (initial pass)
-                page_detections = []
-                for merged_region in merged_regions:
-                    entities = self.detector.analyze_text(
-                        merged_region.text,
-                        locales=user_locales,
-                        auto_detect_locale=(user_locales is None)
-                    )
-
-                    for entity in entities:
-                        # Calculate bounding box spanning the relevant original detections
-                        entity_bbox = get_bbox_for_entity(
-                            entity_start=entity.start,
-                            entity_end=entity.end,
-                            merged_region=merged_region
-                        )
-                        page_detections.append({
-                            'entity_type': entity.entity_type,
-                            'text': entity.text,
-                            'confidence': entity.confidence,
-                            'bbox': entity_bbox,
-                            'page': page_num
-                        })
-
-                # Apply context-aware detection (table structure + header context)
+            # Collect results as they complete
+            for future in as_completed(futures):
+                page_num = futures[future]
                 try:
-                    # Enhance detections using table context
-                    page_detections = self.context_aware_detector.detect_with_context(
-                        page_text_blocks, page_detections
-                    )
-                    # Fill in missing detections based on header context
-                    page_detections = self.context_aware_detector.fill_missing_detections(
-                        page_text_blocks, page_detections
-                    )
-                    # Add page number to any new detections
-                    for det in page_detections:
-                        if 'page' not in det:
-                            det['page'] = page_num
+                    result_page_num, page_dets, page_blocks, dims = future.result()
+                    all_detections.extend(page_dets)
+                    all_text_blocks.extend(page_blocks)
+                    page_dimensions[result_page_num] = dims
                 except Exception as e:
-                    print(f"Page {page_num}: Context-aware detection error: {e}", file=sys.stderr)
-
-                all_detections.extend(page_detections)
-
-                # Detect faces in this page if enabled
-                if detect_faces:
-                    try:
-                        face_detections = self.face_detector.detect_faces(page_image)
-                        for face in face_detections:
-                            # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
-                            x, y, w, h = face.bbox
-                            all_detections.append({
-                                'entity_type': 'FACE',
-                                'text': '[Face]',
-                                'confidence': face.confidence,
-                                'bbox': [float(x), float(y), float(x + w), float(y + h)],
-                                'page': page_num
-                            })
-                        if face_detections:
-                            print(f"Page {page_num}: Detected {len(face_detections)} face(s)", file=sys.stderr)
-                    except Exception as e:
-                        print(f"Page {page_num}: Face detection error: {e}", file=sys.stderr)
-
-                # Detect QR codes in this page
-                try:
-                    qr_detections = self.qr_detector.detect_qr_codes(page_image)
-                    for qr in qr_detections:
-                        # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
-                        x, y, w, h = qr.bbox
-                        all_detections.append({
-                            'entity_type': 'QR_CODE',
-                            'text': qr.data if qr.data else '[QR Code]',
-                            'confidence': qr.confidence,
-                            'bbox': [float(x), float(y), float(x + w), float(y + h)],
-                            'page': page_num
-                        })
-                    if qr_detections:
-                        print(f"Page {page_num}: Detected {len(qr_detections)} QR code(s)", file=sys.stderr)
-                except Exception as e:
-                    print(f"Page {page_num}: QR code detection error: {e}", file=sys.stderr)
-
-                # Detect barcodes in this page
-                try:
-                    barcode_detections = self.barcode_detector.detect_barcodes(page_image)
-                    for barcode in barcode_detections:
-                        # Convert bbox tuple to array format [x1, y1, x2, y2] expected by frontend
-                        x, y, w, h = barcode.bbox
-                        all_detections.append({
-                            'entity_type': 'BARCODE',
-                            'text': f"[{barcode.barcode_type}] {barcode.data}" if barcode.data else f'[{barcode.barcode_type}]',
-                            'confidence': barcode.confidence,
-                            'bbox': [float(x), float(y), float(x + w), float(y + h)],
-                            'page': page_num
-                        })
-                    if barcode_detections:
-                        print(f"Page {page_num}: Detected {len(barcode_detections)} barcode(s)", file=sys.stderr)
-                except Exception as e:
-                    print(f"Page {page_num}: Barcode detection error: {e}", file=sys.stderr)
-
-                print(f"Page {page_num}: Found {len([d for d in all_detections if d['page'] == page_num])} total detections", file=sys.stderr)
-
-            finally:
-                # Clean up temporary file
-                os.unlink(temp_path)
+                    print(f"Page {page_num} processing failed: {e}", file=sys.stderr)
 
         # Apply spatial filtering for improved precision (per page)
         if SPATIAL_FILTER_AVAILABLE and all_detections and all_text_blocks:
@@ -713,16 +768,15 @@ class FileRouter:
                         filtered_all.extend(page_dets)
                         continue
 
-                    # Get page dimensions from first text block bbox
-                    # (or use a default - will be improved when we track page dimensions)
-                    page_width = 612.0  # Standard letter width in pixels (approximate)
-                    page_height = 792.0  # Standard letter height in pixels (approximate)
+                    # Get actual page dimensions (in render pixels, typically 400 DPI)
+                    page_width, page_height = page_dimensions.get(page_num, (612.0, 792.0))
 
-                    # Create spatial context
+                    # Create spatial context with actual render DPI for proper threshold scaling
                     spatial_context = create_spatial_context(
                         page_width=page_width,
                         page_height=page_height,
-                        text_blocks=page_blocks
+                        text_blocks=page_blocks,
+                        source_dpi=float(self.pdf_processor.dpi)  # Typically 400 DPI
                     )
 
                     # Apply spatial filtering to text-based PII only

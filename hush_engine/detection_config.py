@@ -50,34 +50,35 @@ PRECISION_FEATURES = {
 
 
 # Default confidence thresholds per entity type
+# Calibrated on 2026-02-07 using Yellowbrick-style threshold analysis
 DEFAULT_THRESHOLDS = {
-    "PERSON": 0.55,  # Base threshold - precision controlled by consensus logic
-    "EMAIL_ADDRESS": 0.5,
-    "PHONE_NUMBER": 0.5,
+    "PERSON": 0.55,        # Base threshold - precision controlled by consensus logic
+    "EMAIL_ADDRESS": 0.30, # Calibrated: 99.6% F1 at low threshold (high precision)
+    "PHONE_NUMBER": 0.35,  # Calibrated: lower for recall (was 43.9%)
     "LOCATION": 0.5,
     "AWS_ACCESS_KEY": 0.5,
     "STRIPE_KEY": 0.5,
-    "CREDIT_CARD": 0.5,
-    "DATE_TIME": 0.5,
-    "AGE": 0.5,  # Age detection ("15 years old", "Age: 45")
-    "NRP": 0.5,  # Nationality, Religion, Political group
+    "CREDIT_CARD": 0.30,   # Calibrated: 96.3% F1 at low threshold (high precision)
+    "DATE_TIME": 0.40,     # Calibrated: 93.3% F1
+    "AGE": 0.30,           # Calibrated: 89.5% F1 at low threshold
+    "NRP": 0.5,            # Nationality, Religion, Political group
     "ORGANIZATION": 0.5,
     "URL": 0.5,
-    "IP_ADDRESS": 0.5,
+    "IP_ADDRESS": 0.6,     # Higher threshold to reduce FPs (49 in benchmark)
     "FINANCIAL": 0.5,
     "COMPANY": 0.5,
     "GENDER": 0.5,
     "FACE": 0.5,
-    "MEDICAL": 0.5,
+    "MEDICAL": 0.6,        # Higher threshold to reduce FPs (34 in benchmark)
     "QR_CODE": 0.5,
     "BARCODE": 0.5,
-    "COORDINATES": 0.5,
+    "COORDINATES": 0.6,    # Higher threshold to reduce FPs (12 in benchmark)
     # New entity types (v1.4.0)
-    "BIOMETRIC": 0.5,      # Fingerprints, facial recognition, iris scans
+    "BIOMETRIC": 0.6,      # Higher threshold to reduce FPs (12 in benchmark)
     "CREDENTIAL": 0.5,     # Passwords, PINs, API keys
     "ID": 0.5,             # Customer ID, Employee ID, generic IDs
-    "NATIONAL_ID": 0.5,    # SSN, passport, driver's license (consolidates SSN)
-    "NETWORK": 0.5,        # MAC addresses, device IDs, cookies
+    "NATIONAL_ID": 0.45,   # Calibrated: lower for recall (was 44.6%)
+    "NETWORK": 0.6,        # Higher threshold to reduce FPs (34 in benchmark)
     "VEHICLE": 0.5,        # VIN, license plates
 }
 

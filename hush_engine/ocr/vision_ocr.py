@@ -214,6 +214,132 @@ class VisionOCR:
                 except Exception:
                     pass  # Ignore cleanup errors
 
+    def extract_text_from_image(self, image: Image.Image) -> List[TextDetection]:
+        """
+        Extract text from a PIL Image without saving to disk.
+
+        This is an optimized version that avoids disk I/O by converting the
+        PIL Image directly to a CIImage in memory.
+
+        Args:
+            image: PIL Image to process
+
+        Returns:
+            List of TextDetection objects with text and coordinates
+        """
+        import io
+        from Cocoa import NSData
+
+        # Get image dimensions for coordinate transformation
+        image_width, image_height = image.size
+
+        # Convert PIL Image to PNG bytes in memory
+        buffer = io.BytesIO()
+        image.save(buffer, format='PNG')
+        png_bytes = buffer.getvalue()
+
+        # Create CIImage from NSData (in-memory)
+        ns_data = NSData.dataWithBytes_length_(png_bytes, len(png_bytes))
+        ci_image = CIImage.imageWithData_(ns_data)
+
+        if ci_image is None:
+            raise ValueError("Failed to create CIImage from PIL Image")
+
+        # Check CIImage extent to see if Vision is using a different resolution
+        ci_extent = ci_image.extent()
+        ci_width = ci_extent.size.width
+        ci_height = ci_extent.size.height
+
+        # If they don't match, Vision is using different dimensions - update our transform
+        if abs(ci_width - image_width) > 1 or abs(ci_height - image_height) > 1:
+            image_width = int(ci_width)
+            image_height = int(ci_height)
+
+        # Create the text recognition request
+        request = Vision.VNRecognizeTextRequest.alloc().init()
+        request.setRecognitionLevel_(self.vision_level)
+        request.setUsesLanguageCorrection_(True)
+
+        # Create request handler and perform the request
+        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(ci_image, None)
+        success = handler.performRequests_error_([request], None)
+
+        if not success:
+            raise RuntimeError("Vision OCR failed on in-memory image")
+
+        # Extract results
+        results = request.results()
+        if not results:
+            return []  # No text detected
+
+        detections = []
+        for observation in results:
+            # Get the top candidate (highest confidence)
+            top_candidates = observation.topCandidates_(1)
+            if not top_candidates or len(top_candidates) == 0:
+                continue
+
+            candidate = top_candidates[0]
+            # Convert PyObjC unicode to native Python string for Spacy compatibility
+            text = str(candidate.string())
+            confidence = float(candidate.confidence())
+
+            # Get bounding box for the entire text block
+            bbox = observation.boundingBox()
+
+            # Vision bounding box is (x, y, width, height) normalized (0-1)
+            # with origin at bottom-left
+            vision_box = (
+                bbox.origin.x,
+                bbox.origin.y,
+                bbox.size.width,
+                bbox.size.height
+            )
+
+            # Transform to PIL coordinates (x1, y1, x2, y2) in pixels
+            pil_bbox = self.vision_to_pil_coords(
+                vision_box,
+                image_height,
+                image_width,
+                padding=self.bbox_padding
+            )
+
+            # Extract character-level bounding boxes for precise entity localization
+            char_boxes = []
+            try:
+                for i in range(len(text)):
+                    # Get bounding box for each character
+                    char_range = (i, 1)  # (location, length)
+                    char_bbox = observation.boundingBoxForRange_error_(char_range, None)[0]
+                    if char_bbox:
+                        char_vision_box = (
+                            char_bbox.origin.x,
+                            char_bbox.origin.y,
+                            char_bbox.size.width,
+                            char_bbox.size.height
+                        )
+                        char_pil_bbox = self.vision_to_pil_coords(
+                            char_vision_box,
+                            image_height,
+                            image_width
+                        )
+                        char_boxes.append(char_pil_bbox)
+                    else:
+                        # If character bbox is not available, use None
+                        char_boxes.append(None)
+            except Exception:
+                # If character-level boxes are not available, leave as empty list
+                char_boxes = []
+
+            detections.append(TextDetection(
+                text=text,
+                confidence=confidence,
+                bbox=pil_bbox,
+                char_boxes=char_boxes if char_boxes else None
+            ))
+
+        return detections
+
     @staticmethod
     def vision_to_pil_coords(
         vision_box: Tuple[float, float, float, float],

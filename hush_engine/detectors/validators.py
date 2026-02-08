@@ -554,12 +554,69 @@ def validate_bic(bic: str) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]
 # PHONE NUMBER VALIDATION
 # =============================================================================
 
+def _normalize_phone_for_validation(phone_text: str) -> str:
+    """
+    Normalize phone number text for libphonenumber validation.
+
+    This is critical for OCR-recovered phone numbers that have spaces between
+    digits like "9 6 4 0 1 2 3 4 5 6" or "1 800 555 1234".
+
+    Args:
+        phone_text: Raw phone number text (may have OCR spacing)
+
+    Returns:
+        Normalized phone number string suitable for libphonenumber parsing
+    """
+    # Check if this looks like heavily spaced OCR output
+    spaced_pattern = re.match(r'^(\d\s+){7,14}\d$', phone_text.strip())
+    mixed_spaced = re.match(r'^(\d[-.\s]+){7,14}\d$', phone_text.strip())
+
+    if spaced_pattern or mixed_spaced:
+        # Extract just the digits (preserve leading +)
+        has_plus = phone_text.strip().startswith('+')
+        digits = re.sub(r'[^\d]', '', phone_text)
+
+        if has_plus:
+            return '+' + digits
+
+        # For 10-11 digit numbers, assume North American format
+        if len(digits) == 10:
+            return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+        elif len(digits) == 11 and digits.startswith('1'):
+            return f"1-{digits[1:4]}-{digits[4:7]}-{digits[7:]}"
+        else:
+            return '+' + digits if len(digits) > 10 else digits
+
+    # Check for partially spaced numbers like "416 555 1234"
+    partial_spaced = re.match(r'^[\d\s]+$', phone_text.strip())
+    if partial_spaced:
+        digits = re.sub(r'\s+', '', phone_text)
+        if len(digits) >= 10:
+            return digits
+
+    return phone_text
+
+
+def _is_ocr_spaced_phone(phone_text: str) -> bool:
+    """Check if this phone number has OCR-style spacing."""
+    stripped = phone_text.strip()
+    return bool(
+        re.match(r'^(\d\s+){7,14}\d$', stripped) or
+        re.match(r'^(\d[-.\s]+){7,14}\d$', stripped) or
+        re.match(r'^\+\s*(\d\s*){8,15}$', stripped)
+    )
+
+
 def validate_phone(
     phone: str,
     default_region: str = "US"
 ) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
     Validate a phone number using the phonenumbers library.
+
+    Supports OCR-spaced phone numbers by normalizing before validation.
+    For OCR patterns, "possible" numbers are treated as valid since the
+    spacing pattern itself is strong evidence of a phone number.
 
     Args:
         phone: The phone number string
@@ -575,13 +632,25 @@ def validate_phone(
         import phonenumbers
         from phonenumbers import NumberParseException, PhoneNumberType
 
+        # Normalize OCR-spaced phone numbers before validation
+        normalized_phone = _normalize_phone_for_validation(phone)
+        is_ocr = _is_ocr_spaced_phone(phone)
+
         # Parse the phone number
         try:
-            parsed = phonenumbers.parse(phone, default_region)
+            parsed = phonenumbers.parse(normalized_phone, default_region)
         except NumberParseException:
             return False, None, None
 
-        # Validate
+        # For OCR-spaced patterns, treat "possible" as valid
+        # The spacing pattern itself is strong evidence of a phone number
+        if is_ocr:
+            if phonenumbers.is_possible_number(parsed):
+                digits = re.sub(r'\D', '', phone)
+                return True, None, {"digits": digits, "ocr_normalized": True}
+            return False, None, None
+
+        # Standard validation for non-OCR patterns
         if not phonenumbers.is_valid_number(parsed):
             return False, None, None
 

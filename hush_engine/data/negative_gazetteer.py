@@ -176,6 +176,41 @@ ENTITY_NEGATIVE_GAZETTEERS: Dict[str, Set[str]] = {
         # Document labels
         "company", "business", "employer", "vendor", "supplier",
         "customer", "client", "account", "merchant", "retailer",
+
+        # Brand names that are common English words (high FP rate)
+        "apple", "amazon", "target", "delta", "united", "american",
+        "national", "general", "universal", "global", "international",
+        "premier", "prime", "first", "best", "top", "elite", "select",
+        "choice", "preferred", "standard", "classic", "modern", "advanced",
+        "pioneer", "frontier", "summit", "pinnacle", "apex", "zenith",
+        "liberty", "freedom", "justice", "guardian", "sentinel", "shield",
+        "eagle", "falcon", "hawk", "phoenix", "titan", "atlas", "pioneer",
+        "horizon", "sunrise", "sunset", "eclipse", "stellar", "cosmic",
+        "cascade", "evergreen", "sterling", "diamond", "platinum", "gold",
+        "silver", "bronze", "crystal", "emerald", "sapphire", "ruby",
+
+        # Industry terms (single words, not company names)
+        "bank", "banking", "insurance", "healthcare", "hospital", "medical",
+        "hotel", "resort", "restaurant", "retail", "wholesale", "logistics",
+        "shipping", "transport", "airline", "railway", "telecom", "wireless",
+        "energy", "power", "utility", "water", "gas", "electric", "solar",
+        "manufacturing", "automotive", "aerospace", "defense", "security",
+        "pharmaceutical", "biotech", "chemical", "petroleum", "mining",
+        "construction", "engineering", "architecture", "design", "media",
+        "entertainment", "gaming", "sports", "fitness", "wellness", "beauty",
+        "fashion", "apparel", "textile", "furniture", "appliance", "electronics",
+
+        # Common descriptive terms used in company names
+        "north", "south", "east", "west", "central", "coastal", "pacific",
+        "atlantic", "continental", "regional", "local", "metro", "suburban",
+        "rural", "urban", "capital", "crown", "royal", "imperial", "sovereign",
+        "republic", "commonwealth", "dominion", "empire", "kingdom", "realm",
+
+        # Technology/software terms
+        "tech", "digital", "cyber", "virtual", "cloud", "data", "info",
+        "net", "web", "online", "mobile", "smart", "intelligent", "cognitive",
+        "analytics", "insights", "platform", "network", "connect", "link",
+        "sync", "stream", "flow", "hub", "node", "core", "base", "foundation",
     },
 
     "LOCATION": {
@@ -240,8 +275,8 @@ def is_negative_match(text: str, entity_type: str) -> bool:
     """
     text_lower = text.lower().strip()
 
-    # Check common words first (applies to all entity types)
-    if text_lower in COMMON_ENGLISH_WORDS:
+    # Check common words (but NOT for PERSON - many names are also common words)
+    if entity_type != "PERSON" and text_lower in COMMON_ENGLISH_WORDS:
         return True
 
     # Check entity-specific gazetteer
@@ -284,9 +319,20 @@ def is_single_common_word(text: str, entity_type: str) -> bool:
     if text_lower not in COMMON_ENGLISH_WORDS:
         return False
 
-    # Check for corporate suffix in original text
-    corporate_suffixes = ["inc", "inc.", "llc", "ltd", "ltd.", "corp", "corp.",
-                          "co", "co.", "plc", "gmbh", "ag", "sa", "nv", "bv"]
+    # Check for corporate suffix in original text (expanded list)
+    corporate_suffixes = [
+        # Abbreviations
+        "inc", "inc.", "llc", "llc.", "ltd", "ltd.", "corp", "corp.",
+        "co", "co.", "plc", "plc.", "pllc", "lp", "llp",
+        # Full forms
+        "incorporated", "corporation", "limited", "company",
+        # European forms
+        "gmbh", "gmbh.", "ag", "ag.", "sa", "sa.", "nv", "nv.", "bv", "bv.",
+        "s.p.a.", "s.r.l.", "s.a.s.", "sarl", "sas", "spa", "srl",
+        "pty", "pty.", "oy", "ab", "as", "aps",
+        # Other
+        "& co", "& co.", "& company",
+    ]
     text_parts = text.lower().split()
     if any(suffix in text_parts for suffix in corporate_suffixes):
         return False

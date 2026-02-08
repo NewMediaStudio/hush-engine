@@ -311,8 +311,12 @@ class WeightCalibrator:
         for f in feedback_path.glob("*.json"):
             try:
                 with open(f, 'r', encoding='utf-8') as fp:
-                    entry = json.load(fp)
-                    feedback_data.append(entry)
+                    data = json.load(fp)
+                    # Handle both single entries (dict) and batch entries (list)
+                    if isinstance(data, list):
+                        feedback_data.extend(data)
+                    else:
+                        feedback_data.append(data)
             except (json.JSONDecodeError, IOError) as e:
                 logger.debug(f"Skipping invalid feedback file {f}: {e}")
                 continue

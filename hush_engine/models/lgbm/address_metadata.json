@@ -1,6 +1,6 @@
 {
-  "entity_type": "LOCATION",
-  "trained_at": "2026-02-07T19:41:52.139265",
+  "entity_type": "ADDRESS",
+  "trained_at": "2026-02-07T19:42:46.650650",
   "feature_names": [
     "is_capitalized",
     "is_all_caps",

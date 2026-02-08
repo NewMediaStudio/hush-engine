@@ -60,7 +60,7 @@ FIRST_NAMES_ENGLISH = {
     "terrell", "tyrone", "dwayne", "reggie", "lamar", "antoine", "jerome", "kareem",
     "rashad", "quincy", "cedric", "donovan", "andre", "devon", "jamal", "monte",
     # Female - Traditional
-    "mary", "patricia", "jennifer", "linda", "barbara", "elizabeth", "susan",
+    "mary", "patricia", "jennifer", "linda", "barbara", "elizabeth", "susan", "jane",
     "jessica", "sarah", "karen", "lisa", "nancy", "betty", "margaret", "sandra",
     "ashley", "kimberly", "emily", "donna", "michelle", "dorothy", "carol",
     "amanda", "melissa", "deborah", "stephanie", "rebecca", "sharon", "laura",
@@ -564,7 +564,7 @@ FIRST_NAMES_DUTCH = {
 # ============================================================================
 
 LAST_NAMES_ENGLISH = {
-    "smith", "johnson", "williams", "brown", "jones", "garcia", "miller", "davis",
+    "smith", "johnson", "williams", "brown", "jones", "garcia", "miller", "davis", "doe",
     "rodriguez", "martinez", "hernandez", "lopez", "gonzalez", "wilson", "anderson",
     "thomas", "taylor", "moore", "jackson", "martin", "lee", "perez", "thompson",
     "white", "harris", "sanchez", "clark", "ramirez", "lewis", "robinson", "walker",

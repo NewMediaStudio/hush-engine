@@ -4,7 +4,7 @@ PDF Processor - Convert PDFs to images and back for secure redaction
 
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Generator, Tuple
 from PIL import Image
 
 try:
@@ -70,6 +70,63 @@ class PDFProcessor:
         except Exception as e:
             print(f"Error converting PDF to images: {e}", file=sys.stderr)
             raise
+
+    def pdf_to_images_batch(
+        self,
+        pdf_path: str,
+        batch_size: int = 4
+    ) -> Generator[List[Tuple[int, Image.Image]], None, None]:
+        """
+        Convert PDF pages to images in batches for memory-efficient processing.
+
+        This generator yields batches of pages, allowing large PDFs to be processed
+        without loading all pages into memory at once.
+
+        Args:
+            pdf_path: Path to PDF file
+            batch_size: Number of pages per batch (default: 4)
+
+        Yields:
+            List of (page_number, PIL Image) tuples for each batch
+        """
+        from pdf2image import pdfinfo_from_path
+
+        try:
+            info = pdfinfo_from_path(pdf_path)
+            total_pages = info.get('Pages', 0)
+        except Exception:
+            # Fallback: convert first page to check if PDF is valid
+            test_images = convert_from_path(pdf_path, dpi=72, first_page=1, last_page=1)
+            if not test_images:
+                return
+            # Estimate by trying to get count another way
+            total_pages = 1  # Will convert one at a time
+
+        print(f"Processing {total_pages} page(s) in batches of {batch_size}", file=sys.stderr)
+
+        for batch_start in range(1, total_pages + 1, batch_size):
+            batch_end = min(batch_start + batch_size - 1, total_pages)
+
+            try:
+                images = convert_from_path(
+                    pdf_path,
+                    dpi=self.dpi,
+                    fmt='png',
+                    thread_count=2,
+                    first_page=batch_start,
+                    last_page=batch_end
+                )
+
+                # Pair each image with its page number
+                batch = [
+                    (batch_start + i, img)
+                    for i, img in enumerate(images)
+                ]
+                yield batch
+
+            except Exception as e:
+                print(f"Error converting pages {batch_start}-{batch_end}: {e}", file=sys.stderr)
+                raise
 
     def images_to_pdf(self, images: List[Image.Image], output_path: str) -> None:
         """

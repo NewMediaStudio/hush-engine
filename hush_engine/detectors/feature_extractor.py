@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 _names_db = None
 _cities_db = None
 _countries_db = None
+_companies_db = None
 
 
 def _get_names_db():
@@ -60,6 +61,19 @@ def _get_countries_db():
             logger.warning("CountriesDatabase not available")
             _countries_db = False
     return _countries_db if _countries_db else None
+
+
+def _get_companies_db():
+    """Lazy load companies database."""
+    global _companies_db
+    if _companies_db is None:
+        try:
+            from hush_engine.data.companies_database import CompaniesDatabase
+            _companies_db = CompaniesDatabase()
+        except ImportError:
+            logger.debug("CompaniesDatabase not available")
+            _companies_db = False
+    return _companies_db if _companies_db else None
 
 
 # Common patterns
@@ -114,6 +128,15 @@ ORG_CONTEXT = frozenset({
     'hospital', 'bank', 'group', 'foundation', 'association', 'agency',
 })
 
+# Company suffixes (for detecting end of company names)
+COMPANY_SUFFIXES = frozenset({
+    'inc', 'inc.', 'corp', 'corp.', 'corporation', 'llc', 'llc.',
+    'ltd', 'ltd.', 'limited', 'plc', 'plc.', 'co', 'co.',
+    'company', 'companies', 'group', 'holdings', 'partners',
+    'associates', 'enterprises', 'industries', 'international',
+    'gmbh', 'ag', 's.a.', 'sa', 'nv', 'bv', 'pty',
+})
+
 
 @dataclass
 class TokenFeatures:
@@ -143,6 +166,8 @@ class TokenFeatures:
     is_city: bool
     is_country: bool
     is_stop_word: bool
+    is_company_suffix: bool
+    is_known_company: bool
 
     # Pattern features
     is_title: bool
@@ -184,6 +209,8 @@ class TokenFeatures:
             'is_city': int(self.is_city),
             'is_country': int(self.is_country),
             'is_stop_word': int(self.is_stop_word),
+            'is_company_suffix': int(self.is_company_suffix),
+            'is_known_company': int(self.is_known_company),
             'is_title': int(self.is_title),
             'looks_like_email': int(self.looks_like_email),
             'looks_like_phone': int(self.looks_like_phone),
@@ -244,12 +271,15 @@ def extract_token_features(token: str, position: int = 0) -> TokenFeatures:
     names_db = _get_names_db()
     cities_db = _get_cities_db()
     countries_db = _get_countries_db()
+    companies_db = _get_companies_db()
 
     is_first_name = names_db.is_first_name(token_lower) if names_db else False
     is_last_name = names_db.is_last_name(token_lower) if names_db else False
     is_any_name = names_db.is_name(token_lower) if names_db else False
     is_city = cities_db.is_city(token_lower) if cities_db else False
     is_country = countries_db.is_country(token_lower) if countries_db else False
+    is_company_suffix = token_lower.rstrip('.') in COMPANY_SUFFIXES
+    is_known_company = companies_db.is_company(token_lower) if companies_db else False
 
     # Pattern matching
     is_title = bool(TITLE_PATTERN.match(token_stripped))
@@ -279,6 +309,8 @@ def extract_token_features(token: str, position: int = 0) -> TokenFeatures:
         is_city=is_city,
         is_country=is_country,
         is_stop_word=token_lower in STOP_WORDS,
+        is_company_suffix=is_company_suffix,
+        is_known_company=is_known_company,
         is_title=is_title,
         looks_like_email=looks_like_email,
         looks_like_phone=looks_like_phone,
@@ -421,7 +453,8 @@ FEATURE_NAMES = [
     'has_punctuation', 'has_hyphen', 'char_length', 'vowel_ratio',
     'word_shape_Xxxxx', 'word_shape_XXXXX', 'word_shape_xxxxx', 'word_shape_digits',
     'is_first_name', 'is_last_name', 'is_any_name', 'is_city', 'is_country',
-    'is_stop_word', 'is_title', 'looks_like_email', 'looks_like_phone',
+    'is_stop_word', 'is_company_suffix', 'is_known_company',
+    'is_title', 'looks_like_email', 'looks_like_phone',
     'looks_like_date', 'looks_like_url', 'looks_like_currency',
     'prev_is_title', 'prev_is_capitalized', 'next_is_capitalized',
     'has_person_context', 'has_location_context', 'has_org_context',

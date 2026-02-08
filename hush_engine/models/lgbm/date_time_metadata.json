@@ -1,6 +1,7 @@
 {
   "entity_type": "DATE_TIME",
-  "trained_at": "2026-02-06T09:16:26.970126",
+  "classifier_type": "lgbm",
+  "trained_at": "2026-02-07T20:22:45.610481",
   "feature_names": [
     "is_capitalized",
     "is_all_caps",
@@ -20,6 +21,8 @@
     "is_city",
     "is_country",
     "is_stop_word",
+    "is_company_suffix",
+    "is_known_company",
     "is_title",
     "looks_like_email",
     "looks_like_phone",
@@ -35,6 +38,6 @@
     "position_start",
     "position_end"
   ],
-  "num_trees": 200,
+  "num_trees": 195,
   "privacy_note": "Trained on synthetic data only. No real PII used."
 }
