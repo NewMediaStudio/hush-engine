@@ -161,6 +161,10 @@ See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documenta
 | **ImageAnonymizer** | Apply red censor bars to detected areas |
 | **SpreadsheetAnonymizer** | Redact PII in Excel/CSV files |
 | **FaceDetector** | OpenCV Haar cascade face detection |
+| **AddressVerifier** | LightGBM-based address validation with street type/number checks |
+| **CompanyVerifier** | Corporate suffix detection with S&P 500 and international company database |
+| **CredentialEntropy** | Shannon entropy analysis for API keys, tokens, and secrets |
+| **HeuristicVerifier** | Zero-dependency form label filtering and confidence adjustment |
 | **Validators** | Industry-standard validation using python-stdnum and phonenumbers |
 | **DetectionConfig** | Runtime configuration with threshold adjustment |
 
@@ -309,6 +313,42 @@ Available integrations: `lgbm_ner`, `spacy`, `flair`, `transformers`, `gliner`, 
 python -m pytest tests/
 ```
 
+### Benchmarking
+
+Run accuracy benchmarks with the synthetic golden test set:
+
+```bash
+# Quick test (100 samples)
+python3.10 tests/benchmark_accuracy.py --samples 100 --no-pdf
+
+# Full benchmark on synthetic golden set
+python3.10 tests/benchmark_accuracy.py --golden --no-pdf
+
+# Start the benchmark dashboard
+python3.10 tests/benchmark_server.py
+# Then open http://localhost:8000
+```
+
+### Training LightGBM Models
+
+Train or retrain the NER classifiers using synthetic data or the ai4privacy dataset:
+
+```bash
+# Train all entity types with synthetic data
+python3.10 tools/train_lgbm_ner.py --all --samples 5000
+
+# Train with SMOTE class balancing + noise augmentation
+python3.10 tools/train_lgbm_ner.py --all --smote --augment --samples 10000
+
+# Train with ai4privacy/pii-masking-300k external dataset
+python3.10 tools/train_lgbm_ner.py --all --ai4privacy --augment --samples 10000
+
+# SVM classifier alternative
+python3.10 tools/train_lgbm_ner.py --entity-type PERSON --classifier svm
+```
+
+See [tools/AI4PRIVACY_INTEGRATION.md](tools/AI4PRIVACY_INTEGRATION.md) for dataset integration details.
+
 ### Building from Source
 
 ```bash
@@ -344,6 +384,20 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 ## Roadmap
 
+### Completed (v1.5.0)
+- [x] Address verifier with LightGBM classifier
+- [x] Company verifier with S&P 500 database and corporate suffix detection
+- [x] Credential entropy analyzer (Shannon entropy for secrets/tokens)
+- [x] Heuristic verifier for form label filtering (zero dependencies)
+- [x] LightGBM model preloader (resolves OpenMP/spaCy conflict on macOS)
+- [x] OCR noise filter for detected text
+- [x] SVM classifier option for NER training
+- [x] SMOTE class balancing and noise augmentation for training pipeline
+- [x] ai4privacy/pii-masking-300k dataset integration (225K+ annotated samples)
+- [x] Threshold calibration tool with precision-recall analysis
+- [x] Benchmark dashboard with multi-dataset support and run history
+- [x] Person recognizer cascade with tuned model weights and USERNAME detection
+
 ### Completed (v1.4.0)
 - [x] LightGBM NER classifiers (5-10x faster, ~10MB models)
 - [x] New entity types (BIOMETRIC, CREDENTIAL, ID, NATIONAL_ID, NETWORK, VEHICLE)
@@ -366,7 +420,6 @@ For security issues, please email security@newmediastudio.com instead of using t
 
 ### Planned
 - [ ] Windows/Linux support (alternative OCR engines)
-- [ ] Custom local model training
 - [ ] Batch processing optimizations
 - [ ] Video frame processing
 - [ ] GDPR Article 9 special categories (racial origin, political opinions, religious beliefs)
