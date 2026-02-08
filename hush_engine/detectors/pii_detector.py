@@ -2127,6 +2127,15 @@ class PIIDetector:
         # This is a very common pattern in the training data (41% of companies)
         multi_name_company_regex = r"\b[A-Z][a-z]+,\s+[A-Z][a-z]+\s+and\s+[A-Z][a-z]+\b"
 
+        # "Name and Sons/Brothers/Daughters" pattern (e.g., "Mccann and Sons", "Martin and Sons")
+        # Common Faker company format for family businesses
+        and_family_company_regex = r"\b[A-Z][a-z]+\s+and\s+(?:Sons|Brothers|Daughters|Sisters|Family)\b"
+
+        # Hyphenated company with context: "at Name-Name", "Name-Name headquarters"
+        # Higher score than bare hyphenated pattern because context confirms company usage
+        # Uses lookbehind to capture only the company name, not the preposition
+        hyphenated_context_company_regex = r"(?:(?<=\bat\s)|(?<=\bfor\s)|(?<=\bby\s)|(?<=\bfrom\s)|(?<=\bwith\s))[A-Z][a-z]+-[A-Z][a-z]+\b|[A-Z][a-z]+-[A-Z][a-z]+(?=\s+headquarters\b)"
+
         # Company names after context keywords (e.g., "at Jackson-Guzman", "for Andrade LLC")
         # Match capitalized phrase following company context
         context_company_regex = r"(?:at|for|by|from|to|of|with)\s+([A-Z][a-zA-Z]+(?:[-\s][A-Z][a-zA-Z]+)*)"
@@ -2171,6 +2180,16 @@ class PIIDetector:
                     score=0.85,  # High score - very reliable pattern
                 ),
                 Pattern(
+                    name="company_and_family",
+                    regex=and_family_company_regex,
+                    score=0.85,  # High score - "X and Sons" is very reliable
+                ),
+                Pattern(
+                    name="company_hyphenated_context",
+                    regex=hyphenated_context_company_regex,
+                    score=0.80,  # High score - context confirms company usage
+                ),
+                Pattern(
                     name="company_hyphenated",
                     regex=hyphenated_company_regex,
                     score=0.40,  # Reduced from 0.55 - too many false positives
@@ -2207,7 +2226,7 @@ class PIIDetector:
                 ),
                 # CamelCase pattern disabled - too many false positives
             ],
-            context=["company", "inc", "ltd", "corp", "limited", "firm", "business", "employer", "organization", "corporation", "enterprise", "client", "vendor"]
+            context=["company", "inc", "ltd", "corp", "limited", "firm", "business", "employer", "organization", "corporation", "enterprise", "client", "vendor", "headquarters", "hq"]
         )
 
         self.analyzer.registry.add_recognizer(company_recognizer)
@@ -2699,7 +2718,7 @@ class PIIDetector:
             context=["phone", "tel", "mobile", "cell", "fax", "contact"]
         )
 
-        # NA phone with dashes: 416-770-4541 or 1-416-770-4541
+        # NA phone with dashes: 416-770-4541 or 1-416-770-4541 or 001-416-770-4541
         na_phone_dashes = PatternRecognizer(
             supported_entity="PHONE_NUMBER",
             patterns=[
@@ -2712,6 +2731,13 @@ class PIIDetector:
                     name="na_phone_dashes_with_1",
                     # Matches: 1-XXX-XXX-XXXX (toll-free and long-distance format)
                     regex=r"\b1-\d{3}-\d{3}-\d{4}\b",
+                    score=0.95,  # Same score as standard format
+                ),
+                Pattern(
+                    name="na_phone_dashes_with_001",
+                    # Matches: 001-XXX-XXX-XXXX (international dialing prefix for US/Canada)
+                    # Faker generates this format; 001 is the IDD prefix for +1
+                    regex=r"\b001-\d{3}-\d{3}-\d{4}\b",
                     score=0.95,  # Same score as standard format
                 ),
             ],
@@ -2958,10 +2984,22 @@ class PIIDetector:
                     regex=r"\(\d{3}\)\s?\d{3}[-.\s]?\d{4}\s?[xX#]\s?\d{1,6}\b",
                     score=0.95,
                 ),
-                # XXX-XXX-XXXX x NNNNN - dashes with extension
+                # XXX-XXX-XXXX x NNNNN - dashes/dots with extension
                 Pattern(
                     name="phone_ext_dashes",
                     regex=r"\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\s?(?:x|ext\.?|extension)\s?\d{1,6}\b",
+                    score=0.95,
+                ),
+                # 001-XXX-XXX-XXXXxNNNNN - IDD prefix with extension
+                Pattern(
+                    name="phone_ext_001",
+                    regex=r"\b001-\d{3}-\d{3}-\d{4}\s?[xX#]\s?\d{1,6}\b",
+                    score=0.95,
+                ),
+                # +1-XXX-XXX-XXXXxNNNNN - international prefix with extension
+                Pattern(
+                    name="phone_ext_plus1",
+                    regex=r"\+1-\d{3}-\d{3}-\d{4}\s?[xX#]\s?\d{1,6}\b",
                     score=0.95,
                 ),
                 # Redacted phone: ***-***-1906, XXX-XXX-1234
@@ -3981,7 +4019,7 @@ class PIIDetector:
         session_id = r'\b(?:sid|session|sess_id)\s*[:=]\s*[a-zA-Z0-9_\-]{16,}\b'
 
         # Device identifiers (hex strings from ground truth)
-        device_hex = r'\b[a-f0-9]{16}\b'
+        device_hex = r'\b(?=[a-f0-9]*[a-f])[a-f0-9]{16}\b'
         device_uuid = r'\b[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\b'
 
         network_recognizer = PatternRecognizer(
@@ -4024,7 +4062,7 @@ class PIIDetector:
         # Simplified pattern for common formats
         ipv6_full = r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"
         # Compressed IPv6 with ::
-        ipv6_compressed = r"\b(?:[0-9a-fA-F]{1,4}:)*:(?::[0-9a-fA-F]{1,4})*\b"
+        ipv6_compressed = r"\b(?:[0-9a-fA-F]{1,4}:){1,7}:(?::[0-9a-fA-F]{1,4}){0,6}\b"
 
         ip_recognizer = PatternRecognizer(
             supported_entity="IP_ADDRESS",
@@ -4976,6 +5014,12 @@ class PIIDetector:
             if len(digits) >= 10:
                 return digits
 
+        # Normalize international dialing prefix 001- to +1 for libphonenumber
+        # 001 is the IDD (International Direct Dialing) prefix used in many countries
+        # to dial the US/Canada (+1), but phonenumbers expects +1 format
+        if re.match(r'^001[-.\s]', phone_text):
+            return '+1' + phone_text[3:]
+
         # For standard formats, just return as-is
         return phone_text
 
@@ -5352,6 +5396,12 @@ class PIIDetector:
                 # Skip acronyms (all caps) or proper nouns (first letter cap only)
                 if word.isupper() or (word[0].isupper() and word[1:].islower()):
                     continue
+                # Skip hyphenated proper nouns (e.g., "Burgess-Patterson", "Hewlett-Packard")
+                # Each hyphen-separated part should be checked individually
+                if '-' in word:
+                    parts = word.split('-')
+                    if all(p and p[0].isupper() and (len(p) <= 1 or p[1:].islower()) for p in parts):
+                        continue
                 # Check for random caps in middle of word
                 mid = word[1:-1]
                 if mid and any(c.isupper() for c in mid) and any(c.islower() for c in mid):
@@ -5411,6 +5461,11 @@ class PIIDetector:
         - FINANCIAL false positives from names and non-financial data
         """
         filtered = []
+
+        # Pre-compute ADDRESS, COMPANY, and LOCATION spans for cross-entity PERSON filtering
+        address_spans = [(e.start, e.end) for e in entities if e.entity_type == "ADDRESS"]
+        company_spans = [(e.start, e.end) for e in entities if e.entity_type == "COMPANY"]
+        location_spans = [(e.start, e.end) for e in entities if e.entity_type == "LOCATION"]
 
         for entity in entities:
             entity_text = entity.text.strip()
@@ -5617,6 +5672,110 @@ class PIIDetector:
                 if len(entity_text.replace(' ', '')) == 2 and entity_text.isupper():
                     if entity.confidence < 0.90:
                         continue
+                # Cross-entity filtering: suppress PERSON contained within ADDRESS or COMPANY
+                # Street names (e.g. "Johnson" in "819 Johnson Course") and company names
+                # (e.g. "Taylor" in "Becker, Taylor and Davis") trigger false PERSON detections
+                person_in_address = any(
+                    a_start <= entity.start and entity.end <= a_end
+                    for a_start, a_end in address_spans
+                )
+                person_in_company = any(
+                    c_start <= entity.start and entity.end <= c_end
+                    for c_start, c_end in company_spans
+                )
+                if person_in_address or person_in_company:
+                    continue
+
+                # --- Enhanced PERSON-in-address filtering ---
+                # Addresses often detected as LOCATION (not ADDRESS), and PERSON
+                # detections from street names/city names overlap with LOCATION spans.
+
+                # Filter PERSON fully contained within a LOCATION span
+                person_in_location = any(
+                    l_start <= entity.start and entity.end <= l_end
+                    for l_start, l_end in location_spans
+                )
+                if person_in_location:
+                    continue
+
+                # Compute overlap between this PERSON and any LOCATION span
+                _person_loc_overlap = 0
+                for l_start, l_end in location_spans:
+                    _ov_start = max(entity.start, l_start)
+                    _ov_end = min(entity.end, l_end)
+                    if _ov_end > _ov_start:
+                        _person_loc_overlap += _ov_end - _ov_start
+                _person_len = entity.end - entity.start
+                _has_significant_loc_overlap = (
+                    (_person_loc_overlap / _person_len > 0.5) if _person_len > 0 else False
+                )
+
+                _person_words = entity_text.split()
+                _person_words_clean = [w.lower().rstrip('.,;:') for w in _person_words]
+
+                # Street type words that are NOT common last names
+                _safe_street_types = {
+                    'course', 'drive', 'drives', 'road', 'roads', 'street',
+                    'streets', 'avenue', 'avenues', 'way', 'ways', 'court',
+                    'courts', 'boulevard', 'circle', 'circles', 'terrace',
+                    'trail', 'trails', 'highway', 'parkway', 'plaza', 'spur',
+                    'spurs', 'knoll', 'knolls', 'viaduct', 'motorway',
+                    'crossing', 'passage', 'summit', 'overpass', 'underpass',
+                    'turnpike', 'loop', 'alley', 'mews', 'skyway',
+                    'stravenue', 'throughway', 'apt', 'apt.', 'suite', 'unit',
+                }
+                # Filter PERSON containing unambiguous street type words
+                if any(w in _safe_street_types for w in _person_words_clean):
+                    continue
+
+                # Filter PERSON containing "Apt.", "Suite", or "Unit" (strong address signal)
+                if re.search(r'\bApt\.?\b|\bSuite\b|\bUnit\b', entity_text, re.IGNORECASE):
+                    continue
+
+                # Filter "Name, XX" pattern (comma + 2-letter state abbreviation)
+                if re.search(r',\s*[A-Z]{2}$', entity_text):
+                    continue
+
+                # Filter USNS/USS/USCGC prefix (military vessel names, not people)
+                if re.match(r'^(USNS|USS|USCGC)\s', entity_text):
+                    continue
+
+                # Address-context words (geographic features used in street names)
+                _address_context_words = {
+                    'port', 'ports', 'ramp', 'forge', 'forges', 'key', 'keys',
+                    'corner', 'corners', 'light', 'lights', 'plain', 'plains',
+                    'valley', 'valleys', 'crest', 'meadow', 'meadows', 'creek',
+                    'run', 'gateway', 'isle', 'neck', 'falls', 'spring',
+                    'springs', 'orchard', 'inlet', 'fork', 'forks', 'bend',
+                    'walk', 'walks', 'flat', 'flats', 'point', 'points',
+                    'cape', 'mount', 'bluff', 'landing', 'hollow', 'bayou',
+                    'trace', 'dam', 'locks', 'rapids', 'shoal', 'bar',
+                    'estate', 'estates', 'manor', 'village', 'cove', 'island',
+                    'islands', 'square', 'squares', 'tunnel', 'harbor',
+                    'harbors', 'common', 'commons', 'stream', 'pine', 'pines',
+                    'shore', 'shores', 'cliff', 'cliffs', 'mountain',
+                    'mountains', 'green', 'greens', 'center', 'pass', 'mall',
+                    'extension', 'extensions', 'well', 'wells', 'lake',
+                }
+                _has_addr_context = any(
+                    w in _address_context_words for w in _person_words_clean
+                )
+
+                # Filter: address context word + text ends with comma (address fragment)
+                if _has_addr_context and entity_text.strip().endswith(','):
+                    continue
+
+                # Filter: multiple commas in text (address pattern "Street, City, ST")
+                if entity_text.count(',') >= 2:
+                    continue
+
+                # Filter: significant LOCATION overlap + trailing comma
+                if _has_significant_loc_overlap and entity_text.strip().endswith(','):
+                    continue
+
+                # Filter: significant LOCATION overlap + address context word
+                if _has_significant_loc_overlap and _has_addr_context:
+                    continue
 
             # Filter NATIONAL_ID false positives
             if entity.entity_type == "NATIONAL_ID":
@@ -5874,16 +6033,28 @@ class PIIDetector:
             # Filter PHONE_NUMBER false positives
             if entity.entity_type == "PHONE_NUMBER":
                 digits = re.sub(r'\D', '', entity_text)
-                # Skip if it's a credit card (16 digits)
-                if len(digits) == 16:
+                # Strip extension digits before length checks (e.g., "(406)485-3615x30515")
+                # Phone extensions use x, ext, #, etc. -- don't count extension digits
+                # for IMEI/CC/IBAN length-based filters
+                has_extension = bool(re.search(r'[xX#]|ext\.?|extension', entity_text))
+                if has_extension:
+                    # Extract only the base phone digits (before extension marker)
+                    base_phone = re.split(r'[xX#]|ext\.?|extension', entity_text)[0]
+                    base_digits = re.sub(r'\D', '', base_phone)
+                else:
+                    base_digits = digits
+                # Skip if it's a credit card (16 digits in base number)
+                if len(base_digits) == 16:
                     continue
                 # Skip if it matches IBAN pattern (long alphanumeric with letters)
                 # IBANs are 15-34 chars with letters, phone numbers are digits only
                 # Use digit count instead of text length to avoid filtering OCR-spaced phones
-                if len(digits) > 15 and re.search(r'[A-Za-z]', entity_text):
+                # Exclude extension markers (x/X) from the letter check
+                non_ext_text = re.split(r'[xX#]|ext\.?|extension', entity_text)[0]
+                if len(base_digits) > 15 and re.search(r'[A-Za-z]', non_ext_text):
                     continue
-                # Skip if it looks like an IMEI (15 digits)
-                if len(digits) == 15:
+                # Skip if it looks like an IMEI (15 digits in base number)
+                if len(base_digits) == 15:
                     continue
                 # Skip if it looks like an IP address (4 octets separated by dots)
                 if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', entity_text):
@@ -6686,13 +6857,32 @@ class PIIDetector:
                 if re.match(r'^(?:the|a|an|this|that|our|their|your|its)\s+', text_lower):
                     continue
                 # Skip if it's a gerund phrase with hyphen (e.g., "self-assessing")
+                # But NOT if it's a hyphenated proper name (e.g., "Carr-Archer", "Bryant-Meyer")
                 if re.match(r'^[a-z]+-[a-z]+(?:ing|ed|er|tion)\b', text_lower):
-                    continue
+                    if not re.match(r'^[A-Z][a-z]+-[A-Z][a-z]+$', entity_text):
+                        continue
                 # For hyphenated names, require higher confidence when not followed by suffix
+                # BUT allow through if company context words are nearby (headquarters, at X via, etc.)
                 if '-' in entity_text and entity.confidence < 0.7:
                     # Check if NOT followed by a company suffix
                     if not re.search(r'\b(?:Inc|LLC|Ltd|Corp|Company|Group|Partners)\b', entity_text, re.IGNORECASE):
-                        continue
+                        # Check for company context: "X headquarters", "at X via", "at X,"
+                        has_company_context = False
+                        try:
+                            entity_end_pos = entity.end
+                            entity_start_pos = entity.start
+                            # Check text after the entity for "headquarters"
+                            after_text = text[entity_end_pos:min(len(text), entity_end_pos + 30)].lower()
+                            if after_text.lstrip().startswith('headquarters'):
+                                has_company_context = True
+                            # Check text before the entity for "at ", "for ", "from ", "with "
+                            before_text = text[max(0, entity_start_pos - 10):entity_start_pos].lower()
+                            if re.search(r'\b(?:at|for|from|with)\s+$', before_text):
+                                has_company_context = True
+                        except (AttributeError, IndexError):
+                            pass
+                        if not has_company_context:
+                            continue
                 # Skip very short company names (less than 4 chars)
                 if len(entity_text.strip()) < 4:
                     continue
