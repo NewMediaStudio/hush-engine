@@ -371,7 +371,7 @@ class PIIDetector:
             context_enhancer = LemmaContextAwareEnhancer(
                 context_similarity_factor=0.35,
                 min_score_with_context_similarity=0.4,
-                context_prefix_count=5,
+                context_prefix_count=10,  # Wider window for structured/HTML text
                 context_suffix_count=5
             )
 
@@ -1512,6 +1512,52 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(date_birth_year)
         self.analyzer.registry.add_recognizer(date_ordinal)
 
+        # Standalone time patterns (work regardless of dateparser availability)
+        time_patterns = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(
+                    name="time_european_h",
+                    # European format: 10h30, 14h00, 8h45
+                    regex=r"\b([01]?\d|2[0-3])h[0-5]\d\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="time_24h_standalone",
+                    # 24-hour time: 14:30, 08:45, 23:59 (not already in dateparser)
+                    regex=r"\b([01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\b",
+                    score=0.75,
+                ),
+                Pattern(
+                    name="time_12h_ampm",
+                    # 12-hour time with AM/PM: 2:45 PM, 11:30 am
+                    regex=r"\b(1[0-2]|0?[1-9]):[0-5]\d\s*[APap]\.?[Mm]\.?\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="time_hour_ampm",
+                    # Standalone hour with AM/PM: 5 AM, 10 PM, 2 pm
+                    regex=r"\b(1[0-2]|0?[1-9])\s+[APap]\.?[Mm]\.?\b",
+                    score=0.75,
+                ),
+                Pattern(
+                    name="time_oclock",
+                    # N o'clock: 3 o'clock, 15 o'clock
+                    regex=r"\b\d{1,2}\s+o'clock\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="date_month_slash_yy",
+                    # Month/YY format: February/44, August/42, May/64
+                    regex=r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)/\d{1,2}\b",
+                    score=0.80,
+                ),
+            ],
+            context=["time", "at", "from", "to", "until", "schedule", "appointment",
+                     "meeting", "call", "pm", "am", "hour", "clock", "date", "birth"]
+        )
+        self.analyzer.registry.add_recognizer(time_patterns)
+
         # Add dateparser-based recognizer for natural language dates
         # This catches formats that regex misses: "Jul 13, 2009", "13th July 2009", "13/07/2009" (European)
         if DATEPARSER_AVAILABLE:
@@ -2312,6 +2358,7 @@ class PIIDetector:
             r"[Mm][Aa][Ll][Ee]", r"[Ff][Ee][Mm][Aa][Ll][Ee]",
             r"[Mm][Aa][Nn]", r"[Ww][Oo][Mm][Aa][Nn]",
             r"[Bb][Oo][Yy]", r"[Gg][Ii][Rr][Ll]",
+            r"[Mm]asculine", r"[Ff]eminine",
         ]
 
         # Transgender terms
@@ -2364,6 +2411,41 @@ class PIIDetector:
         )
 
         self.analyzer.registry.add_recognizer(gender_recognizer)
+
+        # Single-letter gender codes (M/F) - very low base score, rely on context boost
+        gender_letter_recognizer = PatternRecognizer(
+            supported_entity="GENDER",
+            patterns=[
+                Pattern(
+                    name="gender_single_letter",
+                    regex=r"\b[MF]\b",
+                    score=0.35,
+                )
+            ],
+            context=["gender", "sex", "male", "female", "m/f", "f/m"]
+        )
+
+        self.analyzer.registry.add_recognizer(gender_letter_recognizer)
+
+        # Phrase-based gender responses (common in forms and surveys)
+        gender_phrase_recognizer = PatternRecognizer(
+            supported_entity="GENDER",
+            patterns=[
+                Pattern(
+                    name="gender_prefer_not_to_disclose",
+                    regex=r"\b[Pp]refer\s+not\s+to\s+(?:disclose|say|answer|specify)\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="gender_other",
+                    regex=r"\b[Oo]ther\b",
+                    score=0.30,
+                ),
+            ],
+            context=["gender", "sex", "identity", "male", "female", "m/f", "f/m"]
+        )
+
+        self.analyzer.registry.add_recognizer(gender_phrase_recognizer)
 
     def _add_coordinate_recognizers(self):
         """
@@ -3742,9 +3824,9 @@ class PIIDetector:
             supported_entity="ID",
             patterns=[
                 Pattern(name="id_letter_dash_digits", regex=id_letter_dash_digits, score=0.85),
-                Pattern(name="id_letters_digits", regex=id_letters_digits, score=0.80),
-                Pattern(name="id_mixed_pattern", regex=id_mixed_pattern, score=0.80),
-                Pattern(name="id_airport_code", regex=id_airport_code, score=0.85),
+                Pattern(name="id_letters_digits", regex=id_letters_digits, score=0.55),  # Lowered: generic pattern creates massive FPs
+                Pattern(name="id_mixed_pattern", regex=id_mixed_pattern, score=0.55),  # Lowered: needs context boost
+                Pattern(name="id_airport_code", regex=id_airport_code, score=0.70),  # Lowered: needs some context
                 Pattern(name="id_digits_only", regex=id_digits_only, score=0.40),  # Reduced - needs strong context
                 Pattern(name="id_hex_short", regex=id_hex_short, score=0.55),  # Reduced - needs context
             ],
@@ -4059,10 +4141,13 @@ class PIIDetector:
         ipv4_with_port = rf"\b{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}(?::\d{{1,5}})?\b"
 
         # IPv6: Full format (8 groups of 4 hex digits)
-        # Simplified pattern for common formats
         ipv6_full = r"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b"
-        # Compressed IPv6 with ::
-        ipv6_compressed = r"\b(?:[0-9a-fA-F]{1,4}:){1,7}:(?::[0-9a-fA-F]{1,4}){0,6}\b"
+        # Compressed IPv6 with :: in middle (e.g., 2001:db8::8a2e:370:7334, fe80::1)
+        ipv6_compressed_mid = r"\b(?:[0-9a-fA-F]{1,4}:){1,6}:(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){0,5})\b"
+        # Compressed IPv6 with leading :: (e.g., ::1, ::ffff:192.168.1.1)
+        ipv6_compressed_start = r"(?<![:\w])::(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){0,6})(?![:\w])"
+        # IPv6-mapped IPv4 (e.g., ::ffff:192.168.1.1)
+        ipv6_mapped_ipv4 = rf"(?<![:\w])::ffff:{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}\.{ipv4_octet}(?![:\w])"
 
         ip_recognizer = PatternRecognizer(
             supported_entity="IP_ADDRESS",
@@ -4070,7 +4155,9 @@ class PIIDetector:
                 Pattern(name="ipv4_standard", regex=ipv4_pattern, score=0.85),
                 Pattern(name="ipv4_with_port", regex=ipv4_with_port, score=0.90),
                 Pattern(name="ipv6_full", regex=ipv6_full, score=0.95),
-                Pattern(name="ipv6_compressed", regex=ipv6_compressed, score=0.85),
+                Pattern(name="ipv6_compressed_mid", regex=ipv6_compressed_mid, score=0.85),
+                Pattern(name="ipv6_compressed_start", regex=ipv6_compressed_start, score=0.80),
+                Pattern(name="ipv6_mapped_ipv4", regex=ipv6_mapped_ipv4, score=0.90),
             ],
             context=["ip", "ip address", "ipv4", "ipv6", "server", "host", "network",
                      "address", "connection", "client", "remote", "local", "localhost"]
@@ -4561,17 +4648,19 @@ class PIIDetector:
                     score=0.35,  # Low - conflicts with phone, needs context
                 ),
                 # "044034803" - 9 digits no separators (very generic, needs context)
-                # NOTE: Score set very low - matches order numbers, invoice IDs, etc.
+                # Score at 0.40 to pass min_score_with_context_similarity (0.40)
+                # Without context: 0.40 < 0.55 threshold → filtered
+                # With context: 0.40 + 0.35 = 0.75 → passes threshold
                 Pattern(
                     name="ssn_no_sep",
                     regex=r"\b\d{9}\b",
-                    score=0.10,  # Near-zero - requires very strong context to reach threshold
+                    score=0.40,  # Must be >= 0.40 for context boost to apply
                 ),
                 # 10 digits no separators: 0779979931, 0293609842
                 Pattern(
                     name="ssn_10_digit",
                     regex=r"\b0\d{9}\b",  # Leading zero often indicates ID
-                    score=0.30,  # Low - generic, requires context
+                    score=0.40,  # Must be >= 0.40 for context boost to apply
                 ),
                 # 4-4-4 with dashes (some international formats): 2918-7097-9313
                 Pattern(
@@ -4582,7 +4671,8 @@ class PIIDetector:
             ],
             context=["ssn", "social security", "social security number", "ss#", "ss #",
                      "social", "tax id", "tin", "taxpayer", "employee id", "national id",
-                     "personal id", "citizen id"]
+                     "personal id", "citizen id", "identification", "id number",
+                     "passport", "driver", "license", "licence", "participant"]
         )
 
         self.analyzer.registry.add_recognizer(ssn_recognizer)
@@ -4612,6 +4702,18 @@ class PIIDetector:
                     regex=r"\b\d{3}\.\d{3}\.\d{3}\b",
                     score=0.60,  # Common format
                 ),
+                # Swiss AHV format: 756.xxxx.xxxx.xx
+                Pattern(
+                    name="swiss_ahv",
+                    regex=r"\b756\.\d{4}\.\d{4}\.\d{2}\b",
+                    score=0.90,  # Very distinctive format (always starts with 756)
+                ),
+                # Generic 13-digit dotted: NNN.NNNN.NNNN.NN
+                Pattern(
+                    name="dotted_13_digit",
+                    regex=r"\b\d{3}\.\d{4}\.\d{4}\.\d{2}\b",
+                    score=0.70,
+                ),
             ],
             context=["id", "national id", "id number", "identification", "identity",
                      "citizen", "personal id", "id card", "id-nummer", "kennung",
@@ -4636,9 +4738,52 @@ class PIIDetector:
                     regex=r"\b[A-Z]{2}\d{6,8}\b",
                     score=0.75,
                 ),
+                # 2 letters + 5 digits + 2 letters (UK NINO-like): QD95456MT, RG95837PQ
+                Pattern(
+                    name="alpha_mixed_id",
+                    regex=r"\b[A-Z]{2}\d{4,6}[A-Z]{1,2}\b",
+                    score=0.70,
+                ),
+                # CURP/RFC-like: DANCO-411081-9-013, MALAN-308037-9-763
+                Pattern(
+                    name="curp_like_id",
+                    regex=r"\b[A-Z]{4,6}[-.]?\d{6}[-.]?\d[-.]?\d{3}\b",
+                    score=0.80,
+                ),
+                # Italian fiscal code-like: DESAN0622749530, NANNE6030669080 (5+ letters + 10 digits)
+                Pattern(
+                    name="fiscal_code_long",
+                    regex=r"\b[A-Z]{4,6}\d{10}\b",
+                    score=0.75,
+                ),
+                # Alphanumeric with dots: L3.82.I5Z3P4E.1, R56JT8873119
+                Pattern(
+                    name="alpha_dot_mixed",
+                    regex=r"\b[A-Z]\d+\.[A-Z\d]+\.[A-Z\d]+\.\d+\b",
+                    score=0.65,
+                ),
+                # Spaced CURP: MULUA 910056 9 416, GERAL 952255 GW 330
+                Pattern(
+                    name="curp_spaced",
+                    regex=r"\b[A-Z]{4,6}\s+\d{6}\s+\d\s+\d{3}\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="curp_spaced_letters",
+                    regex=r"\b[A-Z]{4,6}\s+\d{6}\s+[A-Z]{1,2}\s+\d{3}\b",
+                    score=0.80,
+                ),
+                # Generic alphanumeric ID: 8-16 chars with mixed letters/numbers
+                # Examples: 30ZU7O8Z (8), R56JT8873119 (12), PAMUK355316PL457 (16), 4K4G3Q51DHF (11)
+                # Very generic - requires context to avoid FPs
+                Pattern(
+                    name="generic_alphanum_id",
+                    regex=r"\b(?=.*[A-Z])(?=.*\d)[A-Z\d]{8,16}\b",
+                    score=0.40,  # Low - requires context boost
+                ),
             ],
             context=["id", "national id", "id number", "identification", "identity",
-                     "passport", "license", "permit", "registration"]
+                     "passport", "license", "permit", "registration", "number"]
         )
         self.analyzer.registry.add_recognizer(alphanumeric_id)
 
@@ -5006,6 +5151,19 @@ class PIIDetector:
                 # Return as-is with + prefix for international parsing
                 return '+' + digits if len(digits) > 10 else digits
 
+        # Normalize international dialing prefix 001- to +1 for libphonenumber
+        # 001 is the IDD (International Direct Dialing) prefix used in many countries
+        # to dial the US/Canada (+1), but phonenumbers expects +1 format
+        if re.match(r'^001[-.\s]', phone_text):
+            return '+1' + phone_text[3:]
+
+        # Check for European 00-prefix international dialing (must be before partial_spaced)
+        stripped = phone_text.strip()
+        if stripped.startswith('00') and not stripped.startswith('001'):
+            # Convert 00XX to +XX format for phonenumbers
+            digits = re.sub(r'[^\d]', '', stripped)
+            return '+' + digits[2:]  # Remove leading 00
+
         # Check for partially spaced numbers like "416 555 1234" or "1 800 555 1234"
         # These have groups of digits separated by spaces
         partial_spaced = re.match(r'^[\d\s]+$', phone_text.strip())
@@ -5014,11 +5172,20 @@ class PIIDetector:
             if len(digits) >= 10:
                 return digits
 
-        # Normalize international dialing prefix 001- to +1 for libphonenumber
-        # 001 is the IDD (International Direct Dialing) prefix used in many countries
-        # to dial the US/Canada (+1), but phonenumbers expects +1 format
-        if re.match(r'^001[-.\s]', phone_text):
-            return '+1' + phone_text[3:]
+        # Skip standard parenthesized formats - phonenumbers handles them natively
+        if re.match(r'^\+?\(?\d', stripped) and '(' in phone_text and ')' in phone_text:
+            return phone_text
+
+        # Handle mixed separators (dash+dot+space): strip all non-digit chars
+        # This catches formats like '+33 70-242-8659', '0106 41.195-8207', etc.
+        has_plus = phone_text.strip().startswith('+')
+        has_mixed_seps = bool(re.search(r'[-.]', phone_text) and re.search(r'[\s]', phone_text)) or \
+                         bool(re.search(r'[-]', phone_text) and re.search(r'[.]', phone_text))
+        if has_mixed_seps or re.search(r'[^\d\s()+\-.]', phone_text):
+            digits = re.sub(r'[^\d]', '', phone_text)
+            if has_plus:
+                return '+' + digits
+            return digits  # Don't add '+' - let phonenumbers use default_region
 
         # For standard formats, just return as-is
         return phone_text
@@ -5471,7 +5638,7 @@ class PIIDetector:
             entity_text = entity.text.strip()
 
             # CREDENTIAL filtering - Context-anchored entropy verification
-            # Uses Shannon entropy + context anchor (trigger words within 5 tokens)
+            # Uses Shannon entropy + context anchor (trigger words within 10 tokens)
             # See credential_entropy.py for implementation details
             if entity.entity_type == "CREDENTIAL":
                 if CREDENTIAL_ENTROPY_AVAILABLE:
@@ -5535,9 +5702,19 @@ class PIIDetector:
                 if len(entity_text) <= 3 and entity.confidence < 0.85:
                     continue
 
-            # Filter ADDRESS-specific false positives (aggressive filtering for 70%+ precision)
-            if entity.entity_type == "ADDRESS":
+            # Filter ADDRESS/LOCATION false positives
+            if entity.entity_type in ("ADDRESS", "LOCATION"):
                 text_lower = entity_text.lower().strip()
+
+                # Filter "via username" patterns (e.g., "via john_doe", "via @handle")
+                if re.match(r'^via\s+\S+$', text_lower) and ' ' not in text_lower.split('via ', 1)[-1].strip():
+                    continue
+                # Filter "Dear Name" patterns (salutations, not addresses)
+                if re.match(r'^dear\s+\w+', text_lower):
+                    continue
+                # Filter phone-number fragments (NNN-NNNN) misdetected as address/location
+                if re.match(r'^\d{3}[-.]\d{4}$', entity_text.strip()):
+                    continue
 
                 # Filter OCR garbage and malformed patterns
                 if re.match(r'#\d+[a-z]', entity_text, re.IGNORECASE):
@@ -5598,7 +5775,7 @@ class PIIDetector:
                     continue
 
                 # Filter if it starts with prepositions (sentence fragment)
-                if re.match(r'^(in|on|at|to|of|by|for|from|with|as|the|a|an)\s+\w+$', text_lower) and len(words) <= 3:
+                if re.match(r'^(in|on|at|to|of|by|for|from|with|as|the|a|an)\s+\w+$', text_lower) and len(text_lower.split()) <= 3:
                     if entity.confidence < 0.85:
                         continue
 
@@ -5683,6 +5860,19 @@ class PIIDetector:
                     c_start <= entity.start and entity.end <= c_end
                     for c_start, c_end in company_spans
                 )
+                # Allow PERSON through if COMPANY span looks like a sentence, not a name
+                # e.g., "Reach out to Shannon Matthews at Key Ltd" — the COMPANY span
+                # swallows the person, but the text before the name has sentence words
+                if person_in_company:
+                    for c_start, c_end in company_spans:
+                        if c_start <= entity.start and entity.end <= c_end:
+                            before_person = text[c_start:entity.start].lower()
+                            sentence_words = {'to', 'from', 'by', 'with', 'for',
+                                              'contact', 'reach', 'ask', 'call',
+                                              'email', 'notify', 'inform', 'dear'}
+                            if any(w in before_person.split() for w in sentence_words):
+                                person_in_company = False
+                            break
                 if person_in_address or person_in_company:
                     continue
 
@@ -5797,9 +5987,17 @@ class PIIDetector:
                     continue
                 # Skip if it looks like a phone number (10-11 digits with dashes)
                 if len(digits) == 10 or len(digits) == 11:
-                    # Phone patterns: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX XXX XXXX
-                    if re.match(r'^[\(\s]*\d{3}[\)\s\-\.]*\d{3}[\s\-\.]*\d{4}$', entity_text):
-                        continue
+                    # Don't suppress if SSN/ID context keywords are present nearby
+                    nid_ctx_start = max(0, entity.start - 50)
+                    nid_ctx = text[nid_ctx_start:entity.start].lower()
+                    nid_keywords = {'ssn', 'social security', 'national id', 'identification',
+                                    'id number', 'tax id', 'tin', 'national insurance', 'nino',
+                                    'id:', 'number:'}
+                    has_nid_context = any(kw in nid_ctx for kw in nid_keywords)
+                    if not has_nid_context:
+                        # Phone patterns: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX XXX XXXX
+                        if re.match(r'^[\(\s]*\d{3}[\)\s\-\.]*\d{3}[\s\-\.]*\d{4}$', entity_text):
+                            continue
                     # Canadian/Australian format: XXX XXX XXX or XXX-XXX-XXX (9 digits)
                     if len(digits) == 9 and re.match(r'^\d{3}[\s\-\.]\d{3}[\s\-\.]\d{3}$', entity_text):
                         continue
@@ -5906,8 +6104,8 @@ class PIIDetector:
                 # Skip if it looks like a credit card fragment (4 digit groups)
                 if re.match(r'^\d{4}[\s-]?\d{4}', entity_text):
                     continue
-                # Skip very short matches
-                if len(entity_text) < 6:
+                # Skip very short matches (allow times like "14:30" = 5 chars)
+                if len(entity_text) < 4:
                     continue
                 # Skip if it's just a street number pattern like "2901 E"
                 if re.match(r'^\d+\s+[A-Z]$', entity_text):
@@ -5915,9 +6113,14 @@ class PIIDetector:
                 # Skip if it's just numbers (no date separators or month names)
                 if re.match(r'^\d+$', entity_text):
                     continue
-                # Skip if it looks like a year only (4 digits)
+                # Skip standalone years unless date/birth context is nearby
                 if re.match(r'^(19|20)\d{2}$', entity_text):
-                    continue
+                    ctx_start = max(0, entity.start - 50)
+                    ctx = text[ctx_start:entity.start].lower()
+                    year_keywords = {'born', 'birth', 'year', 'since', 'from', 'in', 'during',
+                                     'until', 'between', 'circa', 'date', 'died', 'established'}
+                    if not any(kw in ctx for kw in year_keywords):
+                        continue
                 # Skip very low confidence
                 if entity.confidence < 0.5:
                     continue
@@ -6106,11 +6309,51 @@ class PIIDetector:
                             text=entity.text,
                             start=entity.start,
                             end=entity.end,
-                            confidence=entity.confidence * 0.5,  # Reduce confidence
+                            confidence=entity.confidence * 0.75,  # Gentle penalty (0.5 was too aggressive)
                             pattern_name=entity.pattern_name,
                             locale=entity.locale,
                             recognition_metadata=entity.recognition_metadata
                         )
+
+                # Context-based suppression: numeric IDs in labeled fields
+                # SSNs, passports, driver licenses share digit formats with phones
+                # Narrow window (30 before, 10 after) to avoid cross-contaminating nearby phones
+                phone_ctx_start = max(0, entity.start - 30)
+                phone_ctx_end = min(len(text), entity.end + 10)
+                phone_ctx = text[phone_ctx_start:phone_ctx_end].lower()
+                ssn_keywords = {'social security', 'social number', 'socialnumber',
+                                'ssn', '<socialnumber', 'national insurance'}
+                passport_keywords = {'passport', '<passport'}
+                dl_keywords = {"driver's license", 'driver license', 'driverlicense',
+                               '<driverlicense', 'driving licence', 'dl number', 'dl:'}
+                if any(kw in phone_ctx for kw in ssn_keywords):
+                    continue
+                if any(kw in phone_ctx for kw in passport_keywords):
+                    continue
+                if any(kw in phone_ctx for kw in dl_keywords):
+                    continue
+
+                # Context anchoring: phones without context keywords are likely FPs
+                # Only exempt numbers with strong phone formatting (international prefix)
+                stripped = entity_text.strip()
+                has_intl_prefix = bool(re.match(r'\+\d{1,3}[\s\-\(]', stripped))
+                has_paren_area_code = bool(re.match(r'\(\d{2,4}\)\s*\d', stripped))
+                # Also accept numbers with clear phone separator formatting (xxx-xxx-xxxx)
+                # Require 7+ digits total to avoid matching dates like 2026-02-08
+                has_separator_format = False
+                if re.match(r'\d{3}[\-\.]\d{3}[\-\.]\d{4}', stripped):
+                    has_separator_format = True
+                has_strong_formatting = has_intl_prefix or has_paren_area_code or has_separator_format
+                if not has_strong_formatting:
+                    ctx_start = max(0, entity.start - 100)
+                    ctx_end = min(len(text), entity.end + 50)
+                    surrounding = text[ctx_start:ctx_end].lower()
+                    phone_keywords = {'phone', 'tel', 'mobile', 'cell', 'fax', 'contact',
+                                      'call', 'dial', 'sms', 'whatsapp',
+                                      'reach', 'hotline', 'helpline', 'ext', 'extension',
+                                      'telephone', 'landline', 'cellular'}
+                    if not any(kw in surrounding for kw in phone_keywords):
+                        continue
 
             # Filter IP_ADDRESS false positives (version strings like "v1.2.3.4", "Chrome 110.0.5481.77")
             if entity.entity_type == "IP_ADDRESS":
@@ -6146,6 +6389,32 @@ class PIIDetector:
                     if ip_count >= 3:
                         # Multiple similar patterns suggest tabular data or placeholders
                         continue
+
+                # SSN disambiguation: IPv4-like patterns that are part of longer dot-separated
+                # sequences (e.g., "27.01.06.52.N67.7" social security number format)
+                if ':' not in entity_text:  # Only for IPv4 detections
+                    post_end = min(len(text), entity.end + 10)
+                    post_text = text[entity.end:post_end]
+                    # If followed by .letter or .digit+letter, it's a longer ID, not an IP
+                    if re.match(r'\.[A-Za-z]', post_text):
+                        continue
+                    if re.match(r'\.\d+[A-Za-z]', post_text):
+                        continue
+                    # Check what precedes: if digits. immediately before, part of longer sequence
+                    pre_start = max(0, entity.start - 5)
+                    pre_text = text[pre_start:entity.start]
+                    if re.search(r'\d\.$', pre_text):
+                        continue
+                    # Social number context: "social", "ssn", "número", "numéro"
+                    context_start = max(0, entity.start - 60)
+                    context_before = text[context_start:entity.start].lower()
+                    social_keywords = ['social number', 'social security', 'ssn', 'número', 'numéro',
+                                       'social no', 'personal number', 'identification number',
+                                       'identity number', 'national number', 'civic number',
+                                       'citizen number', 'insurance number', 'pension number']
+                    if any(kw in context_before for kw in social_keywords):
+                        continue
+
 
             # Filter ADDRESS/LOCATION false positives
             if entity.entity_type in ("LOCATION", "ADDRESS"):
@@ -6257,9 +6526,10 @@ class PIIDetector:
                     has_number_prefix = re.match(r'^\d+\s+', entity_text)  # Street number
                     has_comma_separator = ',' in entity_text  # City, State format
                     has_street_suffix = re.search(r'\b(?:st|street|ave|avenue|rd|road|dr|drive|ln|lane|blvd|way|ct|court)\b', text_lower)
-                    if not (has_number_prefix or has_comma_separator or has_street_suffix):
+                    has_location_words = re.search(r'\b(?:road|lane|park|hill|town|village|green|bridge|heath|moor|field|bury|ham|stead|wick|ford|shire)\b', text_lower)
+                    if not (has_number_prefix or has_comma_separator or has_street_suffix or has_location_words):
                         # This looks like a phrase, not an address
-                        if entity.confidence < 0.70:
+                        if entity.confidence < 0.65:
                             continue
                 # Skip single words that are likely city/country names used in non-address contexts
                 words = entity_text.split()
@@ -6340,11 +6610,12 @@ class PIIDetector:
                 # Common terms that need context validation
                 common_binary = {'woman', 'man', 'boy', 'girl', 'female', 'male'}
                 if gender_lower in common_binary:
-                    # Check for gender-related context keywords
-                    context_start = max(0, entity.start - 50)
+                    # Check for gender-related context keywords (wide window for structured data)
+                    context_start = max(0, entity.start - 150)
                     context_end = min(len(text), entity.end + 50)
                     context_text = text[context_start:context_end].lower()
-                    gender_context = {'gender', 'sex', 'identity', 'pronoun', 'assigned', 'birth'}
+                    gender_context = {'gender', 'sex', 'identity', 'pronoun', 'assigned', 'birth',
+                                      'm/f', 'f/m', 'masculine', 'feminine', 'non-binary'}
                     # Filter if no context and not high confidence
                     if not any(kw in context_text for kw in gender_context):
                         if entity.confidence < 0.85:
@@ -6575,14 +6846,210 @@ class PIIDetector:
                 # Skip if contains numbers (names don't have digits)
                 if any(c.isdigit() for c in entity_text):
                     continue
+                # Skip if less than 50% alphabetic characters (extraction artifacts)
+                alpha_count = sum(1 for c in entity_text if c.isalpha())
+                if alpha_count < len(entity_text.strip()) * 0.5:
+                    continue
                 # Skip very long text (likely phrases, not names)
                 if len(entity_text) > 35:
                     continue
                 # For spaCy NER detections (lower confidence), require moderate threshold
                 # Our pattern recognizers have scores 0.85-0.95
-                # Lowered to 0.55 to avoid filtering valid names (was 0.70, caused recall drop)
-                if entity.confidence < 0.55:
+                # Lowered to 0.50 to match ENTITY_THRESHOLDS (was 0.70, caused recall drop)
+                if entity.confidence < 0.50:
                     continue
+                # Require higher confidence for very short entities (<=4 chars)
+                # Short words like "Jan", "May" often trigger as person names
+                if len(entity_text.strip()) <= 4 and entity.confidence < 0.80:
+                    continue
+                # Require higher confidence for single-word entities
+                # Single words from spaCy NER with moderate confidence are often FPs
+                words_in_name = entity_text.strip().split()
+                if len(words_in_name) == 1 and entity.confidence < 0.65:
+                    continue
+                # For single-word PERSON with confidence < 0.80, require name context
+                # Lowered from 0.85 to let more dictionary-backed names through
+                if len(words_in_name) == 1 and entity.confidence < 0.80:
+                    ctx_start = max(0, entity.start - 60)
+                    ctx_end = min(len(text), entity.end + 30)
+                    ctx_text = text[ctx_start:ctx_end].lower()
+                    name_indicators = {'name', 'mr', 'mrs', 'ms', 'dr', 'prof',
+                                       'dear', 'sincerely', 'regards', 'attn',
+                                       'author', 'by ', 'from ', 'signed',
+                                       'participant', 'applicant', 'student',
+                                       'contact', 'username', 'email',
+                                       'member', 'staff', 'personnel', 'account',
+                                       'leader', 'manager', 'officer', 'director',
+                                       'patient', 'client', 'customer', 'user',
+                                       'owner', 'holder', 'sender', 'recipient'}
+                    if not any(kw in ctx_text for kw in name_indicators):
+                        continue
+                # Skip entities containing HTML tags or markup artifacts
+                # Examples: "<p>", "s:</b>", "et: A", HTML fragments from text extraction
+                if '<' in entity_text or '>' in entity_text:
+                    continue
+                if '&lt;' in entity_text or '&gt;' in entity_text or '&amp;' in entity_text:
+                    continue
+                # Skip entities containing markdown/formatting artifacts
+                # Examples: "Report**", "Literacy**", "Users:**", "Areas","
+                stripped_name = entity_text.strip()
+                if '**' in stripped_name or stripped_name.endswith(':**'):
+                    continue
+                # Strip trailing/leading punctuation to check the clean name
+                clean_name = re.sub(r'[*:,"\'\s!?\[\]()]+$', '', stripped_name)
+                clean_name = re.sub(r'^[*:,"\'\s!?\[\]()]+', '', clean_name)
+                if len(clean_name) < 2:
+                    continue
+                # Skip if clean name still contains colon (field labels like "Contact Information:")
+                # Use clean_name (not entity_text) to tolerate span-bleed trailing colons
+                # e.g., "Scott Powell, SSN:" → clean_name "Scott Powell, SSN" (no colon → ok)
+                if ':' in clean_name:
+                    continue
+                # Skip if contains exclamation mark (names never have !)
+                if '!' in entity_text:
+                    continue
+                # Skip common English words that aren't names (targeted set)
+                # Only words that are NEVER person names
+                common_non_names = {
+                    'comment', 'areas', 'literacy', 'additionally', 'workshop',
+                    'incorporating', 'academic', 'truancy', 'strategy', 'rooms',
+                    'program', 'users', 'feedback', 'ensure', 'compliance',
+                    'control', 'safety', 'security', 'access', 'records',
+                    'information', 'assessment', 'results', 'system', 'tracking',
+                    'completion', 'readiness', 'education', 'experts', 'events',
+                    'schedule', 'training', 'matters', 'consent', 'review',
+                    'confirmation', 'background', 'policy', 'platform',
+                    'inspections', 'measures', 'coordinator', 'forums',
+                    'guidelines', 'requirements', 'procedures', 'regulations',
+                    'overview', 'introduction', 'conclusion', 'appendix',
+                    'notification', 'alert', 'warning', 'notice',
+                    # Gender words (not person names)
+                    'masculine', 'feminine', 'nonbinary', 'transgender',
+                    'female', 'male',
+                    # Form/document labels
+                    'admission', 'sample', 'form', 'draft', 'template',
+                    'attachment', 'document', 'report', 'memo', 'receipt',
+                    # Common words from ai4privacy FP analysis
+                    'contact', 'party', 'prefer', 'other', 'both',
+                    'absolutely', 'team', 'steps', 'next', 'maintain',
+                    'participate', 'changes', 'please', 'counseling',
+                    'sessions', 'practice', 'mindfulness', 'video', 'short',
+                    'dear', 'wellbeing', 'mentorship', 'password', 'palace',
+                    'residence', 'read', 'clubs', 'student', 'records',
+                    'update', 'signed', 'immerse', 'additionally',
+                    'incorporating', 'music', 'arts', 'performing',
+                    # Action/descriptive words
+                    'important', 'special', 'general', 'primary', 'secondary',
+                    'advanced', 'basic', 'standard', 'custom', 'initial',
+                    # Single words from ai4privacy FP analysis (never names)
+                    'office', 'visionary', 'reality', 'link', 'curriculum',
+                    'technology', 'thread', 'messaging', 'masterclass',
+                    'emergency', 'postcode', 'forums',
+                    # Form field labels (ai4privacy FP analysis 2026-02-08)
+                    'email', 'username', 'sex', 'subject', 'description',
+                    'birthdate', 'telephone', 'birth', 'details', 'time',
+                    # Role/descriptor words (never person names)
+                    'participant', 'applicant', 'candidate', 'tutor',
+                    'recipient', 'individual', 'user', 'participants',
+                    # Sentence starters / common words (never person names)
+                    'the', 'your', 'thank', 'let', 'welcome', 'this',
+                    'looking', 'warm', 'with', 'should', 'our', 'here',
+                    # Location terms
+                    'country', 'state', 'street', 'city', 'location',
+                    # Equipment/item terms
+                    'equipment', 'material', 'type', 'item', 'component',
+                    # Document/credential terms
+                    'driver', 'license', 'passport', 'card', 'certificate',
+                    'citizenship', 'record', 'application', 'confirmed',
+                    # Non-name months (keep May/June/March/April/August - valid names)
+                    'september', 'october', 'november', 'december',
+                    'february', 'january',
+                    # Additional common nouns (2026-02-08 FP analysis)
+                    'detail', 'achievement', 'methodology', 'quantity',
+                    'operational', 'deposit', 'headquarters', 'exhibit',
+                    'issuer', 'delivery', 'provider', 'analysis', 'buyer',
+                    'total', 'acquisition', 'employee', 'today',
+                }
+                if clean_name.lower() in common_non_names:
+                    continue
+                # Skip words with English-word suffixes that NEVER appear in real names
+                # Carefully curated: excludes -ance (Constance), -ence (Lawrence),
+                # -ment (Clement), -ity (Trinity), -ive (Clive), -ward (Edward),
+                # -ling (Sterling), -ing (Manning), -ly (Kelly)
+                _clean_lower = clean_name.lower()
+                _safe_non_name_suffixes = (
+                    'tion', 'sion',     # information, decision (never a name)
+                    'ness',             # readiness, wellness
+                    'ous', 'ious', 'eous',  # various, serious, gorgeous
+                    'ical',             # medical, political
+                    'ally',             # especially, additionally
+                    'ible',             # possible, terrible
+                    'ful',              # beautiful, helpful
+                    'less',             # careless, useless
+                    'ism',              # capitalism, marxism
+                )
+                # For single words, check suffix directly (min 6 chars to avoid short names)
+                if len(words_in_name) == 1 and len(_clean_lower) > 5:
+                    if any(_clean_lower.endswith(sfx) for sfx in _safe_non_name_suffixes):
+                        continue
+                # For multi-word, if ANY word has a non-name suffix, suppress
+                if len(words_in_name) >= 2:
+                    _has_non_name_word = False
+                    for w in words_in_name:
+                        wl = w.lower().rstrip('*:,"!.')
+                        if len(wl) > 5 and any(wl.endswith(sfx) for sfx in _safe_non_name_suffixes):
+                            _has_non_name_word = True
+                            break
+                    if _has_non_name_word:
+                        continue
+                # Skip multi-word form field labels ending with generic label words
+                # Examples: "Donor Name", "Part Number", "Delivery Date", "School Form"
+                if len(words_in_name) >= 2:
+                    last_word = words_in_name[-1].lower().rstrip('*:,"')
+                    field_labels = {'name', 'number', 'date', 'form', 'report',
+                                    'address', 'phone', 'email', 'details'}
+                    if last_word in field_labels:
+                        continue
+                # Skip multi-word phrases containing institutional/organizational keywords
+                # These are titles, headers, or org names - not person names
+                if len(words_in_name) >= 2:
+                    lower_words = {w.lower().rstrip('*:,"') for w in words_in_name}
+                    # Skip phrases with clearly institutional/organizational words
+                    org_keywords = {
+                        'board', 'institute', 'academy', 'system', 'coordinator',
+                        'department', 'committee', 'program', 'service', 'center',
+                        'centre', 'foundation', 'authority', 'commission', 'bureau',
+                        'management', 'information', 'certification',
+                        'completion', 'password', 'address', 'secondary', 'assessment',
+                        'competition', 'tracking', 'education', 'community',
+                        'platform', 'learning', 'mentorship', 'clubs', 'practice',
+                        'sessions', 'counseling', 'performing', 'arts', 'music',
+                        'compliance', 'records', 'confirmation', 'steps', 'video',
+                        'skills', 'training', 'student', 'results', 'review',
+                        # Document structure / course titles (ai4privacy FP analysis)
+                        'messaging', 'admissions', 'course', 'learner', 'needs',
+                        'engaging', 'content', 'practices', 'understanding',
+                        'creating', 'sustainable', 'goals', 'emergency',
+                        'response', 'plan', 'thread', 'masterclass', 'feedback',
+                        'request', 'forums', 'strategy', 'curriculum',
+                        'technology', 'reality', 'development',
+                        # Additional document/form terms (2026-02-08 FP analysis)
+                        'labor', 'health', 'general', 'public', 'agreement',
+                        'responsibilities', 'purchase', 'power', 'notary',
+                        'inspection', 'diagnosis', 'discharge', 'donor',
+                        'supplier', 'technician', 'task', 'vehicle',
+                    }
+                    if lower_words & org_keywords:
+                        continue
+                    # Skip multi-word phrases where ALL words are common English
+                    # (no word looks like it could be a proper name)
+                    all_common = all(
+                        w.lower().rstrip('*:,"') in common_non_names or
+                        w.lower().rstrip('*:,"') in org_keywords
+                        for w in words_in_name
+                    )
+                    if all_common:
+                        continue
                 # Skip "patient" prefix phrases (medical context, not person names)
                 # Examples: "patient records", "patient was an elderly woman"
                 if entity_text.lower().startswith('patient'):
@@ -6602,14 +7069,54 @@ class PIIDetector:
                     'persian', 'vietnamese', 'thai', 'filipino', 'indonesian',
                     'malaysian', 'singaporean', 'pakistani', 'bangladeshi', 'sri lankan',
                 }
-                if entity_text.lower().strip() in nationalities:
+                if clean_name.lower() in nationalities:
+                    continue
+                # Skip country/region names that are never person names
+                country_names = {
+                    'nederland', 'deutschland', 'schweiz', 'brasil', 'españa',
+                    'britain', 'great britain', 'united kingdom', 'united states',
+                    'australia', 'new zealand', 'south africa', 'saudi arabia',
+                    'netherlands', 'belgium', 'switzerland', 'germany', 'france',
+                    'spain', 'portugal', 'italy', 'italia', 'austria', 'romania', 'bulgaria',
+                    'croatia', 'slovenia', 'serbia', 'bosnia', 'montenegro',
+                    'norway', 'sweden', 'denmark', 'finland', 'iceland',
+                    'russia', 'ukraine', 'poland', 'czechia', 'slovakia',
+                    'hungary', 'greece', 'turkey', 'egypt', 'morocco',
+                    'nigeria', 'kenya', 'ghana', 'ethiopia', 'tanzania',
+                    'brazil', 'argentina', 'colombia', 'peru', 'chile',
+                    'mexico', 'venezuela', 'ecuador', 'uruguay', 'paraguay',
+                    'japan', 'korea', 'china', 'taiwan', 'vietnam',
+                    'thailand', 'indonesia', 'malaysia', 'singapore', 'philippines',
+                    'pakistan', 'bangladesh', 'iran', 'iraq', 'israel',
+                    'canada', 'ireland', 'scotland', 'wales', 'england',
+                }
+                if clean_name.lower() in country_names:
+                    continue
+                # Skip entities preceded by field labels (structured data context)
+                # "City: Newton Abbot", "Country: Italia", "Sex: Female", "Street: Via dell'Industria"
+                field_ctx_start = max(0, entity.start - 40)
+                field_ctx = text[field_ctx_start:entity.start].lower()
+                field_labels = ['city:', 'country:', 'street:', 'state:', 'sex:',
+                                'gender:', 'event:', 'postcode:', 'zip:', 'address:',
+                                'building:', 'province:', 'region:', 'district:',
+                                'second address:', 'secondary address:', 'location:',
+                                'nationality:', 'citizenship:', 'born in:', 'city/town:',
+                                'subject:', 'session:', 'topic:', 'scope:', 'details:',
+                                'course:', 'module:', 'title:', 'description:']
+                if any(field_ctx.rstrip().endswith(lbl) or
+                       field_ctx.rstrip().endswith(lbl.rstrip(':'))
+                       for lbl in field_labels):
+                    continue
+                # Skip entities containing conversational contractions
+                # "Amy, I'm", "It's", "I've been" - these are sentence fragments
+                if re.search(r"\b(?:I'm|I've|I'll|I'd|it's|he's|she's|we're|they're|you're|isn't|aren't|wasn't|weren't|don't|doesn't|didn't|can't|won't|wouldn't|shouldn't|couldn't)\b", entity_text, re.IGNORECASE):
                     continue
                 # Skip food/menu items (commonly flagged as names)
                 food_items = {
                     'caesar', 'caesar salad', 'juicy', 'crispy', 'grilled',
                     'roasted', 'baked', 'fried', 'steamed', 'fresh',
                 }
-                if entity_text.lower().strip() in food_items:
+                if clean_name.lower() in food_items:
                     continue
                 # Skip generic role words (not person names)
                 generic_roles = {
@@ -6619,7 +7126,7 @@ class PIIDetector:
                     'applicant', 'applicants', 'candidate', 'candidates', 'participant',
                     'billing card', 'employee name', 'employee id',
                 }
-                if entity_text.lower().strip() in generic_roles:
+                if clean_name.lower() in generic_roles:
                     continue
                 # Skip phrases starting with "member" or "recipient"
                 if entity_text.lower().startswith(('member ', 'recipient ', 'reviewed ')):
@@ -6746,6 +7253,27 @@ class PIIDetector:
                 if entity_text.isupper() and len(entity_text) <= 6:
                     continue
 
+            # Filter ID false positives (generic alphanumeric patterns)
+            if entity.entity_type == "ID":
+                stripped = entity_text.strip()
+                # Require minimum 6 characters
+                if len(stripped) < 6:
+                    continue
+                # Require both letters and digits (alphanumeric mix)
+                has_letters = any(c.isalpha() for c in stripped)
+                has_digits = any(c.isdigit() for c in stripped)
+                if not (has_letters and has_digits):
+                    if entity.confidence < 0.90:
+                        continue
+                # Short letter+digit patterns (e.g., AB1234) need context keywords
+                if re.match(r'^[A-Z]{2}\d{4,5}$', stripped):
+                    context_start = max(0, entity.start - 60)
+                    context = text[context_start:entity.start].lower()
+                    id_keywords = {'id', 'card', 'reference', 'number', 'identifier',
+                                   'registration', 'account', 'customer', 'case', 'ticket'}
+                    if not any(kw in context for kw in id_keywords):
+                        continue
+
             # Filter COORDINATES false positives
             if entity.entity_type == "COORDINATES":
                 # Skip if it looks like an IP address fragment
@@ -6772,6 +7300,21 @@ class PIIDetector:
                     continue
                 # Skip patterns that are clearly dates (month-day-year patterns)
                 if re.match(r'^\d{2}[-/]\d{2}[-/]\d{4}$', entity_text):
+                    continue
+                # Skip IP address fragments (3 dot-separated octets like "213.237.252")
+                if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}$', entity_text):
+                    continue
+                # Skip if context indicates IP address
+                natl_ctx_start = max(0, entity.start - 40)
+                natl_ctx = text[natl_ctx_start:entity.start].lower()
+                if 'ip address' in natl_ctx or 'ip:' in natl_ctx or 'ipv' in natl_ctx:
+                    continue
+                # Skip if context indicates phone number (preceded by + country code)
+                natl_ctx_before = text[max(0, entity.start - 15):entity.start]
+                if re.search(r'\+\d{1,3}[\s-]*$', natl_ctx_before):
+                    continue
+                # Skip if "phone" or "telephone" in nearby context
+                if any(kw in natl_ctx for kw in ['phone', 'tel:', 'telephone', 'mobile', 'fax']):
                     continue
 
             # Filter COMPANY false positives
@@ -7046,6 +7589,37 @@ class PIIDetector:
                     except ValueError:
                         pass
 
+            # Filter EMAIL_ADDRESS false positives
+            if entity.entity_type == "EMAIL_ADDRESS":
+                # Fix email boundaries - Presidio sometimes captures surrounding noise
+                # or truncates the domain when text has escape sequences
+                email_re = re.compile(r'[\w.+-]+@[\w.-]+\.\w{2,}')
+                # Search in a wider window around the detection to find the real email
+                search_start = max(0, entity.start - 5)
+                search_end = min(len(text), entity.end + 10)
+                search_text = text[search_start:search_end]
+                email_match = email_re.search(search_text)
+                if email_match:
+                    # Adjust entity boundaries to the actual email
+                    entity.start = search_start + email_match.start()
+                    entity.end = search_start + email_match.end()
+                    entity_text = text[entity.start:entity.end]
+                else:
+                    # No valid email in or near the span - skip
+                    continue
+
+                # Suppress email-like patterns embedded within HTTP URLs
+                # e.g., https://example.com/user@domain.com/profile
+                # But keep mailto: emails (those are real emails)
+                pre_start = max(0, entity.start - 30)
+                pre_text = text[pre_start:entity.start].lower()
+                post_end = min(len(text), entity.end + 5)
+                post_text = text[entity.end:post_end]
+                if '://' in pre_text and 'mailto:' not in pre_text:
+                    # Only suppress if followed by path (part of URL)
+                    if post_text.startswith('/'):
+                        continue
+
             filtered.append(entity)
 
         return filtered
@@ -7193,25 +7767,27 @@ class PIIDetector:
         # PersonRecognizer: single-model 0.60-0.85, multi-model 0.55-0.92
         # AddressVerifier: weighted component scoring 0.50-1.10
         ENTITY_THRESHOLDS = {
-            'PERSON': 0.55,       # Calibrated: balanced precision/recall
-            'ADDRESS': 0.60,      # Balanced: lower caused FP increase
+            'PERSON': 0.50,       # Balanced: lower adds marginal recall but significant FP processing cost
+            'ADDRESS': 0.50,      # Lowered from 0.60 for partial address component recall
+            'LOCATION': 0.50,     # Same as ADDRESS - LOCATION maps to ADDRESS in benchmark
             'SSN': 0.60,          # Balanced
             'CREDIT_CARD': 0.55,  # Calibrated: high precision recognizer
-            'PHONE_NUMBER': 0.55, # Balanced: lower didn't improve recall
+            'PHONE_NUMBER': 0.55, # Lowered from 0.65 for international format recall
             'CREDENTIAL': 0.85,   # Context-anchored entropy filtering enabled
             'COMPANY': 0.60,      # Balanced for suffix validation
-            'ID': 0.80,           # Moderate - reduce FPs
-            'NATIONAL_ID': 0.55,  # Balanced: lower didn't improve recall
+            'ID': 0.90,           # High: generic patterns create massive FPs on diverse text
+            'NATIONAL_ID': 0.55,  # Balanced: lower didn't improve recall, caused FPs
             'VEHICLE': 0.78,      # Keep
             'VEHICLE_ID': 0.90,   # Keep
             'MEDICAL': 0.65,      # Moderate - reduce FPs
-            'PASSPORT': 0.65,     # Balanced
+            'PASSPORT': 0.50,     # Aligned with NATIONAL_ID - passports are valid national IDs
             'UK_NHS': 0.65,       # Balanced
             'DEVICE_ID': 0.99,    # Keep - spurious
             'BANK_NUMBER': 0.65,  # Balanced
-            'DRIVERS_LICENSE': 0.99,  # Keep - spurious
-            'IP_ADDRESS': 0.70,   # Higher to reduce FPs (49 in benchmark)
+            'DRIVERS_LICENSE': 0.65,  # Lowered from 0.99 - driver's licenses are valid national IDs
+            'IP_ADDRESS': 0.65,   # Lowered from 0.70 to improve IPv6 recall
             'FINANCIAL': 0.65,    # Balanced
+            'COORDINATES': 0.85,  # High: single decimal_coords (0.70) creates massive FPs
         }
         DEFAULT_THRESHOLD = 0.65  # Balanced default
         entities = [

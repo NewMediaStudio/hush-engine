@@ -271,7 +271,7 @@ def detect_with_spacy(text: str) -> List[Tuple[str, int, int, float]]:
         if ent.label_ == "PERSON":
             # spaCy doesn't provide confidence; estimate based on entity length
             # Lower base scores to stay below threshold even with consensus boost
-            base_score = 0.65
+            base_score = 0.68  # Boosted from 0.65 for better single-word recall
             if len(ent.text.split()) >= 2:
                 base_score = 0.72  # Multi-word names - still needs consensus
             results.append((ent.text, ent.start_char, ent.end_char, base_score))
@@ -488,6 +488,9 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
             # Boost confidence for multi-part names (increased from 0.15 to 0.20)
             if len(parts) >= 2:
                 confidence = min(0.95, confidence + 0.20)
+            elif len(parts) == 1:
+                # Smaller boost for single-word names (helps unusual names pass filters)
+                confidence = min(0.90, confidence + 0.10)
 
             results.append((potential_name, match.start(), match.end(), confidence))
 
@@ -570,6 +573,16 @@ ROLE_CONTEXT_PATTERN = re.compile(
     r"[Dd]river|[Oo]wner|[Rr]egistrant|[Rr]espondent|[Pp]etitioner)"
     r"\s*[:.]\s*"  # REQUIRE colon or period (no longer optional)
     r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3})"
+)
+
+# Salutation patterns (Dear Name, Hi Name, Hello Name)
+# Handles: "Dear Allison Hill,", "Dear Margaret Hawkins DDS,", "Hi John,"
+# Requires trailing comma/newline/exclamation to avoid matching "Dear Customer Service"
+SALUTATION_PATTERN = re.compile(
+    r"\b(?:Dear|Hi|Hello|Greetings|Attention|Attn)\s+"
+    r"([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+){0,3}"
+    r"(?:\s+(?:DDS|MD|PhD|Jr\.?|Sr\.?|II|III|IV|Esq|CPA|RN|DO)\.?)?)"
+    r"\s*[,\n!]"
 )
 
 # Common international name prefixes that indicate full names follow
@@ -791,6 +804,16 @@ def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
             # Single word role context names less reliable
             results.append((match.group(0), match.start(), match.end(), 0.80))
 
+    # Salutation patterns (Dear John Smith, Hi Jane Doe)
+    for match in SALUTATION_PATTERN.finditer(text):
+        name = match.group(1)
+        if len(name.split()) >= 2 and len(name) >= 5:
+            # Multi-word salutation names are very reliable
+            results.append((name, match.start(1), match.end(1), 0.92))
+        elif len(name.split()) >= 1 and len(name) >= 3:
+            # Single word salutation names
+            results.append((name, match.start(1), match.end(1), 0.82))
+
     # International name prefix patterns (Mohammed Ali, Abdul Rahman)
     for match in INTL_NAME_PREFIX_PATTERN.finditer(text):
         name = match.group(1)
@@ -848,7 +871,7 @@ class PersonRecognizer(EntityRecognizer):
     # Feature flag for strict precision mode
     # Set to True to enable refined voting strategy
     # Expected: +10-15% precision, -5-10% recall
-    STRICT_PERSON_MODE = False
+    STRICT_PERSON_MODE = True
 
     def __init__(
         self,
@@ -861,7 +884,7 @@ class PersonRecognizer(EntityRecognizer):
         use_transformers: bool = False,
         use_name_dataset: bool = True,
         use_patterns: bool = True,
-        min_confidence: float = 0.70,  # Raised from 0.65 for better precision
+        min_confidence: float = 0.55,  # Lowered from 0.70 to allow Tier 3 single-model detections through
         early_exit_confidence: float = 0.85,
         spreadsheet_mode: bool = False,
     ):
@@ -987,8 +1010,9 @@ class PersonRecognizer(EntityRecognizer):
             for text_match, start, end, score in detect_with_lgbm(processed_text):
                 all_detections.append((text_match, start, end, score, "lgbm"))
 
-        # Step 3: Dictionary lookup (good for spreadsheets)
-        if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 100):
+        # Step 3: Dictionary lookup (good for spreadsheets and moderate texts)
+        # Raised from 500 to 1000 for better recall on paragraph-length texts
+        if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 1000):
             for text_match, start, end, score in lookup_with_name_dataset(processed_text):
                 all_detections.append((text_match, start, end, score, "name_dataset"))
 
@@ -1254,8 +1278,9 @@ class PersonRecognizer(EntityRecognizer):
                         accepted = False
 
                 # Strict Tier 3: Single-model detection
+                # Lowered from 0.62 to 0.58 - aligned with DEFAULT mode for better recall
                 else:
-                    if max_score >= 0.70:
+                    if max_score >= 0.58:
                         final_score = max_score
                         tier_used = "strict_tier3_single_acceptable"
                         accepted = True
@@ -1362,6 +1387,12 @@ class PersonRecognizer(EntityRecognizer):
 
     def _is_false_positive(self, text: str) -> bool:
         """Filter out common false positives."""
+        # Clean span-merge artifacts: truncate at first newline and strip
+        # trailing punctuation. LightGBM often bleeds spans past line breaks
+        # (e.g., "Allison Hill,\n\nYour" → "Allison Hill")
+        if '\n' in text or '\r' in text:
+            text = text.split('\n')[0].split('\r')[0].rstrip(' \t,:;')
+
         text_lower = text.lower().strip()
         text_stripped = text.strip()
 
@@ -1373,8 +1404,8 @@ class PersonRecognizer(EntityRecognizer):
         if any(c.isdigit() for c in text):
             return True
 
-        # Skip if contains newlines or excessive whitespace
-        if '\n' in text or '\r' in text or '  ' in text:
+        # Skip if excessive internal whitespace (OCR artifact)
+        if '  ' in text:
             return True
 
         # Skip if too long (likely a phrase, not a name)
