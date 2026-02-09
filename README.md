@@ -14,10 +14,10 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ### Advanced NER
 - **LightGBM NER classifiers**: Fast, lightweight token classification (5-10x faster, ~10MB models)
-- **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (74% recall)
+- **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (71% recall on ai4privacy)
 - **Medical NER**: Disease and drug detection using Fast Data Science libraries (MIT, zero dependencies)
-- **Company NER**: Dictionary-based company name detection
-- **Address parsing**: libpostal integration for 99.45% accuracy address detection (65% recall)
+- **Company NER**: Dictionary-based company name detection (100% F1 on golden set)
+- **Address parsing**: libpostal integration for 99.45% accuracy, 94% recall on golden set
 
 ### International Support
 - **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
@@ -158,7 +158,7 @@ See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documenta
 | **TableDetector** | Context-aware detection for structured data (spreadsheets, tables) |
 | **VisionOCR** | Apple Vision-powered OCR (400 DPI) |
 | **PDFProcessor** | PDF to image conversion (400 DPI for accuracy) |
-| **ImageAnonymizer** | Apply red censor bars to detected areas |
+| **ImageAnonymizer** | Apply censor bars to detected areas |
 | **SpreadsheetAnonymizer** | Redact PII in Excel/CSV files |
 | **FaceDetector** | OpenCV Haar cascade face detection |
 | **AddressVerifier** | LightGBM-based address validation with street type/number checks |
@@ -329,6 +329,25 @@ python3.10 tests/benchmark_server.py
 # Then open http://localhost:8000
 ```
 
+### Performance
+
+**Synthetic Golden Set** (1000 samples, 2522 entities): **F1 99.2%**
+- Precision: 100% | Recall: 98.4%
+- Perfect (100% F1): EMAIL, DATE_TIME, CREDIT_CARD, AGE, PHONE, NATIONAL_ID, COMPANY
+- Near-perfect: PERSON 98.7%, ADDRESS 96.8%
+
+**ai4privacy benchmark** (3000 samples, 5675 entities): **F1 90.2%**
+- Precision: 91.9% | Recall: 88.6%
+- Strong: DATE_TIME 97.4%, EMAIL 99.8%, IP_ADDRESS 99.5%, CREDIT_CARD 100%
+- Good: PHONE 92.0%, NATIONAL_ID 92.6%, ADDRESS 91.6%, GENDER 80.7%
+- Challenging: PERSON 69.9% (single-word unusual names)
+
+**Key capabilities:**
+- Cross-type recall: detections under wrong label still count (valid for redaction)
+- Handles international formats: 150+ phone patterns, 35+ national ID formats
+- Context-aware: SSN/ID keywords boost NATIONAL_ID confidence
+- Name detection: Multi-NER cascade with 71% recall on diverse names
+
 ### Training LightGBM Models
 
 Train or retrain the NER classifiers using synthetic data or the ai4privacy dataset:
@@ -380,7 +399,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Security
 
-For security issues, please email security@newmediastudio.com instead of using the issue tracker.
+For security issues, please email studio@newmediastudio.com instead of using the issue tracker.
 
 ## Roadmap
 
@@ -421,7 +440,6 @@ For security issues, please email security@newmediastudio.com instead of using t
 ### Planned
 - [ ] Windows/Linux support (alternative OCR engines)
 - [ ] Batch processing optimizations
-- [ ] Video frame processing
 - [ ] GDPR Article 9 special categories (racial origin, political opinions, religious beliefs)
 
 ## Acknowledgments
