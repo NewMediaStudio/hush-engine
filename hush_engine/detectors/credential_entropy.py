@@ -82,20 +82,20 @@ class EntropyResult:
 # Entropy thresholds based on industry research
 # These are tuned for precision - requiring higher entropy for unlabeled credentials
 ENTROPY_THRESHOLDS = {
-    # Minimum entropy for unlabeled credentials (stricter for precision)
-    # Real secrets typically have entropy >= 4.0
-    "min_unlabeled": 4.0,
+    # Minimum entropy for unlabeled credentials
+    # Lowered from 4.0 to 3.5 for better recall on shorter passwords/PINs
+    "min_unlabeled": 3.5,
 
     # Minimum entropy for labeled credentials (password=, api_key=, etc.)
     # Lower threshold since labels provide strong context
-    "min_labeled": 3.0,
+    "min_labeled": 2.5,
 
     # Maximum entropy (above this is likely random noise or encoding)
-    # Base64 max is ~6.0, random bytes is ~8.0
-    "max_valid": 6.5,
+    # Raised from 6.5 to 7.0 to catch more base64 tokens
+    "max_valid": 7.0,
 
     # Ideal range for high-confidence secrets
-    "ideal_low": 4.5,
+    "ideal_low": 4.0,
     "ideal_high": 6.0,
 }
 
@@ -112,19 +112,27 @@ CREDENTIAL_TRIGGER_WORDS = {
     # Secondary trigger words (moderate signal)
     "access", "private", "oauth", "jwt", "authorization", "authenticate",
     "encryption", "decrypt", "encrypt", "ssh", "rsa", "pem", "certificate",
+    # Login/account context
+    "login", "signin", "signup", "account", "user", "username", "pin",
+    "passcode", "passphrase", "hash", "salt", "cipher", "hmac", "digest",
+    # Configuration context
+    "config", "env", "environment", "variable", "setting", "connection",
+    "database", "db", "redis", "mongo", "mysql", "postgres",
     # Platform-specific triggers
     "stripe", "aws", "github", "slack", "npm", "google", "firebase", "azure",
     "heroku", "twilio", "sendgrid", "mailgun", "openai", "anthropic",
+    "docker", "kubernetes", "webhook", "endpoint",
 }
 
 # Maximum distance (in tokens) between credential and trigger word
-CONTEXT_WINDOW_TOKENS = 5
+# Widened from 5 to 10 for better recall on credentials in longer contexts
+CONTEXT_WINDOW_TOKENS = 10
 
-# Minimum length for unlabeled credentials
-MIN_UNLABELED_LENGTH = 12
+# Minimum length for unlabeled credentials (lowered from 12 for shorter secrets)
+MIN_UNLABELED_LENGTH = 8
 
 # Minimum length for labeled credentials
-MIN_LABELED_LENGTH = 6
+MIN_LABELED_LENGTH = 4
 
 # Known credential label patterns
 CREDENTIAL_LABELS = re.compile(
