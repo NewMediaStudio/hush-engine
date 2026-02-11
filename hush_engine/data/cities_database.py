@@ -65,11 +65,64 @@ CITIES_NORTH_AMERICA = {
 
 # European Cities
 CITIES_EUROPE = {
-    # UK
+    # UK - Major cities
     "london", "birmingham", "manchester", "glasgow", "liverpool", "leeds", "sheffield",
     "edinburgh", "bristol", "leicester", "coventry", "cardiff", "belfast", "nottingham",
     "newcastle", "brighton", "portsmouth", "southampton", "oxford", "cambridge", "york",
     "bath", "exeter", "norwich", "dundee", "aberdeen", "swansea", "reading", "luton",
+    # UK - Additional cities and towns (England)
+    "wolverhampton", "stoke-on-trent", "plymouth", "derby", "hull", "blackpool",
+    "bolton", "sunderland", "stockport", "rotherham", "middlesbrough", "blackburn",
+    "doncaster", "oldham", "crawley", "wigan", "basildon", "colchester", "ipswich",
+    "wakefield", "telford", "peterborough", "slough", "gloucester", "watford",
+    "northampton", "cheltenham", "harrogate", "chester", "carlisle", "lancaster",
+    "stafford", "shrewsbury", "hereford", "worcester", "guildford", "maidstone",
+    "folkestone", "dover", "ashford", "eastbourne", "hastings", "worthing",
+    "chichester", "basingstoke", "woking", "chelmsford", "stevenage",
+    "swindon", "taunton", "yeovil", "torquay", "truro", "falmouth",
+    "penzance", "weymouth", "dorchester", "salisbury", "winchester",
+    "poole", "bournemouth", "bude", "newquay", "bodmin",
+    "warwick", "stratford-upon-avon", "nuneaton", "rugby", "solihull",
+    "tamworth", "lichfield", "burton upon trent", "newcastle-under-lyme", "keele",
+    "stoke", "crewe", "macclesfield", "buxton", "matlock", "chesterfield",
+    "mansfield", "newark", "worksop", "lincoln", "boston", "skegness",
+    "grantham", "stamford", "grimsby", "scunthorpe", "beverley", "scarborough",
+    "whitby", "ripon", "skipton", "kendal", "penrith", "keswick",
+    "barrow-in-furness", "morecambe", "burnley", "rochdale", "bury",
+    "stockton-on-tees", "darlington", "hartlepool", "durham", "hexham",
+    "berwick-upon-tweed", "alnwick", "morpeth", "blyth",
+    "newmarket", "ely", "thetford", "lowestoft", "felixstowe",
+    "bedford", "leighton buzzard", "aylesbury", "high wycombe", "banbury",
+    "newbury", "andover", "fareham", "gosport", "ringwood",
+    "barnstaple", "tiverton", "bridgwater", "minehead", "frome",
+    "chippenham", "devizes", "marlborough", "cirencester", "stroud",
+    "tewkesbury", "evesham", "kidderminster", "bromsgrove", "redditch",
+    "cannock", "rugeley", "leek", "congleton", "nantwich",
+    "oswestry", "whitchurch", "ludlow", "bridgnorth", "market drayton",
+    "oakham", "melton mowbray", "loughborough", "hinckley", "coalville",
+    "corby", "kettering", "wellingborough", "daventry", "towcester",
+    "spalding", "gainsborough", "louth", "retford", "selby",
+    "wetherby", "knaresborough", "thirsk", "northallerton", "richmond",
+    "barnard castle", "bishop auckland", "consett", "cramlington",
+    # UK - Additional smaller towns (benchmark misses)
+    "ormskirk", "horsham", "carnforth", "settle", "lechlade", "keighley",
+    "oxted", "petersfield", "tadley", "romsey", "lydney", "faringdon",
+    "wingate", "christchurch", "wantage", "henley-on-thames", "marlow",
+    "thame", "bicester", "witney", "carterton", "eynsham", "woodstock",
+    "chipping norton", "burford", "moreton-in-marsh", "stow-on-the-wold",
+    # UK - Scotland
+    "stirling", "perth", "inverness", "fort william", "oban", "dumfries",
+    "ayr", "kilmarnock", "greenock", "paisley", "livingston", "kirkcaldy",
+    "dunfermline", "falkirk", "motherwell", "hamilton", "cumbernauld",
+    "east kilbride", "coatbridge", "arbroath", "elgin", "peterhead",
+    # UK - Wales
+    "newport", "wrexham", "llandudno", "bangor", "aberystwyth",
+    "carmarthen", "haverfordwest", "brecon", "merthyr tydfil", "pontypridd",
+    "caerphilly", "neath", "bridgend", "barry", "cwmbran", "pontypool",
+    # UK - Northern Ireland
+    "derry", "londonderry", "lisburn", "newry", "armagh",
+    "omagh", "enniskillen", "ballymena", "coleraine", "bangor",
+    "carrickfergus", "larne", "newtownards", "dungannon", "cookstown",
     # France
     "paris", "marseille", "lyon", "toulouse", "nice", "nantes", "strasbourg", "montpellier",
     "bordeaux", "lille", "rennes", "reims", "le havre", "saint-etienne", "toulon", "grenoble",
@@ -82,12 +135,14 @@ CITIES_EUROPE = {
     # Spain
     "madrid", "barcelona", "valencia", "seville", "zaragoza", "malaga", "murcia", "palma",
     "las palmas", "bilbao", "alicante", "cordoba", "valladolid", "vigo", "gijon", "granada",
-    # Italy
+    # Italy (including Italian names)
     "rome", "milan", "naples", "turin", "palermo", "genoa", "bologna", "florence", "bari",
     "catania", "venice", "verona", "messina", "padua", "trieste", "brescia", "parma", "pisa",
-    # Netherlands
+    "torino", "roma", "milano", "napoli", "firenze", "venezia", "pavarolo",
+    # Netherlands (including Dutch names)
     "amsterdam", "rotterdam", "the hague", "utrecht", "eindhoven", "tilburg", "groningen",
     "almere", "breda", "nijmegen", "apeldoorn", "haarlem", "arnhem", "enschede", "leiden",
+    "dordrecht", "schagen", "den haag",
     # Belgium
     "brussels", "antwerp", "ghent", "charleroi", "liege", "bruges", "namur", "leuven",
     # Switzerland
@@ -124,6 +179,16 @@ CITIES_EUROPE = {
     "bucharest", "cluj-napoca", "timisoara", "iasi", "constanta", "brasov",
     # Turkey
     "istanbul", "ankara", "izmir", "bursa", "adana", "gaziantep", "konya", "antalya",
+    # Country names (native language forms common in ai4privacy data)
+    "france", "italia", "españa", "nederland", "schweiz", "deutschland", "belgique",
+    "österreich", "portugal", "polska", "česko", "magyarország", "sverige", "norge",
+    "suomi", "ireland", "england", "scotland", "wales",
+    # Major regions/provinces (common in address data)
+    "piemonte", "lombardia", "toscana", "lazio", "campania", "sicilia", "sardegna",
+    "veneto", "emilia-romagna", "puglia", "calabria", "liguria", "friuli",
+    "andalucía", "cataluña", "galicia", "castilla", "valencia", "navarra",
+    "bayern", "nordrhein-westfalen", "hessen", "sachsen", "thüringen",
+    "provence", "bretagne", "normandie", "alsace", "aquitaine", "bourgogne",
 }
 
 # Asian Cities

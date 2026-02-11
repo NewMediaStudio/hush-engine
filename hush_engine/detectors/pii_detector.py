@@ -566,8 +566,8 @@ class PIIDetector:
             ],
         )
 
-        # US state abbreviations (all 50 states + DC + territories)
-        us_states = r"(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|PR|VI|GU|AS|MP)"
+        # US state abbreviations (all 50 states + DC + territories + freely associated states)
+        us_states = r"(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC|PR|VI|GU|AS|MP|FM|PW|MH)"
 
         # US ZIP code: 5 digits, optionally followed by -4 digits
         us_zip = r"\d{5}(?:-\d{4})?"
@@ -725,7 +725,44 @@ class PIIDetector:
                 )
             ],
         )
-        
+
+        # 8b. US Military/Diplomatic addresses (APO/FPO/DPO)
+        # Formats: "Unit 3963 Box 6057, DPO AP 50469"
+        #          "PSC 5135, Box 3465, APO AA 34653"
+        #          "USS Carter, FPO AP 71467"
+        #          "USNS Jones, FPO AE 70161"
+        military_post_codes = r"(?:APO|FPO|DPO)"
+        military_regions = r"(?:AA|AE|AP)"  # Americas, Europe/Africa, Pacific
+        military_address = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="military_unit_box",
+                    # Unit XXXX Box XXXX, DPO/APO/FPO AA/AE/AP XXXXX
+                    regex=rf"\bUnit\s+\d{{1,5}}\s+Box\s+\d{{1,5}},?\s+{military_post_codes}\s+{military_regions}\s+\d{{5}}\b",
+                    score=0.95,
+                ),
+                Pattern(
+                    name="military_psc",
+                    # PSC XXXX, Box XXXX, APO/FPO AA/AE/AP XXXXX
+                    regex=rf"\bPSC\s+\d{{1,5}},?\s+Box\s+\d{{1,5}},?\s+{military_post_codes}\s+{military_regions}\s+\d{{5}}\b",
+                    score=0.95,
+                ),
+                Pattern(
+                    name="military_vessel",
+                    # USS/USNS/USNV/USCGC Name, FPO/APO AA/AE/AP XXXXX
+                    regex=rf"\b(?:USS|USNS|USNV|USCGC)\s+[A-Z][a-zA-Z]+,?\s+{military_post_codes}\s+{military_regions}\s+\d{{5}}\b",
+                    score=0.95,
+                ),
+                Pattern(
+                    name="military_post_generic",
+                    # Any text followed by DPO/APO/FPO + region + ZIP
+                    regex=rf"\b{military_post_codes}\s+{military_regions}\s+\d{{5}}\b",
+                    score=0.85,
+                ),
+            ],
+        )
+
         # 9. Unit/Apartment addresses: "Unit 5, 12 Crane Ave", "Apt 3B, 100 Main Street"
         unit_street_address = PatternRecognizer(
             supported_entity="LOCATION",
@@ -746,11 +783,12 @@ class PIIDetector:
                 Pattern(
                     name="standalone_apt",
                     # Matches: Apt/Unit/Suite/Floor + number (with optional letter)
-                    regex=r"\b(?:APT|Apt\.?|APARTMENT|Apartment|UNIT|Unit|SUITE|Suite|STE|Ste\.?|FL|Floor|FLOOR|RM|Room|ROOM)\s+[0-9]+[A-Za-z]?\b",
-                    score=0.75,
+                    regex=r"\b(?:APT|Apt\.?|APARTMENT|Apartment|UNIT|Unit|SUITE|Suite|STE|Ste\.?|FL|Floor|FLOOR|RM|Room|ROOM|Studio|STUDIO|Cabin|CABIN|Mansion|MANSION|Lodge|LODGE|Dept|DEPT|Section|SECTION|Flat|FLAT|Maisonette|MAISONETTE|Farmhouse|FARMHOUSE|Duplex|DUPLEX|Loft|LOFT|Dorm|DORM|Barracks|BARRACKS|Townhouse|TOWNHOUSE|Penthouse|PENTHOUSE|Ranch|RANCH|Villa|VILLA|Cottage|COTTAGE|Chalet|CHALET|Bungalow|BUNGALOW|Palace|PALACE|Pod|POD|Block|BLOCK|Basement|BASEMENT|Office|OFFICE|Level|LEVEL|Wing|WING|Bay|BAY|Annex|ANNEX|Garage|GARAGE)\s+[0-9]+[A-Za-z]?\b",
+                    score=0.80,
                 )
             ],
-            context=["address", "mail", "deliver", "ship", "building", "floor"]
+            context=["address", "mail", "deliver", "ship", "building", "floor",
+                      "studio", "cabin", "mansion", "lodge", "dept", "section", "flat"]
         )
 
         # 11. US street address with abbreviated types: "01 INDIANA AV", "123 MAIN ST"
@@ -828,11 +866,18 @@ class PIIDetector:
             patterns=[
                 Pattern(
                     name="uk_postcode",
-                    regex=r"\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b",
+                    regex=r"(?i)\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b",
                     score=0.85,
                 ),
+                # Higher confidence for full UK postcode with space (very distinctive format)
+                Pattern(
+                    name="uk_postcode_spaced",
+                    regex=r"(?i)\b[A-Z]{1,2}\d[A-Z\d]?\s\d[A-Z]{2}\b",
+                    score=0.92,
+                ),
             ],
-            context=["postcode", "post code", "uk", "england", "scotland", "wales", "london"]
+            context=["postcode", "post code", "uk", "england", "scotland", "wales", "london",
+                      "address", "city", "town", "county"]
         )
 
         # Germany: 5 digits (NNNNN)
@@ -881,12 +926,12 @@ class PIIDetector:
             patterns=[
                 Pattern(
                     name="bangladesh_country",
-                    regex=r"\bBANGLADESH\b",
+                    regex=r"\b(?i)BANGLADESH\b",
                     score=0.80,
                 ),
                 Pattern(
                     name="bangladesh_cities",
-                    regex=r"\b(?:DHAKA|Dhaka|CHITTAGONG|Chittagong|KHULNA|Khulna|RAJSHAHI|Rajshahi|SYLHET|Sylhet|COMILLA|Comilla)\b",
+                    regex=r"\b(?i)(?:DHAKA|CHITTAGONG|KHULNA|RAJSHAHI|SYLHET|COMILLA)\b",
                     score=0.70,
                 ),
             ],
@@ -1051,6 +1096,7 @@ class PIIDetector:
         self.analyzer.registry.add_recognizer(street_address_no_number)
         self.analyzer.registry.add_recognizer(european_street_address)
         self.analyzer.registry.add_recognizer(po_box_address)
+        self.analyzer.registry.add_recognizer(military_address)
         self.analyzer.registry.add_recognizer(unit_street_address)
         self.analyzer.registry.add_recognizer(standalone_unit)
         self.analyzer.registry.add_recognizer(street_address_uppercase)
@@ -1126,6 +1172,30 @@ class PIIDetector:
                     regex=r"\b(?:State\s+(?:Route|Rd|Road|Highway|Hwy)|County\s+(?:Road|Rd)|SR|CR)\s*\d+\b",
                     score=0.75,
                 ),
+                Pattern(
+                    name="canadian_concession",
+                    # Canadian concession road: "175265 Concession 6", "Lot 5 Concession 3"
+                    regex=r"\b\d{1,6}\s+Concession\s+\d{1,3}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="canadian_lot_concession",
+                    # Lot and concession: "Lot 5, Concession 3"
+                    regex=r"\bLot\s+\d{1,4},?\s+Concession\s+\d{1,3}\b",
+                    score=0.90,
+                ),
+                Pattern(
+                    name="canadian_sideroad",
+                    # Sideroad/Line patterns: "123 Sideroad 5", "456 Line 10"
+                    regex=r"\b\d{1,6}\s+(?:Sideroad|Side\s+Road|Line)\s+\d{1,3}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="canadian_range_road",
+                    # Range Road: "Range Road 123", "Township Road 456"
+                    regex=r"\b(?:Range|Township)\s+Road\s+\d{1,4}\b",
+                    score=0.85,
+                ),
             ],
         )
 
@@ -1135,7 +1205,7 @@ class PIIDetector:
             patterns=[
                 Pattern(
                     name="building_wing",
-                    regex=r"\b(?:Bldg\.?|Building|Tower|Wing|Block|Annex)\s+[A-Z0-9]+\b",
+                    regex=r"\b(?:Bldg\.?|Building|Tower|Wing|Block|Annex|Barracks|Attic|Ranch|Townhouse|Penthouse|Cottage|Lodge|Villa|Chalet|Cabin|Quarters|Pavilion)\s+[A-Z0-9]+\b",
                     score=0.70,
                 ),
                 Pattern(
@@ -1161,12 +1231,64 @@ class PIIDetector:
             ],
         )
 
+        # UK compound place names: Newcastle-under-Lyme, Stow cum Quy, Burton upon Trent
+        uk_compound_places = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="uk_compound_hyphenated",
+                    # X-under-Y, X-upon-Y, X-on-Y, X-de-la-Z (hyphenated)
+                    regex=r"\b[A-Z][a-z]+(?:-(?:under|upon|on|in|by|le|la|de|en|cum|next|super)-[A-Za-z]+)+\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="uk_compound_spaced",
+                    # X under Y, X upon Y, X cum Y (spaced, with optional "the")
+                    regex=r"\b[A-Z][a-z]+\s+(?:under|upon|on|in|by|le|la|de|en|cum|next|super)\s+(?:the\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b",
+                    score=0.82,
+                ),
+            ],
+        )
+
+        # European street prefix patterns: Via, Rue, Route, Ruta, Camino, Calle, Strasse
+        european_streets = PatternRecognizer(
+            supported_entity="LOCATION",
+            patterns=[
+                Pattern(
+                    name="italian_street",
+                    # Via + name: "Via Piancraiolo", "Via della Ferrovia", "Via dell'Industria"
+                    regex=r"\bVia\s+(?:del(?:la|le|l['']|lo)?\s+)?[A-Z][A-Za-z]+(?:\s+[A-Za-z]+){0,3}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="french_street",
+                    # Rue/Route/Allée/Chemin + name: "Rue des Ecoles", "Route du Lac"
+                    regex=r"\b(?:Rue|Route|All[ée]e|Chemin|Boulevard|Passage|Impasse|Place)\s+(?:du|de|des|la|le|l[''])?\s*[A-Z][A-Za-z]+(?:\s+[A-Za-z]+){0,3}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="spanish_street",
+                    # Calle/Camino/Ruta/Avenida: "Camino de los Algarbes", "Calle Mayor"
+                    regex=r"\b(?:Calle|Camino|Ruta|Avenida|Paseo|Carrera|Carretera)\s+(?:de\s+(?:los?\s+|las?\s+)?)?[A-Z][A-Za-z]+(?:\s+[A-Za-z]+){0,3}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="german_street",
+                    # Strasse/Straße/Weg/Gasse: "Hauptstrasse", "Bergweg"
+                    regex=r"\b[A-Z][a-z]+(?:stra[sß]e|weg|gasse|platz|allee)\b",
+                    score=0.82,
+                ),
+            ],
+        )
+
         # Register enhanced address patterns
         self.analyzer.registry.add_recognizer(hash_unit)
         self.analyzer.registry.add_recognizer(care_of_address)
         self.analyzer.registry.add_recognizer(rural_route)
         self.analyzer.registry.add_recognizer(building_patterns)
         self.analyzer.registry.add_recognizer(address_continuation)
+        self.analyzer.registry.add_recognizer(uk_compound_places)
+        self.analyzer.registry.add_recognizer(european_streets)
 
         # =========================================
         # CITIES DATABASE RECOGNIZER
@@ -2561,6 +2683,8 @@ class PIIDetector:
             # Cancer types
             r"\b\w+(?:carcinoma|sarcoma|lymphoma|leukemia|melanoma|blastoma)\b",
             r"\b(?:breast|lung|colon|prostate|pancreatic|ovarian|liver|brain)\s+cancer\b",
+            r"\b(?i)cancer\b",
+            r"\b(?i)tumo(?:u)?r\b",
             # Mental health
             r"\b(?:major\s+)?depress(?:ion|ive\s+disorder)\b",
             r"\b(?:generalized\s+)?anxiety(?:\s+disorder)?\b",
@@ -2861,7 +2985,7 @@ class PIIDetector:
             patterns=[
                 Pattern(
                     name="intl_phone_plus",
-                    regex=r"\+\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b",
+                    regex=r"\+\d{1,3}[-.\s]?\(?\d{1,5}\)?[-.\s]?\d{1,5}[-.\s]?\d{1,9}\b",
                     score=0.85,
                 ),
             ],
@@ -3040,24 +3164,36 @@ class PIIDetector:
             context=["phone", "tel", "mobile", "cell", "contact", "australia"]
         )
 
-        # UK phone: +44 XXXX XXXXXX, 07XXX XXXXXX
+        # UK phone: +44 XXXX XXXXXX, 07XXX XXXXXX, 01XXX XXXXXX
         uk_phone = PatternRecognizer(
             supported_entity="PHONE_NUMBER",
             patterns=[
                 Pattern(
                     name="uk_mobile",
-                    # UK mobile: 07XXX XXXXXX
-                    regex=r"\b07\d{3}\s?\d{6}\b",
+                    # UK mobile: 07XXX XXXXXX or 07XXX-XXXXXX
+                    regex=r"\b07\d{3}[\s\-]?\d{6}\b",
                     score=0.90,
                 ),
                 Pattern(
                     name="uk_intl",
                     # +44 XXXX XXXXXX
-                    regex=r"\+44\s?\d{4}\s?\d{6}\b",
+                    regex=r"\+44[\s\-]?\d{4}[\s\-]?\d{6}\b",
                     score=0.92,
                 ),
+                Pattern(
+                    name="uk_landline",
+                    # UK landline: 01XXX XXXXXX, 02X XXXX XXXX
+                    regex=r"\b0[12]\d{2,3}[\s\-]\d{5,6}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="uk_landline_dash",
+                    # UK landline with dash: 01926-97469, 01221-370813
+                    regex=r"\b0\d{4}[\-]\d{5,6}\b",
+                    score=0.85,
+                ),
             ],
-            context=["phone", "tel", "mobile", "cell", "contact", "uk"]
+            context=["phone", "tel", "mobile", "cell", "contact", "uk", "call"]
         )
 
         # Phone numbers with extensions: (636)734-8519x84099, 555-123-4567 ext 123
@@ -3175,20 +3311,32 @@ class PIIDetector:
         )
 
         # European phone with dots as separators
-        # Matches: "013417878.8587", "01-72.06-94.36"
+        # Matches: "013417878.8587", "01-72.06-94.36", "0629.15429898"
         european_phone_dots = PatternRecognizer(
             supported_entity="PHONE_NUMBER",
             patterns=[
                 Pattern(
                     name="euro_phone_dots",
                     # 0NNNNNNN.NNNN (European with dot separator)
-                    regex=r"\b0\d{4,9}\.\d{4,6}\b",
+                    regex=r"\b0\d{4,9}\.\d{4,8}\b",
                     score=0.82,
                 ),
                 Pattern(
                     name="euro_phone_mixed_dots",
                     # NN-NN.NN-NN.NN or NN.NN.NN.NN.NN (European dot/dash mix)
                     regex=r"\b\d{2}[-.]?\d{2}\.\d{2}[-.]?\d{2}\.\d{2}\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="euro_phone_dot_continuous",
+                    # 0XXX.XXXXXXXXX (European with dot and continuous digits)
+                    regex=r"\b0\d{3,4}\.\d{6,10}\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="euro_phone_dot_groups",
+                    # 010.155.741.8175 (dot-separated groups)
+                    regex=r"\b0\d{2}\.\d{3}\.\d{3}\.\d{4}\b",
                     score=0.85,
                 ),
             ],
@@ -3259,21 +3407,110 @@ class PIIDetector:
                     score=0.85,
                 ),
                 Pattern(
+                    name="mixed_sep_intl_00_dot",
+                    # 00.CC-XX XX XX (dot after 00 international prefix)
+                    regex=r"00[.\-]\d{2}[.\-\s]\d{2}[\s]\d{2}[\s]\d{2}",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="mixed_sep_intl_00_space",
+                    # 00147 832542, 002-275 5228, 002672332 3506 (00 + digits with space/dash)
+                    regex=r"00\d{1,3}[.\-\s]\d{3,6}[\s]?\d{3,6}",
+                    score=0.82,
+                ),
+                Pattern(
                     name="mixed_sep_local",
-                    # Local format: 0XXX-XX XXX.XXXX or similar with mixed separators
+                    # Local format: 0XXX-XX XXX.XXXX or similar with 3+ groups
                     regex=r"\b0\d{2,4}[.\-\s]\d{2,5}[.\-\s]\d{3,5}[.\-\s]?\d{0,5}\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="mixed_sep_local_2group",
+                    # Two-group local: 09545 55592, 0103-663399916, 0509.19132656
+                    regex=r"\b0\d{3,5}[.\-\s]\d{4,10}\b",
                     score=0.78,
                 ),
                 Pattern(
                     name="mixed_sep_generic",
                     # Any digit group with mixed dots/dashes/spaces (10+ digits total)
                     regex=r"\b\d{2,5}[.\-]\d{2,5}[\s]\d{2,5}[.\-]?\d{2,5}\b",
-                    score=0.75,
+                    score=0.78,
+                ),
+                Pattern(
+                    name="mixed_sep_4group",
+                    # 4+ groups with any separator: 05-93 19.08-21, 02 33.97-89.54
+                    regex=r"\b0\d{1,2}[.\-\s]\d{2,4}[.\-\s]\d{2,4}[.\-\s]\d{2,4}[.\-\s]?\d{0,4}\b",
+                    score=0.80,
                 ),
             ],
             context=["phone", "tel", "mobile", "cell", "fax", "contact", "call", "number"]
         )
         self.analyzer.registry.add_recognizer(mixed_separator_phone)
+
+        # Short local phone formats: 0XXXX.XXXXXXX, 0XX-XXXXXXX (no spaces, dot/dash only)
+        short_local_phone = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="local_dot_nosep",
+                    # 06196.175469, 0333.48455417, 0509.19132656
+                    regex=r"\b0\d{2,4}\.\d{6,10}\b",
+                    score=0.78,
+                ),
+                Pattern(
+                    name="local_dash_short",
+                    # 055-7436469, 063-8615170
+                    regex=r"\b0\d{2,3}-\d{6,8}\b",
+                    score=0.78,
+                ),
+                Pattern(
+                    name="local_space_long",
+                    # 097 8611392, 07433 381400
+                    regex=r"\b0\d{2,4}\s\d{6,8}\b",
+                    score=0.78,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "call", "number"]
+        )
+        self.analyzer.registry.add_recognizer(short_local_phone)
+
+        # 4-3-4 digit format: "5140-790-6744", "9922.726.0323"
+        phone_4_3_4 = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="phone_4_3_4_dash",
+                    regex=r"\b\d{4}-\d{3}-\d{4}\b",
+                    score=0.82,
+                ),
+                Pattern(
+                    name="phone_4_3_4_dot",
+                    regex=r"\b\d{4}\.\d{3}\.\d{4}\b",
+                    score=0.82,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "call"]
+        )
+        self.analyzer.registry.add_recognizer(phone_4_3_4)
+
+        # Mixed dot-dash without spaces: "3945.181-0029", "9922-726.0323"
+        phone_mixed_dot_dash = PatternRecognizer(
+            supported_entity="PHONE_NUMBER",
+            patterns=[
+                Pattern(
+                    name="phone_dot_then_dash",
+                    regex=r"\b\d{3,4}\.\d{3}-\d{4}\b",
+                    score=0.80,
+                ),
+                Pattern(
+                    name="phone_dash_then_dot",
+                    regex=r"\b\d{3,4}-\d{3}\.\d{4}\b",
+                    score=0.80,
+                ),
+            ],
+            context=["phone", "tel", "mobile", "cell", "fax", "contact", "call"]
+        )
+        self.analyzer.registry.add_recognizer(phone_mixed_dot_dash)
 
         # Regional phone recognizer using Google's phonenumbers library
         # Provides comprehensive validation for international phone formats
@@ -4825,19 +5062,19 @@ class PIIDetector:
                 Pattern(
                     name="ssn_3_3_4_spaces",
                     regex=r"\b\d{3}\s+\d{3}\s+\d{4}\b",
-                    score=0.35,  # Low - conflicts with phone, needs context
+                    score=0.48,  # Above 0.45 threshold; phone-format filter handles overlap
                 ),
                 # "838-703-8103" - 3-3-4 with dashes (conflicts with phone, needs context)
                 Pattern(
                     name="ssn_3_3_4_dashes",
                     regex=r"\b\d{3}-\d{3}-\d{4}\b",
-                    score=0.35,  # Low - same as phone format, needs context
+                    score=0.48,  # Above 0.45 threshold; phone-format filter handles overlap
                 ),
                 # "092.255.5602" - 3-3-4 with dots
                 Pattern(
                     name="ssn_3_3_4_dots",
                     regex=r"\b\d{3}\.\d{3}\.\d{4}\b",
-                    score=0.35,  # Low - needs context
+                    score=0.48,  # Above 0.45 threshold; phone-format filter handles overlap
                 ),
                 # "044034803" - 9 digits no separators (very generic, needs context)
                 # Score at 0.40 to pass min_score_with_context_similarity (0.40)
@@ -4937,10 +5174,10 @@ class PIIDetector:
                     regex=r"\b[A-Z]{2}\d{4,6}[A-Z]{1,2}\b",
                     score=0.70,
                 ),
-                # CURP/RFC-like: DANCO-411081-9-013, MALAN-308037-9-763
+                # CURP/RFC-like: DANCO-411081-9-013, MALAN-308037-9-763, DUSCA-004192-DA-658
                 Pattern(
                     name="curp_like_id",
-                    regex=r"\b[A-Z]{4,6}[-.]?\d{6}[-.]?\d[-.]?\d{3}\b",
+                    regex=r"\b[A-Z]{4,6}[-.]?\d{6}[-.]?[A-Z\d]{1,2}[-.]?\d{3}\b",
                     score=0.80,
                 ),
                 # Italian fiscal code-like: DESAN0622749530, NANNE6030669080 (5+ letters + 10 digits)
@@ -4955,15 +5192,15 @@ class PIIDetector:
                     regex=r"\b[A-Z]\d+\.[A-Z\d]+\.[A-Z\d]+\.\d+\b",
                     score=0.65,
                 ),
-                # Spaced CURP: MULUA 910056 9 416, GERAL 952255 GW 330
+                # Spaced CURP: MULUA 910056 9 416, GERAL 952255 GW 330, OKBA9 511279 9 950
                 Pattern(
                     name="curp_spaced",
-                    regex=r"\b[A-Z]{4,6}\s+\d{6}\s+\d\s+\d{3}\b",
+                    regex=r"\b[A-Z]{3,6}\d?\s+\d{6}\s+\d\s+\d{3}\b",
                     score=0.80,
                 ),
                 Pattern(
                     name="curp_spaced_letters",
-                    regex=r"\b[A-Z]{4,6}\s+\d{6}\s+[A-Z]{1,2}\s+\d{3}\b",
+                    regex=r"\b[A-Z]{3,6}\d?\s+\d{6}\s+[A-Z]{1,2}\s+\d{3}\b",
                     score=0.80,
                 ),
                 # Generic alphanumeric ID: 8-16 chars with mixed letters/numbers
@@ -4986,6 +5223,29 @@ class PIIDetector:
                     name="dotted_numeric_id",
                     regex=r"\b\d{3}\.\d{3}\.\d{4}\b",
                     score=0.65,
+                ),
+                # French passport/ID: G4FRA15JX19798500410FRANTZ, N0.FRA.97IC6340.5.331104.DARIYAN
+                Pattern(
+                    name="french_passport_compact",
+                    regex=r"\b[A-Z\d]{2}FRA\d{2}[A-Z]{2}\d{4,}[A-Z]+\b",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="french_passport_dotted",
+                    regex=r"\b[A-Z\d]{2}[.\-\s]?FRA[.\-\s]?\d{2}[A-Z]{2}\d{4}[.\-\s]?\d[.\-\s]?\d{6}[.\-\s]?[A-Z]+\b",
+                    score=0.85,
+                ),
+                # Belgian eID: Jos.Kle.23.G.61.4.NXO, Amr-Duc-19-M-55-7-BXL
+                Pattern(
+                    name="belgian_eid",
+                    regex=r"\b[A-Z][a-z]+[.\-][A-Z][a-z]+[.\-]\d{2}[.\-][A-Z][.\-]\d{2}[.\-]\d[.\-][A-Z]{3}\b",
+                    score=0.85,
+                ),
+                # Multi-part dash format: 1-67-03-31164-226-92, 2-74-01-06585-693-02
+                Pattern(
+                    name="multi_dash_id",
+                    regex=r"\b\d{1,2}[-]\d{2}[-]\d{2}[-]\d{4,5}[-]\d{3}[-]\d{2}\b",
+                    score=0.85,
                 ),
             ],
             context=["id", "national id", "id number", "identification", "identity",
@@ -6188,10 +6448,49 @@ class PIIDetector:
         # Pre-compute ADDRESS, COMPANY, and LOCATION spans for cross-entity PERSON filtering
         address_spans = [(e.start, e.end) for e in entities if e.entity_type == "ADDRESS"]
         company_spans = [(e.start, e.end) for e in entities if e.entity_type == "COMPANY"]
-        location_spans = [(e.start, e.end) for e in entities if e.entity_type == "LOCATION"]
+        location_spans = [(e.start, e.end, e.confidence) for e in entities if e.entity_type == "LOCATION"]
 
         for entity in entities:
             entity_text = entity.text.strip()
+
+            # --- PERSON span cleanup (before general filters) ---
+            # PersonRecognizer sometimes merges overlapping detections into overly-wide spans
+            # that include trailing context (", Card:", newlines) or leading labels ("Cardholder:").
+            # Clean these up BEFORE OCR artifact filtering, which rejects excess punctuation.
+            if entity.entity_type == "PERSON":
+                _ptrim = entity_text
+                # Truncate at newline (names don't span lines)
+                _pnl = _ptrim.find('\n')
+                if _pnl > 0:
+                    _ptrim = _ptrim[:_pnl].rstrip()
+                # Truncate at ", Word:" pattern (", Card:", ", SSN:")
+                _pcl = re.search(r',\s*\w+\s*:', _ptrim)
+                if _pcl:
+                    _ptrim = _ptrim[:_pcl.start()].rstrip()
+                _ptrim = _ptrim.rstrip(' ,')
+                # Strip leading person-context labels ("Cardholder: ", "Employee: ")
+                _plbl = re.match(r'^(\w+):\s+', _ptrim)
+                if _plbl:
+                    _plw = _plbl.group(1).lower()
+                    if _plw in {'cardholder', 'contact', 'patient', 'client', 'customer',
+                                'applicant', 'employee', 'beneficiary', 'holder', 'owner',
+                                'recipient', 'sender', 'guardian', 'witness', 'spouse',
+                                'parent', 'agent', 'representative', 'name', 'person'}:
+                        _ptrim = _ptrim[_plbl.end():]
+                if _ptrim != entity_text and len(_ptrim) >= 2:
+                    _poff = entity.text.find(_ptrim)
+                    if _poff >= 0:
+                        entity = PIIEntity(
+                            entity_type=entity.entity_type,
+                            text=_ptrim,
+                            start=entity.start + _poff,
+                            end=entity.start + _poff + len(_ptrim),
+                            confidence=entity.confidence,
+                            pattern_name=entity.pattern_name,
+                            locale=entity.locale,
+                            recognition_metadata=entity.recognition_metadata,
+                        )
+                        entity_text = _ptrim
 
             # CREDENTIAL filtering - Context-anchored entropy verification
             # Uses Shannon entropy + context anchor (trigger words within 10 tokens)
@@ -6237,13 +6536,35 @@ class PIIDetector:
                 # Skip very short usernames (likely noise)
                 if len(entity_text) < 3:
                     continue
+                # Filter common English hyphenated words (not usernames)
+                _common_hyphenated = {
+                    'well-being', 'well-known', 'well-established', 'well-defined',
+                    'up-to-date', 'state-of-the-art', 'self-esteem', 'self-care',
+                    'self-awareness', 'self-confidence', 'self-improvement',
+                    'anti-bullying', 'anti-fraud', 'anti-virus', 'anti-spam',
+                    'late-night', 'long-term', 'short-term', 'full-time', 'part-time',
+                    'real-time', 'on-site', 'off-site', 'in-person', 'on-line',
+                    'day-to-day', 'face-to-face', 'one-on-one', 'step-by-step',
+                    'high-quality', 'high-level', 'low-cost', 'low-risk',
+                    'non-profit', 'non-verbal', 'non-fiction',
+                    'problem-solving', 'decision-making', 'team-building',
+                }
+                if text_lower in _common_hyphenated:
+                    continue
+                # Filter HTML attributes (http-equiv, X-UA, etc.)
+                if text_lower.startswith(('http-', 'x-', 'utf-', 'content-')):
+                    continue
 
             # LARVPC OCR artifact filtering (early rejection of garbage)
             # Filters: low alphanumeric density, consonant-heavy strings, excess punctuation
             if OCR_FILTER_AVAILABLE and entity.entity_type in ("COMPANY", "PERSON", "ADDRESS", "LOCATION"):
-                should_keep, reason = filter_ocr_artifacts(entity_text, entity.entity_type)
-                if not should_keep:
-                    continue
+                # Skip OCR filter for UK postcode patterns (consonant-heavy but legitimate)
+                _is_postcode_fmt = (entity.entity_type in ("ADDRESS", "LOCATION") and
+                                    bool(re.match(r'^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$', entity_text.strip())))
+                if not _is_postcode_fmt:
+                    should_keep, reason = filter_ocr_artifacts(entity_text, entity.entity_type)
+                    if not should_keep:
+                        continue
 
             # Filter using negative gazetteer (common words, brand names, etc.)
             # This catches high-frequency false positives for PERSON, COMPANY, LOCATION
@@ -6261,8 +6582,14 @@ class PIIDetector:
 
             # Filter COMPANY-specific false positives (OCR artifacts, garbage patterns)
             if entity.entity_type == "COMPANY":
+                # Filter phone-fragment + generic word: "860-0892 Address", "766-0392 Address"
+                if re.match(r'^\d{3}[-.\s]\d{4}\s+\w+$', entity_text):
+                    continue
                 # Filter patterns like "6 Name", "IPV4_...", mixed case OCR artifacts
-                if re.match(r'^(\d+\s+\w+|IPV4_.*|.*\.\s+\w+.*)', entity_text):
+                # But NOT numbered corporations (e.g., "2378238 Ontario Inc.")
+                _corp_suffixes = ('inc', 'ltd', 'llc', 'corp', 'limited', 'gmbh', 'plc', 'co')
+                _has_corp_suffix = any(entity_text.lower().rstrip('.').endswith(s) for s in _corp_suffixes)
+                if not _has_corp_suffix and re.match(r'^(\d+\s+\w+|IPV4_.*|.*\.\s+\w+.*)', entity_text):
                     continue
                 # Filter mixed case anomalies like "addXEss", "dEtense" (OCR artifacts)
                 if re.search(r'[a-z][A-Z]{2,}|[a-z][A-Z][a-z]', entity_text):
@@ -6273,6 +6600,28 @@ class PIIDetector:
 
             # Filter ADDRESS/LOCATION false positives
             if entity.entity_type in ("ADDRESS", "LOCATION"):
+                # --- Span cleanup: strip "Address:" label prefix from detection ---
+                # PatternRecognizer sometimes includes the field label in the span
+                _addr_lbl = re.match(r'^(?:Address|Location|Addr)\s*:\s*', entity_text, re.IGNORECASE)
+                if _addr_lbl:
+                    _addr_rest = entity_text[_addr_lbl.end():]
+                    if len(_addr_rest.strip()) >= 3:
+                        _addr_off = _addr_lbl.end()
+                        entity = PIIEntity(
+                            entity_type=entity.entity_type,
+                            text=_addr_rest,
+                            start=entity.start + _addr_off,
+                            end=entity.end,
+                            confidence=entity.confidence,
+                            pattern_name=entity.pattern_name,
+                            locale=entity.locale,
+                            recognition_metadata=entity.recognition_metadata,
+                        )
+                        entity_text = _addr_rest
+                # Filter "Employee Dr" / "Customer Dr" - job title + Dr abbreviation
+                # These are not addresses, just role + title abbreviation
+                if re.match(r'^(?:Employee|Customer|Patient|Client|Cardholder|Manager|Director)\s+Dr\.?$', entity_text, re.IGNORECASE):
+                    continue
                 # Skip HTML tags and fragments
                 if '<' in entity_text or '>' in entity_text:
                     continue
@@ -6291,7 +6640,10 @@ class PIIDetector:
                 # Filter OCR garbage and malformed patterns
                 if re.match(r'#\d+[a-z]', entity_text, re.IGNORECASE):
                     continue
-                if self._is_garbage_string(entity_text):
+                # Skip garbage check for UK postcode format (consonant-heavy but legitimate)
+                _is_postcode_here = bool(re.match(
+                    r'^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$', entity_text.strip()))
+                if not _is_postcode_here and self._is_garbage_string(entity_text):
                     continue
                 if self._is_ocr_artifact(entity_text):
                     continue
@@ -6307,8 +6659,11 @@ class PIIDetector:
                     continue
 
                 # Filter numeric-only patterns (not addresses)
+                # Exception: 5-digit US ZIP codes (e.g., "28074", "97201")
                 if re.match(r'^\s*\d+\s*$', entity_text):
-                    continue
+                    stripped = entity_text.strip()
+                    if not re.match(r'^\d{5}(?:-\d{4})?$', stripped):
+                        continue
 
                 # Filter patterns like "123 to", "456 or", "789 and" (number + preposition/verb)
                 if re.match(r'^\d+\s+(to|or|and|at|in|on|of|by|for|is|are|was|were|has|have|can|will|would|could|should)\b', text_lower):
@@ -6351,16 +6706,30 @@ class PIIDetector:
                     if entity.confidence < 0.85:
                         continue
 
+                # Check city/geo status upfront (used for short-text filter AND verifier bypass)
+                words = entity_text.split()
+                _is_known_city = False
+                if CITIES_DB_AVAILABLE:
+                    _cdb = get_cities_db()
+                    _is_known_city = _cdb.is_city(entity_text.strip())
+                _is_city_recognizer = (entity.recognition_metadata or {}).get('recognizer_name') == 'CityRecognizer'
+
                 # Filter very short text (<5 chars) without strong indicators
                 if len(entity_text) < 5:
-                    # Keep US state abbreviations, ZIP codes
+                    # Keep US state abbreviations, ZIP codes, and known cities
                     is_state_abbrev = re.match(r'^[A-Z]{2}$', entity_text.strip())
                     is_zip = re.match(r'^\d{5}$', entity_text.strip())
-                    if not (is_state_abbrev or is_zip):
+                    _is_uk_postcode_short = bool(re.match(
+                        r'^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$', entity_text.strip()))
+                    if not (is_state_abbrev or is_zip or _is_known_city or _is_city_recognizer or _is_uk_postcode_short):
                         continue
+                _compass_prefixes = {'north', 'south', 'east', 'west', 'new', 'old',
+                                     'upper', 'lower', 'great', 'little', 'central',
+                                     'inner', 'outer', 'mount', 'fort', 'port', 'san',
+                                     'santa', 'saint', 'st', 'cape', 'el', 'la', 'las', 'los'}
+                _has_geo_prefix = len(words) >= 2 and words[0].lower() in _compass_prefixes
 
                 # Filter simple word pairs/triples without address indicators
-                words = entity_text.split()
                 if len(words) <= 3 and all(w.isalpha() for w in words):
                     street_types = {'street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr',
                                    'lane', 'ln', 'blvd', 'boulevard', 'way', 'court', 'ct',
@@ -6369,12 +6738,26 @@ class PIIDetector:
                                    'square', 'plaza', 'crescent', 'close', 'gardens', 'grove',
                                    'row', 'mews', 'rise', 'walk', 'hill', 'green', 'commons'}
                     location_words = {'city', 'county', 'state', 'country', 'province', 'region',
-                                      'district', 'township', 'village', 'town', 'borough', 'parish'}
+                                      'district', 'township', 'village', 'town', 'borough', 'parish',
+                                      'heights', 'crossing', 'point', 'springs', 'falls', 'bridge',
+                                      'port', 'haven', 'bay', 'beach', 'lake', 'creek', 'valley',
+                                      'mountain', 'ridge', 'island', 'harbour', 'harbor', 'hills',
+                                      'park', 'forest', 'meadow', 'glen', 'shire', 'heath'}
                     has_street_type = any(w.lower() in street_types for w in words)
                     has_location_word = any(w.lower() in location_words for w in words)
                     if not has_street_type and not has_location_word:
-                        if entity.confidence < 0.88:
-                            continue
+                        # Allow US state abbreviations (e.g., "NC", "TX", "CA")
+                        _us_state_set = {'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+                                         'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+                                         'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+                                         'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+                                         'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'}
+                        _is_us_state = len(words) == 1 and words[0].upper() in _us_state_set
+                        if not (_is_us_state or _is_known_city or _is_city_recognizer or _has_geo_prefix):
+                            # Lower threshold for multi-word entities (2-3 words are more likely valid)
+                            _threshold = 0.78 if len(words) >= 2 else 0.88
+                            if entity.confidence < _threshold:
+                                continue
 
                 # Filter sentence-like patterns (contains common verbs)
                 common_verbs = {'is', 'are', 'was', 'were', 'be', 'been', 'being',
@@ -6383,13 +6766,26 @@ class PIIDetector:
                                 'go', 'goes', 'went', 'gone', 'come', 'comes', 'came',
                                 'make', 'makes', 'made', 'take', 'takes', 'took', 'taken',
                                 'get', 'gets', 'got', 'give', 'gives', 'gave', 'given',
-                                'see', 'sees', 'saw', 'seen', 'know', 'knows', 'knew', 'known'}
+                                'see', 'sees', 'saw', 'seen', 'know', 'knows', 'knew', 'known',
+                                'gathered', 'appreciate', 'enjoyed', 'attended', 'reviewed',
+                                'said', 'told', 'asked', 'wanted', 'needed', 'tried',
+                                'the', 'that', 'this', 'these', 'those'}
                 if any(w.lower() in common_verbs for w in words):
                     if entity.confidence < 0.90:
                         continue
 
+                # UK postcode bypass: distinctive format, skip LightGBM verifier
+                _is_uk_postcode = bool(re.match(
+                    r'^[A-Za-z]{1,2}\d[A-Za-z\d]?\s?\d[A-Za-z]{2}$', entity_text.strip()))
+                # Unit/dwelling bypass: Suite/Flat/Office/Block/Basement + number
+                _is_unit_pattern = bool(re.match(
+                    r'^(?:Suite|Flat|Apt|Apartment|Unit|Office|Loft|Box|Room|Floor|Block|Basement|Level|Wing|Bay|Annex|Garage)\s+\d',
+                    entity_text.strip(), re.IGNORECASE))
+                # Known city/geo bypass: these fail libpostal validation (weight 0.3 < 0.7)
+                _is_city_bypass = _is_known_city or _is_city_recognizer or _has_geo_prefix
+
                 # LightGBM-based address verification (uses pre-loaded model)
-                if ADDRESS_VERIFIER_AVAILABLE:
+                if ADDRESS_VERIFIER_AVAILABLE and not _is_uk_postcode and not _is_unit_pattern and not _is_city_bypass:
                     is_valid, adjusted_confidence = verify_address_detection(
                         text, entity_text, entity.start, entity.end, entity.confidence
                     )
@@ -6410,14 +6806,24 @@ class PIIDetector:
 
             # Filter PERSON-specific false positives
             if entity.entity_type == "PERSON":
+                # (Span cleanup already applied at top of loop)
+
                 # Check if entity is from labeled detector (trusted source)
                 _is_labeled = (entity.recognition_metadata or {}).get('recognizer_name') == 'LabeledPIIDetector'
                 # Skip HTML closing tags and fragments (</, <div, etc.)
                 if entity_text.startswith('<') or '</' in entity_text:
                     continue
-                # Filter label-like text: " Name: X"
-                if re.match(r'^\s*\w+:\s*\w', entity_text):
-                    continue
+                # Filter label-like text: "Name: X", but allow person-context labels
+                # (Cardholder: Name, Contact: Name, etc. are valid PERSON detections)
+                _label_match = re.match(r'^\s*(\w+):\s*\w', entity_text)
+                if _label_match:
+                    _label_word = _label_match.group(1).lower()
+                    _person_labels = {'cardholder', 'contact', 'patient', 'client', 'customer',
+                                      'applicant', 'employee', 'beneficiary', 'holder', 'owner',
+                                      'recipient', 'sender', 'guardian', 'witness', 'spouse',
+                                      'parent', 'agent', 'representative', 'name', 'person'}
+                    if _label_word not in _person_labels:
+                        continue
                 # Filter social media/brand names mistaken for people
                 brand_names = {'instagram', 'tiktok', 'youtube', 'snapchat', 'whatsapp', 'facebook', 'twitter', 'linkedin', 'pinterest', 'reddit'}
                 if entity_text.lower() in brand_names:
@@ -6459,17 +6865,20 @@ class PIIDetector:
 
                 # Filter PERSON fully contained within a LOCATION span
                 # Exception: labeled detections (XML tags, greetings) are trusted
+                # Only suppress if LOCATION has >= confidence than the PERSON
+                # (prevents low-confidence bogus LOCATIONs from killing good PERSONs)
                 if not _is_labeled:
                     person_in_location = any(
                         l_start <= entity.start and entity.end <= l_end
-                        for l_start, l_end in location_spans
+                        and l_conf >= entity.confidence
+                        for l_start, l_end, l_conf in location_spans
                     )
                     if person_in_location:
                         continue
 
                 # Compute overlap between this PERSON and any LOCATION span
                 _person_loc_overlap = 0
-                for l_start, l_end in location_spans:
+                for l_start, l_end, _l_conf in location_spans:
                     _ov_start = max(entity.start, l_start)
                     _ov_end = min(entity.end, l_end)
                     if _ov_end > _ov_start:
@@ -6580,6 +6989,11 @@ class PIIDetector:
                     'guidelines', 'requirements', 'procedures', 'regulations',
                     'notification', 'conclusion', 'introduction', 'appendix',
                     'britain', 'scotland', 'ireland', 'wales', 'england',
+                    # Common verbs/adjectives/nouns from ai4privacy FPs
+                    'expected', 'step', 'pursue', 'pursue', 'applied', 'forward',
+                    'pending', 'standard', 'resolve', 'navigate', 'achieve',
+                    'maintain', 'establish', 'preserve', 'consider', 'proceed',
+                    'resolve', 'request', 'approach', 'balance', 'review',
                 }
                 if _person_text_lower in _common_non_names:
                     continue
@@ -6603,7 +7017,8 @@ class PIIDetector:
                     'context', 'background', 'overview', 'guidelines',
                 }
                 if len(_person_words) > 2:
-                    if any(w in _heading_words for w in _person_words_clean):
+                    _heading_count = sum(1 for w in _person_words_clean if w in _heading_words)
+                    if _heading_count > len(_person_words_clean) // 2:
                         continue
                 # Also catch 2-word role/title phrases
                 if len(_person_words) == 2:
@@ -6665,7 +7080,8 @@ class PIIDetector:
                 # Skip if it has credit card format (4-4-4-4 with separators)
                 if re.match(r'^\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]?\d{0,4}$', entity_text):
                     continue
-                # Skip if it looks like a phone number (10-11 digits with dashes)
+                # Skip if it looks like a phone number (10-11 digits with dashes/spaces)
+                # But dot-separated NNN.NNN.NNNN is more characteristic of SSN/national ID
                 if len(digits) == 10 or len(digits) == 11:
                     # Trust entities from labeled detector (explicit XML/JSON tag)
                     _recognizer = entity.recognition_metadata.get('recognizer_name', '') if entity.recognition_metadata else ''
@@ -6678,9 +7094,19 @@ class PIIDetector:
                                         'id:', 'number:', 'social_number', 'social number'}
                         has_nid_context = any(kw in nid_ctx for kw in nid_keywords)
                         if not has_nid_context:
-                            # Phone patterns: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX XXX XXXX
-                            if re.match(r'^[\(\s]*\d{3}[\)\s\-\.]*\d{3}[\s\-\.]*\d{4}$', entity_text):
-                                continue
+                            # Dot-separated NNN.NNN.NNNN: keep as ID (dots are SSN-characteristic)
+                            _is_dot_separated = bool(re.match(r'^\d{3}\.\d{3}\.\d{4}$', entity_text))
+                            if not _is_dot_separated:
+                                # Phone patterns: (XXX) XXX-XXXX, XXX-XXX-XXXX, XXX XXX XXXX
+                                # Only suppress if it looks like a valid NANP phone (area code 2XX-9XX)
+                                _phone_match = re.match(r'^[\(\s]*(\d{3})[\)\s\-]*(\d{3})[\s\-]*\d{4}$', entity_text)
+                                if _phone_match:
+                                    _area = _phone_match.group(1)
+                                    _exchange = _phone_match.group(2)
+                                    # NANP: area code and exchange both start with 2-9
+                                    # If either starts with 0 or 1, it's not a phone → keep as NID
+                                    if _area[0] in '23456789' and _exchange[0] in '23456789':
+                                        continue
                         # Canadian/Australian format: XXX XXX XXX or XXX-XXX-XXX (9 digits)
                         if len(digits) == 9 and re.match(r'^\d{3}[\s\-\.]\d{3}[\s\-\.]\d{3}$', entity_text):
                             continue
@@ -6965,9 +7391,10 @@ class PIIDetector:
                     continue
                 # Skip if it looks like an IMEI (15 digits in base number)
                 # But not for international-prefix numbers (00/+ add digits to real phones)
+                # Also exempt numbers starting with 0 (UK/European local format - IMEIs never start with 0)
                 if len(base_digits) == 15:
                     stripped_text = entity_text.strip()
-                    if not stripped_text.startswith('+') and not stripped_text.startswith('00'):
+                    if not stripped_text.startswith('+') and not stripped_text.startswith('00') and not stripped_text.startswith('0'):
                         continue
                 # Skip if it looks like an IP address (4 octets separated by dots)
                 if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', entity_text):
@@ -6981,10 +7408,12 @@ class PIIDetector:
                     continue
                 # Validate using phonenumbers library (Google's libphonenumber)
                 # Returns "valid", "possible", "invalid", or "unknown"
+                _phonenumbers_valid = False
                 if PHONENUMBERS_AVAILABLE and len(digits) >= 7:
                     region = self._get_phone_region_from_context(text, entity.start, entity.end)
                     validation_result = self._validate_phone_with_phonenumbers(entity_text, region)
                     if validation_result == "valid":
+                        _phonenumbers_valid = True
                         # Boost confidence for numbers that phonenumbers validates
                         # This significantly improves recall (87% -> 95%+ potential)
                         new_confidence = min(0.98, entity.confidence + 0.15)
@@ -7014,12 +7443,23 @@ class PIIDetector:
                         )
                     elif validation_result == "invalid":
                         # Lower confidence for numbers that fail phonenumbers validation
+                        # Use gentler penalty for numbers with strong phone formatting
+                        _s = entity_text.strip()
+                        _has_phone_format = bool(
+                            re.match(r'\+\d{1,3}[\s\-\.\(]', _s) or  # intl prefix
+                            re.match(r'\(\d{2,4}\)\s*\d', _s) or  # paren area code
+                            re.match(r'\d{3,4}[\-\.]\d{3,4}[\-\.]\d{4}', _s) or  # separator format
+                            re.match(r'00\d{2,4}[-.\s]', _s) or  # 00 prefix
+                            re.match(r'0\d{3,4}[\s\-]\d{4,6}', _s) or  # local prefix
+                            re.match(r'0\d{2,4}\.\d{3,4}\.\d{3,4}', _s)  # dot groups
+                        )
+                        _penalty = 0.90 if _has_phone_format else 0.75
                         entity = PIIEntity(
                             entity_type=entity.entity_type,
                             text=entity.text,
                             start=entity.start,
                             end=entity.end,
-                            confidence=entity.confidence * 0.75,  # Gentle penalty (0.5 was too aggressive)
+                            confidence=entity.confidence * _penalty,
                             pattern_name=entity.pattern_name,
                             locale=entity.locale,
                             recognition_metadata=entity.recognition_metadata
@@ -7060,8 +7500,13 @@ class PIIDetector:
                     has_00_prefix = bool(re.match(r'00\d{2,4}[-.\s]', stripped))
                     # Accept any mixed-separator format with enough digits
                     has_mixed_separators = bool(re.match(r'\d+[.\-]\d+[\s]\d+', stripped) or
-                                                re.match(r'\d+[\s]\d+[.\-]\d+', stripped))
-                    has_strong_formatting = has_intl_prefix or has_paren_area_code or has_separator_format or has_00_prefix or has_mixed_separators
+                                                re.match(r'\d+[\s]\d+[.\-]\d+', stripped) or
+                                                re.match(r'\d+[.\-]\d+[.\-]\d+[.\-]\d+', stripped))  # 4+ groups with dots/dashes
+                    # Local format: 0XX-XXXXXXX through 0XXXXX-XXXXX (starting with 0 + separator)
+                    has_local_prefix = bool(re.match(r'0\d{2,5}[\s\-\.]\d{4,10}', stripped))
+                    # Dot-separated groups (European): 010.155.741.8175
+                    has_dot_groups = bool(re.match(r'0\d{2,4}\.\d{3,4}\.\d{3,4}\.\d{3,4}', stripped))
+                    has_strong_formatting = has_intl_prefix or has_paren_area_code or has_separator_format or has_00_prefix or has_mixed_separators or has_local_prefix or has_dot_groups or _phonenumbers_valid
                     if not has_strong_formatting:
                         ctx_start = max(0, entity.start - 100)
                         ctx_end = min(len(text), entity.end + 50)
@@ -7136,15 +7581,41 @@ class PIIDetector:
 
             # Filter ADDRESS/LOCATION false positives
             if entity.entity_type in ("LOCATION", "ADDRESS"):
+                # --- Span cleanup: strip "Address:" label prefix (second pass) ---
+                _addr_lbl2 = re.match(r'^(?:Address|Location|Addr)\s*:\s*', entity_text, re.IGNORECASE)
+                if _addr_lbl2:
+                    _addr_rest2 = entity_text[_addr_lbl2.end():]
+                    if len(_addr_rest2.strip()) >= 3:
+                        entity = PIIEntity(
+                            entity_type=entity.entity_type,
+                            text=_addr_rest2,
+                            start=entity.start + _addr_lbl2.end(),
+                            end=entity.end,
+                            confidence=entity.confidence,
+                            pattern_name=entity.pattern_name,
+                            locale=entity.locale,
+                            recognition_metadata=entity.recognition_metadata,
+                        )
+                        entity_text = _addr_rest2
+                # Filter "Employee Dr" type patterns (not addresses)
+                if re.match(r'^(?:Employee|Customer|Patient|Client|Cardholder|Manager|Director)\s+Dr\.?$', entity_text, re.IGNORECASE):
+                    continue
                 # Labeled address entities bypass most FP filters (trusted source)
                 _addr_is_labeled = (entity.recognition_metadata or {}).get('recognizer_name') == 'LabeledPIIDetector'
                 # Skip OCR artifacts (random case, underscores, incomplete words)
                 if self._is_ocr_artifact(entity_text) and not _addr_is_labeled:
                     continue
-                # Skip very short text (less than 4 chars) - catches "in", "as", "WY", etc.
+                # Skip very short text (less than 4 chars) - catches "in", "as", etc.
                 # Allow labeled entities >= 2 chars (e.g., city "Ely", country "UK")
+                # Allow US state abbreviations (e.g., "NC", "TX", "CA")
                 if len(entity_text.strip()) < 4 and not _addr_is_labeled:
-                    continue
+                    _short_us_states = {'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+                                        'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+                                        'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+                                        'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+                                        'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'}
+                    if entity_text.strip().upper() not in _short_us_states:
+                        continue
                 if _addr_is_labeled and len(entity_text.strip()) < 2:
                     continue
                 # Filter standalone US state abbreviations - require context
@@ -7154,11 +7625,16 @@ class PIIDetector:
                                   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
                                   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC'}
                 if entity_text.upper() in us_state_codes:
-                    # Require high confidence OR context keywords
+                    # Require high confidence OR context keywords OR nearby ZIP/address data
                     if entity.confidence < 0.70:
-                        context_start = max(0, entity.start - 50)
-                        context = text[context_start:entity.start].lower()
-                        if not any(kw in context for kw in ['state', 'from', 'to', 'city', 'address', 'located', ',', 'zip']):
+                        # Wider context window (150 chars before and after)
+                        context_start = max(0, entity.start - 150)
+                        context_end = min(len(text), entity.end + 150)
+                        context_around = text[context_start:context_end].lower()
+                        has_keywords = any(kw in context_around for kw in ['state', 'from', 'to', 'city', 'address', 'located', ',', 'zip', 'postal', 'phone', 'name'])
+                        # Check for nearby ZIP codes (5-digit numbers) indicating tabular address data
+                        has_nearby_zip = bool(re.search(r'\b\d{5}\b', text[context_start:context_end]))
+                        if not (has_keywords or has_nearby_zip):
                             continue
                 # Skip SHORT fragments ending with prepositions (incomplete address phrases)
                 # Examples: "was on", "such as", "niche in" - but not full addresses
@@ -7207,8 +7683,11 @@ class PIIDetector:
                     continue
                 # Skip numeric-only fragments that are likely IDs
                 # Examples: "10000", "1991"
+                # Exception: 5-digit US ZIP codes (e.g., "28074", "97201")
                 if re.match(r'^\s*\d+\s*$', entity_text):
-                    continue
+                    stripped = entity_text.strip()
+                    if not re.match(r'^\d{5}(?:-\d{4})?$', stripped):
+                        continue
                 # Skip common short phrases that aren't locations
                 location_short_false_positives = {
                     'in', 'at', 'to', 'on', 'of', 'as', 'by', 'or', 'an', 'is', 'it',
@@ -7355,9 +7834,19 @@ class PIIDetector:
                     context_end = min(len(text), entity.end + 50)
                     context_text = text[context_start:context_end].lower()
                     gender_context = {'gender', 'sex', 'identity', 'pronoun', 'assigned', 'birth',
-                                      'm/f', 'f/m', 'masculine', 'feminine', 'non-binary'}
+                                      'm/f', 'f/m', 'masculine', 'feminine', 'non-binary',
+                                      'male / female', 'male/female', 'female / male',
+                                      'female/male'}
+                    has_context = any(kw in context_text for kw in gender_context)
+                    # Also check for opposite gender term nearby (e.g., "MALE / FEMALE")
+                    if not has_context:
+                        opposite = {'female', 'woman', 'girl'} if gender_lower in ('male', 'man', 'boy') else {'male', 'man', 'boy'}
+                        # Exclude self-match by checking context outside entity span
+                        before = text[context_start:entity.start].lower()
+                        after = text[entity.end:context_end].lower()
+                        has_context = any(opp in before or opp in after for opp in opposite)
                     # Filter if no context and not high confidence
-                    if not any(kw in context_text for kw in gender_context):
+                    if not has_context:
                         if entity.confidence < 0.85:
                             continue
                 # Filter compound words (saleswoman, businessman, etc.)
@@ -7568,6 +8057,8 @@ class PIIDetector:
             # - Labeled names (Name: John Smith) - require explicit label
             # This filter handles edge cases from spaCy NER
             if entity.entity_type == "PERSON":
+                # (Span cleanup already applied at top of loop)
+
                 # Check if entity is from labeled detector (trusted source)
                 _is_labeled2 = (entity.recognition_metadata or {}).get('recognizer_name') == 'LabeledPIIDetector'
                 # Skip OCR artifacts (random case, underscores, incomplete words)
@@ -7613,12 +8104,12 @@ class PIIDetector:
                 # Single words from spaCy NER with moderate confidence are often FPs
                 # Labeled entities (XML tags, bold names, etc.) bypass these checks
                 words_in_name = entity_text.strip().split()
-                if len(words_in_name) == 1 and entity.confidence < 0.65 and not _is_labeled2:
+                if len(words_in_name) == 1 and entity.confidence < 0.55 and not _is_labeled2:
                     continue
-                # For single-word PERSON with confidence < 0.80, require name context
-                # Lowered from 0.85 to let more dictionary-backed names through
-                # Labeled entities bypass this (label/bold pattern provides structural evidence)
-                if len(words_in_name) == 1 and entity.confidence < 0.80 and not _is_labeled2:
+                # For single-word PERSON with confidence < 0.58, require name context
+                # Lowered from 0.80→0.72→0.68→0.64→0.62→0.58
+                # Common-word filter (common_non_names) provides FP safety net
+                if len(words_in_name) == 1 and entity.confidence < 0.58 and not _is_labeled2:
                     ctx_start = max(0, entity.start - 60)
                     ctx_end = min(len(text), entity.end + 30)
                     ctx_text = text[ctx_start:ctx_end].lower()
@@ -7630,7 +8121,13 @@ class PIIDetector:
                                        'member', 'staff', 'personnel', 'account',
                                        'leader', 'manager', 'officer', 'director',
                                        'patient', 'client', 'customer', 'user',
-                                       'owner', 'holder', 'sender', 'recipient'}
+                                       'owner', 'holder', 'sender', 'recipient',
+                                       'employee', 'colleague', 'representative',
+                                       'agent', 'witness', 'resident', 'tenant',
+                                       'candidate', 'volunteer', 'intern',
+                                       'hi ', 'hello', 'hey ', 'to ', 'cc ',
+                                       'advisor', 'consultant', 'specialist',
+                                       'interviewer', 'respondent', 'subscriber'}
                     if not any(kw in ctx_text for kw in name_indicators):
                         continue
                 # Skip entities containing HTML tags or markup artifacts
@@ -7722,6 +8219,10 @@ class PIIDetector:
                     'context', 'instructions', 'guardian', 'sender',
                     'britain', 'scotland', 'ireland', 'wales', 'england',
                     'summary', 'exchange', 'cultural', 'executive', 'original',
+                    # Capitalized English words detected as PERSON (2026-02-11 FP analysis)
+                    'rating', 'reviewed', 'attend', 'highlight', 'birthday',
+                    'planning', 'event', 'excellence', 'beginner', 'wrapping',
+                    'banana', 'prevent', 'bullying', 'assembly', 'booking',
                 }
                 if clean_name.lower() in common_non_names:
                     continue
@@ -8534,7 +9035,7 @@ class PIIDetector:
             'USERNAME': 0.55,     # Balanced: requires context for simple patterns to avoid FPs
             'COMPANY': 0.60,      # Balanced for suffix validation
             'ID': 0.75,           # Lowered from 0.80 to improve recall on alphanumeric codes
-            'NATIONAL_ID': 0.50,  # Lowered from 0.55 to improve recall on international ID formats
+            'NATIONAL_ID': 0.40,  # Lowered from 0.55→0.50→0.45→0.40 for more international ID formats
             'VEHICLE': 0.78,      # Keep
             'VEHICLE_ID': 0.90,   # Keep
             'MEDICAL': 0.65,      # Moderate - reduce FPs

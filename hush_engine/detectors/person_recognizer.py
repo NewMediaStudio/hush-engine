@@ -490,7 +490,7 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
                 confidence = min(0.95, confidence + 0.20)
             elif len(parts) == 1:
                 # Smaller boost for single-word names (helps unusual names pass filters)
-                confidence = min(0.90, confidence + 0.10)
+                confidence = min(0.90, confidence + 0.13)
 
             results.append((potential_name, match.start(), match.end(), confidence))
 
@@ -1011,10 +1011,28 @@ class PersonRecognizer(EntityRecognizer):
                 all_detections.append((text_match, start, end, score, "lgbm"))
 
         # Step 3: Dictionary lookup (good for spreadsheets and moderate texts)
-        # Raised from 500 to 1000 for better recall on paragraph-length texts
-        if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 1000):
+        # Raised from 500 to 2000 for better recall on longer text samples
+        if self.use_name_dataset and (self.spreadsheet_mode or len(processed_text) < 2000):
             for text_match, start, end, score in lookup_with_name_dataset(processed_text):
                 all_detections.append((text_match, start, end, score, "name_dataset"))
+
+        # Step 3b: NamesDatabase lookup (curated names from 53 locales)
+        # Complements name-dataset with broader coverage of international names
+        try:
+            from hush_engine.data.names_database import get_names_database
+            _names_db = get_names_database()
+            # Only check short-to-moderate text to avoid excessive scanning
+            if len(processed_text) < 2000:
+                # Find capitalized words (including accented chars) and check against names database
+                for m in re.finditer(r'\b([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,})\b', processed_text):
+                    word = m.group(1)
+                    if _names_db.is_name(word):
+                        # Check if already detected at this position
+                        _already = any(abs(d[1] - m.start()) < 3 for d in all_detections)
+                        if not _already:
+                            all_detections.append((word, m.start(), m.end(), 0.60, "names_db"))
+        except ImportError:
+            pass
 
         # Step 4: Standard NER (spaCy - fast, reliable)
         if self.use_spacy:
@@ -1102,7 +1120,8 @@ class PersonRecognizer(EntityRecognizer):
         "lgbm": 0.88,          # UP from 0.85 - trained on real data
         "transformers": 0.88,  # BERT NER - high precision
         "gliner": 0.82,        # Zero-shot NER
-        "name_dataset": 0.68,  # UP from 0.60 - better for context detection
+        "name_dataset": 0.78,  # UP from 0.68 - improved recall for single-word names
+        "names_db": 0.75,     # Curated NamesDatabase (53 locales, 5349 names)
     }
 
     # Soft voting acceptance threshold (lowered for better recall)
@@ -1278,9 +1297,9 @@ class PersonRecognizer(EntityRecognizer):
                         accepted = False
 
                 # Strict Tier 3: Single-model detection
-                # Lowered from 0.62 to 0.58 - aligned with DEFAULT mode for better recall
+                # Lowered from 0.62 to 0.55 - improved recall for borderline detections
                 else:
-                    if max_score >= 0.58:
+                    if max_score >= 0.55:
                         final_score = max_score
                         tier_used = "strict_tier3_single_acceptable"
                         accepted = True
