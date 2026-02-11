@@ -14,14 +14,14 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ### Advanced NER
 - **LightGBM NER classifiers**: Fast, lightweight token classification (5-10x faster, ~10MB models)
-- **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), and GLiNER for high-recall person detection (71% recall on ai4privacy)
+- **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), GLiNER, and curated names database for high-recall person detection (89% recall on ai4privacy)
 - **Medical NER**: Disease and drug detection using Fast Data Science libraries (MIT, zero dependencies)
 - **Company NER**: Dictionary-based company name detection (100% F1 on golden set)
 - **Address parsing**: libpostal integration for 99.45% accuracy, 94% recall on golden set
 
 ### International Support
 - **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
-- **Cities database**: ~500 major world cities for improved LOCATION detection
+- **Cities database**: ~800 major world cities and towns for improved LOCATION detection
 - **Countries database**: Complete country name and demonym recognition
 - **Locale-aware detection**: User-configurable locale preferences with automatic document locale detection
 
@@ -32,7 +32,7 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 
 ### Additional Features
 - **Face detection**: OpenCV Haar cascade face detection in images
-- **Lightweight name database**: Curated 1,400+ names across 13 languages for fast lookup
+- **Names database**: Curated 7,200+ names across 53 locales for fast lookup
 - **Library management**: Optional libraries (phonenumbers, spaCy, etc.) can be enabled/disabled
 - **Extensible**: Easy to add custom PII recognizers
 
@@ -131,13 +131,13 @@ for detection in detections:
 
 | Category | Entity Types | Notes |
 |----------|-------------|-------|
-| **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (74% recall) |
+| **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (89% recall) |
 | **Financial** | CREDIT_CARD, IBAN_CODE, FINANCIAL (SWIFT/BIC), crypto wallets | Luhn/Mod-97 validated |
 | **Government** | NATIONAL_ID (SSN, passport, driver's license) | 35+ countries via python-stdnum |
 | **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | Fast Data Science NER |
 | **Technical** | CREDENTIAL (API keys, tokens), IP_ADDRESS, URL | AWS, Stripe, GitHub tokens |
 | **Network** | NETWORK (MAC, IMEI, UUID, cookies, device IDs) | Device identifiers |
-| **Location** | LOCATION (addresses, cities, countries, coordinates) | Cities/countries databases, libpostal |
+| **Location** | ADDRESS (addresses, cities, countries, coordinates) | 800+ cities, countries databases, libpostal |
 | **Biometric** | BIOMETRIC, FACE | Fingerprint IDs, facial recognition, OpenCV |
 | **Demographics** | GENDER, AGE | "25 years old", "Age: 45" |
 | **Organization** | COMPANY, ORGANIZATION | Dictionary + NER based |
@@ -175,12 +175,13 @@ The PersonRecognizer uses a tiered approach balancing speed and accuracy:
 **Lightweight (default, fast)**:
 1. **LightGBM NER** - Fast token classifiers (~10MB, 5-10x faster than transformers)
 2. **spaCy** (`en_core_web_lg`) - Fast, reliable baseline
-3. **Names Database** - Dictionary lookup for first/last names
+3. **name-dataset** - Dictionary lookup from name-dataset library
+4. **NamesDatabase** - Curated 7,200+ names across 53 locales
 
 **Heavyweight (optional, high accuracy)**:
-4. **Flair** (`ner`) - High accuracy sequence labeling
-5. **Transformers** (`dslim/bert-base-NER`) - BERT-based NER
-6. **GLiNER** (`urchade/gliner_multi_pii-v1`) - Zero-shot PII detection
+5. **Flair** (`ner`) - High accuracy sequence labeling
+6. **Transformers** (`dslim/bert-base-NER`) - BERT-based NER
+7. **GLiNER** (`urchade/gliner_multi_pii-v1`) - Zero-shot PII detection
 
 Install heavyweight models: `pip install hush-engine[accurate]`
 
@@ -331,22 +332,30 @@ python3.10 tests/benchmark_server.py
 
 ### Performance
 
-**Synthetic Golden Set** (1000 samples, 2522 entities): **F1 99.2%**
-- Precision: 100% | Recall: 98.4%
-- Perfect (100% F1): EMAIL, DATE_TIME, CREDIT_CARD, AGE, PHONE, NATIONAL_ID, COMPANY
-- Near-perfect: PERSON 98.7%, ADDRESS 96.8%
+**Synthetic Golden Set** (1000 samples, 2522 entities): **F1 99.7%**
+- Precision: 99.5% | Recall: 100%
+- Perfect (100% F1): EMAIL, DATE_TIME, CREDIT_CARD, AGE, PHONE, NATIONAL_ID, COMPANY, PERSON
+- Near-perfect: ADDRESS 98.7%
 
-**ai4privacy benchmark** (3000 samples, 5675 entities): **F1 90.2%**
-- Precision: 91.9% | Recall: 88.6%
-- Strong: DATE_TIME 97.4%, EMAIL 99.8%, IP_ADDRESS 99.5%, CREDIT_CARD 100%
-- Good: PHONE 92.0%, NATIONAL_ID 92.6%, ADDRESS 91.6%, GENDER 80.7%
-- Challenging: PERSON 69.9% (single-word unusual names)
+**ai4privacy benchmark** (1000 samples from 3000, ~5000 entities): **F1 94.6%**
+- Precision: 96.8% | Recall: 92.6%
+
+| Entity | F1 | Precision | Recall |
+|--------|-----|-----------|--------|
+| EMAIL | 100% | 100% | 100% |
+| DATE_TIME | 99.6% | 100% | 99.2% |
+| CREDIT_CARD | ~100% | 100% | ~100% |
+| IP_ADDRESS | 96.3% | 100% | 92.9% |
+| NATIONAL_ID | 94.7% | 100% | 90.0% |
+| PHONE | 94.5% | 100% | 89.5% |
+| ADDRESS | 93.4% | 97.7% | 89.4% |
+| PERSON | 89.4% | 89.6% | 89.2% |
 
 **Key capabilities:**
 - Cross-type recall: detections under wrong label still count (valid for redaction)
 - Handles international formats: 150+ phone patterns, 35+ national ID formats
 - Context-aware: SSN/ID keywords boost NATIONAL_ID confidence
-- Name detection: Multi-NER cascade with 71% recall on diverse names
+- Name detection: Multi-NER cascade with 7,200+ name database achieving 89% recall on diverse international names
 
 ### Training LightGBM Models
 
@@ -366,7 +375,7 @@ python3.10 tools/train_lgbm_ner.py --all --ai4privacy --augment --samples 10000
 python3.10 tools/train_lgbm_ner.py --entity-type PERSON --classifier svm
 ```
 
-See [tools/AI4PRIVACY_INTEGRATION.md](tools/AI4PRIVACY_INTEGRATION.md) for dataset integration details.
+See the training README for dataset integration details.
 
 ### Building from Source
 
@@ -404,6 +413,13 @@ For security issues, please email studio@newmediastudio.com instead of using the
 ## Roadmap
 
 ### Completed (v1.5.0)
+- [x] Expanded names database: 7,200+ names across 53 locales (up from 1,400)
+- [x] NamesDatabase lookup in PersonRecognizer cascade (89% PERSON recall, up from 71%)
+- [x] Expanded cities database: 800+ world cities/towns including UK coverage
+- [x] UK compound place name patterns (Newcastle-under-Lyme, Stoke-on-Trent, etc.)
+- [x] Secondary address patterns (Block, Basement, Office, Level, Wing, etc.)
+- [x] Phone mixed-separator patterns (4-3-4, dot-dash formats)
+- [x] UK postcode detection through OCR garbage filter
 - [x] Address verifier with LightGBM classifier
 - [x] Company verifier with S&P 500 database and corporate suffix detection
 - [x] Credential entropy analyzer (Shannon entropy for secrets/tokens)
@@ -431,10 +447,8 @@ For security issues, please email studio@newmediastudio.com instead of using the
 - [x] Age detection ("25 years old", "Age: 45")
 - [x] Library management (enable/disable optional libraries)
 - [x] Locale configuration (30+ locales supported)
-- [x] Lightweight names database (1,400+ names, 13 languages)
-- [x] Multi-NER cascade for PERSON (74% recall)
-- [x] Cities database (~500 world cities)
-- [x] Countries database (complete country/demonym recognition)
+- [x] Multi-NER cascade for PERSON
+- [x] Cities database and countries database (complete country/demonym recognition)
 - [x] libpostal address parsing (99.45% accuracy)
 
 ### Planned

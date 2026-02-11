@@ -80,13 +80,13 @@ This classification draws from authoritative sources:
 
 | Identifier | Standard Format / Regex Pattern | Key Regulations | Hush Engine Support |
 |------------|--------------------------------|-----------------|---------------------|
-| **Full Name** | `\b[A-Z][a-z]+\s+[A-Z][a-z]+\b` | HIPAA, GDPR, CCPA | ✅ `PERSON` (NLP-based) |
+| **Full Name** | `\b[A-Z][a-z]+\s+[A-Z][a-z]+\b` | HIPAA, GDPR, CCPA | ✅ `PERSON` (Multi-NER cascade + 7,200 name database, 89% recall) |
 | **Email Address** | `\b[\w.-]+@[\w.-]+\.\w+\b` | GDPR, CCPA | ✅ `EMAIL_ADDRESS` |
 | **Phone Number** | `\b\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b` | HIPAA, GDPR, CCPA | ✅ `PHONE_NUMBER` (150+ countries via phonenumbers) |
-| **Physical Address** | Street + City + State/Province + Postal | HIPAA, GDPR, CCPA | ✅ `LOCATION` |
-| **Street Address** | `\b\d+\s+[A-Z][a-z]+\s+(St\|Ave\|Rd\|Blvd)\.?\b` | HIPAA, GDPR | ✅ `LOCATION` |
-| **City, State/Province** | `\b[A-Z][a-z]+,?\s+[A-Z]{2}\b` | HIPAA, GDPR | ✅ `LOCATION` |
-| **Postal/ZIP Code** | `\b\d{5}(-\d{4})?\b` or `\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b` | HIPAA, GDPR | ✅ `LOCATION` |
+| **Physical Address** | Street + City + State/Province + Postal | HIPAA, GDPR, CCPA | ✅ `ADDRESS` (libpostal + 800 cities database) |
+| **Street Address** | `\b\d+\s+[A-Z][a-z]+\s+(St\|Ave\|Rd\|Blvd)\.?\b` | HIPAA, GDPR | ✅ `ADDRESS` |
+| **City, State/Province** | `\b[A-Z][a-z]+,?\s+[A-Z]{2}\b` | HIPAA, GDPR | ✅ `ADDRESS` |
+| **Postal/ZIP Code** | `\b\d{5}(-\d{4})?\b` or `\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b` | HIPAA, GDPR | ✅ `ADDRESS` |
 | **Date of Birth** | `\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b` | HIPAA, GDPR, CCPA | ✅ `DATE_TIME` |
 | **Age (exact)** | `\b\d{1,3}\s*(years?\|yrs?)\s*old\b` or `Age:\s*\d+` | HIPAA | ✅ `AGE` |
 | **IP Address** | `\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b` | GDPR, CCPA | ✅ `IP_ADDRESS` |
@@ -123,8 +123,8 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 
 | # | HIPAA Identifier | Hush Engine Entity | Status | Notes |
 |---|------------------|-------------------|--------|-------|
-| 1 | Names | `PERSON` | ✅ Full | Multi-NER cascade with ensemble scoring |
-| 2 | Geographic data smaller than state | `LOCATION` | ✅ Full | libpostal + cities/countries databases |
+| 1 | Names | `PERSON` | ✅ Full | Multi-NER cascade + 7,200 name database (89% recall) |
+| 2 | Geographic data smaller than state | `ADDRESS` | ✅ Full | libpostal + 800 cities/countries databases |
 | 3 | Dates (except year) + Ages >89 | `DATE_TIME`, `AGE` | ✅ Full | dateparser + regex patterns |
 | 4 | Phone numbers | `PHONE_NUMBER` | ✅ Full | libphonenumber (150+ countries) |
 | 5 | Fax numbers | `PHONE_NUMBER` | ✅ Full | Same as phone detection |
@@ -157,7 +157,7 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 | Health data | `MEDICAL` | ✅ Full | ICD-10, conditions, medications, blood types |
 | Sex life or sexual orientation | `GENDER` | ⚠️ Partial | Gender identity terms only |
 
-### Additional GDPR-Relevant Entities (v1.4.0)
+### Additional GDPR-Relevant Entities (v1.5.0)
 
 | Category | Hush Engine Entity | Status | Notes |
 |----------|-------------------|--------|-------|
@@ -246,5 +246,5 @@ These patterns may cause false positives and should be validated:
 
 ---
 
-*Last updated: 2026-02-06*
-*Document version: 1.6 - Aligns with hush-engine v1.4.0. New entity types: BIOMETRIC, CREDENTIAL, ID, NATIONAL_ID (consolidates SSN), NETWORK, VEHICLE. LightGBM NER for faster inference.*
+*Last updated: 2026-02-11*
+*Document version: 1.7 - Aligns with hush-engine v1.5.0. Names database expanded to 7,200+ names (53 locales). Cities database expanded to 800+ entries. PERSON recall improved to 89%. Overall ai4privacy F1: 94.6%.*
