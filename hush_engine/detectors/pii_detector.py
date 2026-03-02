@@ -1460,8 +1460,15 @@ class PIIDetector:
             supported_entity="DATE_TIME",
             patterns=[
                 Pattern(
-                    name="labeled_date",
+                    name="labeled_date_dmy",
+                    # DD/MM/YYYY after "Date:" label
                     regex=r"(?:Date|DATE|Dated?)[:\s]+(?:0?[1-9]|[12][0-9]|3[01])[/\-.](?:0?[1-9]|1[0-2])[/\-.](?:19|20)\d{2}\b",
+                    score=0.95,
+                ),
+                Pattern(
+                    name="labeled_date_mdy",
+                    # MM/DD/YYYY after "Date:" label (US format, shipping labels)
+                    regex=r"(?:Date|DATE|Dated?)[:\s]+(?:0?[1-9]|1[0-2])[/\-.](?:0?[1-9]|[12][0-9]|3[01])[/\-.](?:19|20)\d{2}\b",
                     score=0.95,
                 ),
             ],
@@ -6652,8 +6659,14 @@ class PIIDetector:
                 verb_patterns = [
                     r'^\d+\s+(is|are|was|were|has|have|can|will|would|could|should|may|might|must|do|does|did)\b',
                     r'^(also|just|only|still|even|now|then|here|there|been|being)\s+\w+',
-                    r'^(run|build|send|ship|go|come|move|travel|went|came|been|get|got|make|made|take|took)\s+',
+                    r'^(run|build|send|ship|go|come|move|travel|went|came|been|get|got|make|made|take|took|drop|hand|pick|put|set|use|leave)\s+',
                     r'\b(we|you|they|he|she|it|i)\s+(are|is|was|were|have|has|had|will|would|can|could)\b',
+                    # "Place" used as verb (imperative), not street type
+                    # e.g. "Place your label so it" vs legitimate "Place de la Concorde"
+                    r'^place\s+(?:your|the|this|a|an|it|them|all|each|one)\b',
+                    # Imperative instructions on shipping labels and forms
+                    # e.g. "Cut on dotted line", "Adhere your label", "Mail your package"
+                    r'^(cut|fold|tear|peel|detach|remove|attach|affix|adhere|retain|check|click|select|scan|copy|print|sign|fill|keep|save|mail|return|review|see|refer|read|enter|thank)\s+',
                 ]
                 if any(re.search(p, entity_text, re.IGNORECASE) for p in verb_patterns):
                     continue
@@ -7739,7 +7752,8 @@ class PIIDetector:
                     # Single word locations need moderate confidence (lowered from 0.75)
                     if entity.confidence < 0.60:
                         continue
-                    # Filter standalone country names (not PII without full address context)
+                    # Filter standalone country names in prose (not PII without context)
+                    # BUT keep them in structured/form data (ALL CAPS) or labeled contexts
                     standalone_countries = {
                         'india', 'china', 'japan', 'korea', 'australia', 'canada', 'mexico',
                         'brazil', 'argentina', 'france', 'germany', 'italy', 'spain', 'portugal',
@@ -7751,7 +7765,15 @@ class PIIDetector:
                         'israel', 'dubai', 'qatar', 'kuwait', 'saudi', 'iran', 'iraq',
                     }
                     if entity_text.lower() in standalone_countries:
-                        continue
+                        # ALL CAPS = likely structured form/table data where country IS PII
+                        is_allcaps = entity_text.isupper() and len(entity_text) > 2
+                        # Check for labeled context (Country: X, Nationality: X, etc.)
+                        ctx_before = text[max(0, entity.start - 60):entity.start].lower()
+                        pii_labels = ['country', 'nationality', 'nation', 'citizen', 'origin',
+                                      'from:', 'born in', 'resid', 'location', 'address']
+                        has_pii_label = any(lbl in ctx_before for lbl in pii_labels)
+                        if not is_allcaps and not has_pii_label:
+                            continue
                 # Require at least one address indicator for texts > 20 chars
                 # Note: Raised from >10 to avoid filtering valid short addresses
                 if len(entity_text) > 20:
@@ -7846,8 +7868,10 @@ class PIIDetector:
                         after = text[entity.end:context_end].lower()
                         has_context = any(opp in before or opp in after for opp in opposite)
                     # Filter if no context and not high confidence
+                    # ALL CAPS (e.g., "MALE", "FEMALE") suggests structured form data
                     if not has_context:
-                        if entity.confidence < 0.85:
+                        threshold = 0.70 if entity_text.isupper() else 0.85
+                        if entity.confidence < threshold:
                             continue
                 # Filter compound words (saleswoman, businessman, etc.)
                 compound_patterns = r'(sales|business|police|fire|chair|mail|sports)(wo)?man|woman-owned'
@@ -8806,7 +8830,7 @@ class PIIDetector:
                 if text_lower.strip() in month_names:
                     continue
                 # Skip if confidence is low
-                if entity.confidence < 0.75:
+                if entity.confidence < 0.55:
                     continue
 
             # Filter FINANCIAL false positives
@@ -9047,6 +9071,7 @@ class PIIDetector:
             'IP_ADDRESS': 0.60,   # Lowered from 0.65 to improve recall for valid IPs
             'FINANCIAL': 0.65,    # Balanced
             'COORDINATES': 0.85,  # High: single decimal_coords (0.70) creates massive FPs
+            'DATE_TIME': 0.55,    # Lowered from default 0.65 to catch labeled dates on shipping labels/forms
             'AGE': 0.80,          # Raised from default 0.65 to reduce false positives (e.g., "28M" room codes)
             'GENDER': 0.70,       # Raised from default 0.65 to reduce false positives from loose context matches
         }

@@ -28,6 +28,14 @@ except ImportError:
     SPATIAL_FILTER_AVAILABLE = False
     apply_spatial_filtering = None
     create_spatial_context = None
+# Direct PDF text extraction (supplement OCR for small/missed text)
+try:
+    import pdfplumber
+    PDFPLUMBER_AVAILABLE = True
+except ImportError:
+    PDFPLUMBER_AVAILABLE = False
+    pdfplumber = None
+
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
 from pdf import PDFProcessor
 from image_optimizer import optimize_image
@@ -127,6 +135,136 @@ def _create_merged_region(detections: list) -> MergedTextRegion:
     )
 
 
+def extract_pdf_text_blocks(pdf_path: str, page_num: int, image_width: float, image_height: float) -> list:
+    """
+    Extract text blocks from a PDF page using pdfplumber (direct text extraction).
+
+    This supplements OCR by catching small text that Vision OCR misses.
+    Only useful for digitally-generated PDFs (not scanned documents).
+
+    Args:
+        pdf_path: Path to the PDF file
+        page_num: 1-indexed page number
+        image_width: Width of the rendered image (pixels)
+        image_height: Height of the rendered image (pixels)
+
+    Returns:
+        List of TextDetection-compatible objects with text and bbox in image coordinates
+    """
+    if not PDFPLUMBER_AVAILABLE:
+        return []
+
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            if page_num > len(pdf.pages):
+                return []
+            page = pdf.pages[page_num - 1]
+            page_width = page.width
+            page_height = page.height
+
+            if page_width <= 0 or page_height <= 0:
+                return []
+
+            # Scale factors: PDF points → image pixels
+            scale_x = image_width / page_width
+            scale_y = image_height / page_height
+
+            # Group words into lines by proximity
+            words = page.extract_words(keep_blank_chars=False, y_tolerance=3, x_tolerance=3)
+            if not words:
+                return []
+
+            # Group words into lines (same y position ± tolerance)
+            lines = []
+            current_line = [words[0]]
+            for word in words[1:]:
+                prev = current_line[-1]
+                # Same line if vertical centers are within tolerance
+                prev_y_center = (prev['top'] + prev['bottom']) / 2
+                word_y_center = (word['top'] + word['bottom']) / 2
+                if abs(word_y_center - prev_y_center) < 4:  # ~4pt tolerance
+                    current_line.append(word)
+                else:
+                    lines.append(current_line)
+                    current_line = [word]
+            if current_line:
+                lines.append(current_line)
+
+            # Convert lines to TextDetection-like objects
+            @dataclass
+            class PDFTextBlock:
+                text: str
+                confidence: float
+                bbox: Tuple[float, float, float, float]
+                char_boxes: Optional[list] = None
+
+            blocks = []
+            for line_words in lines:
+                text = " ".join(w['text'] for w in line_words)
+                x0 = min(w['x0'] for w in line_words) * scale_x
+                y0 = min(w['top'] for w in line_words) * scale_y
+                x1 = max(w['x1'] for w in line_words) * scale_x
+                y1 = max(w['bottom'] for w in line_words) * scale_y
+                blocks.append(PDFTextBlock(
+                    text=text,
+                    confidence=1.0,
+                    bbox=(x0, y0, x1, y1)
+                ))
+
+            return blocks
+    except Exception as e:
+        print(f"pdfplumber extraction failed: {e}", file=sys.stderr)
+        return []
+
+
+def supplement_ocr_with_pdf_text(ocr_detections: list, pdf_blocks: list,
+                                  overlap_threshold: float = 0.5) -> list:
+    """
+    Add PDF text blocks that OCR missed to the detection list.
+
+    Avoids duplicates by checking for spatial overlap with existing OCR blocks.
+
+    Args:
+        ocr_detections: OCR text detections
+        pdf_blocks: Text blocks from pdfplumber
+        overlap_threshold: IOU threshold for considering a block as duplicate
+
+    Returns:
+        Combined list of text detections
+    """
+    if not pdf_blocks:
+        return ocr_detections
+
+    def bbox_overlap(a, b):
+        """Check if two bboxes overlap significantly."""
+        x_overlap = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+        y_overlap = max(0, min(a[3], b[3]) - max(a[1], b[1]))
+        intersection = x_overlap * y_overlap
+        a_area = (a[2] - a[0]) * (a[3] - a[1])
+        b_area = (b[2] - b[0]) * (b[3] - b[1])
+        if a_area <= 0 or b_area <= 0:
+            return 0.0
+        # Use overlap relative to the smaller box
+        min_area = min(a_area, b_area)
+        return intersection / min_area if min_area > 0 else 0.0
+
+    supplementary = []
+    for pdf_block in pdf_blocks:
+        # Check if OCR already has this text
+        is_duplicate = False
+        for ocr_det in ocr_detections:
+            if bbox_overlap(pdf_block.bbox, ocr_det.bbox) > overlap_threshold:
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            supplementary.append(pdf_block)
+
+    if supplementary:
+        print(f"  PDF text supplement: {len(supplementary)} blocks added (OCR missed)", file=sys.stderr)
+
+    return list(ocr_detections) + supplementary
+
+
 def get_bbox_for_entity(
     entity_start: int,
     entity_end: int,
@@ -153,10 +291,23 @@ def get_bbox_for_entity(
                         max_x = max(max_x, box[2])
                         max_y = max(max_y, box[3])
             else:
-                min_x = min(min_x, detection.bbox[0])
-                min_y = min(min_y, detection.bbox[1])
-                max_x = max(max_x, detection.bbox[2])
-                max_y = max(max_y, detection.bbox[3])
+                # Estimate bbox proportionally based on character position
+                # within the line, instead of using the full line bbox
+                det_text_len = len(detection.text)
+                if det_text_len > 0:
+                    bbox_width = detection.bbox[2] - detection.bbox[0]
+                    char_width = bbox_width / det_text_len
+                    est_x_start = detection.bbox[0] + local_start * char_width
+                    est_x_end = detection.bbox[0] + local_end * char_width
+                    min_x = min(min_x, est_x_start)
+                    min_y = min(min_y, detection.bbox[1])
+                    max_x = max(max_x, est_x_end)
+                    max_y = max(max_y, detection.bbox[3])
+                else:
+                    min_x = min(min_x, detection.bbox[0])
+                    min_y = min(min_y, detection.bbox[1])
+                    max_x = max(max_x, detection.bbox[2])
+                    max_y = max(max_y, detection.bbox[3])
 
     if min_x == float('inf'):
         return merged_region.detections[0].bbox
@@ -545,7 +696,8 @@ class FileRouter:
         user_locales: Optional[List[str]],
         detect_faces: bool,
         detect_qr: bool,
-        detect_barcodes: bool
+        detect_barcodes: bool,
+        pdf_text_blocks: Optional[list] = None
     ) -> Tuple[int, List[Dict], List[Dict], Tuple[float, float]]:
         """
         Process a single PDF page for PII detection.
@@ -560,6 +712,7 @@ class FileRouter:
             detect_faces: Whether to detect faces
             detect_qr: Whether to detect QR codes
             detect_barcodes: Whether to detect barcodes
+            pdf_text_blocks: Optional supplementary text blocks from pdfplumber
 
         Returns:
             Tuple of (page_num, page_detections, page_text_blocks, page_dimensions)
@@ -570,6 +723,10 @@ class FileRouter:
 
         # Extract text from this page using in-memory OCR (no temp file I/O)
         ocr_detections = self.ocr.extract_text_from_image(page_image)
+
+        # Supplement OCR with direct PDF text extraction (catches small text OCR misses)
+        if pdf_text_blocks:
+            ocr_detections = supplement_ocr_with_pdf_text(ocr_detections, pdf_text_blocks)
 
         # Convert OCR detections to text blocks with page number
         for detection in ocr_detections:
@@ -711,6 +868,17 @@ class FileRouter:
 
         print(f"Processing {total_pages} page(s) from PDF using {MAX_PDF_WORKERS} workers", file=sys.stderr)
 
+        # Pre-extract text from PDF structure (supplements OCR for small text)
+        pdf_text_by_page = {}
+        if PDFPLUMBER_AVAILABLE:
+            for page_num, page_image in enumerate(page_images, start=1):
+                pdf_blocks = extract_pdf_text_blocks(
+                    input_path, page_num,
+                    float(page_image.width), float(page_image.height)
+                )
+                if pdf_blocks:
+                    pdf_text_by_page[page_num] = pdf_blocks
+
         all_detections = []
         all_text_blocks = []
         page_dimensions = {}  # Track actual page dimensions for spatial filtering
@@ -726,7 +894,8 @@ class FileRouter:
                     user_locales,
                     detect_faces,
                     detect_qr,
-                    detect_barcodes
+                    detect_barcodes,
+                    pdf_text_by_page.get(page_num)
                 ): page_num
                 for page_num, page_image in enumerate(page_images, start=1)
             }

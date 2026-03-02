@@ -431,19 +431,27 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
     # Handles: JOHN SMITH, MARY JANE DOE
     allcaps_pattern = re.compile(r"\b([A-Z][A-Z'-]+(?:\s+[A-Z][A-Z'-]+){1,2})\b")
 
+    # Also check curated names database for ALL CAPS lookups
+    try:
+        from hush_engine.data.names_database import get_names_database
+        _curated_db = get_names_database()
+    except ImportError:
+        _curated_db = None
+
     for match in allcaps_pattern.finditer(text):
         potential_name = match.group(1)
-        # Convert to Title Case for name-dataset lookup
+        # Convert to Title Case for lookup
         title_case_name = potential_name.title()
         parts = title_case_name.split()
 
-        # Check each part against name-dataset
-        is_likely_name = False
+        # Check each part against name-dataset AND curated names database
         matches_found = 0
+        curated_matches = 0
 
         for part in parts:
             if len(part) < 2:
                 continue
+            # Check name-dataset
             result = _name_dataset.search(part)
             if result:
                 first_name_data = result.get("first_name", {})
@@ -452,10 +460,17 @@ def lookup_with_name_dataset(text: str) -> List[Tuple[str, int, int, float]]:
                 last_rank = last_name_data.get("rank", {}).get("*", 0) if last_name_data else 0
                 if first_rank > 0 or last_rank > 0:
                     matches_found += 1
+            # Also check curated names database (broader coverage)
+            if _curated_db and _curated_db.is_name(part):
+                curated_matches += 1
 
-        # Require at least 2 parts match the name database for ALL CAPS
-        if matches_found >= 2:
-            confidence = 0.75 + min(0.15, matches_found * 0.05)
+        total_matches = max(matches_found, curated_matches)
+
+        # For ALL CAPS multi-word: require at least 1 part is a known name
+        # (relaxed from 2 - handles cases like "MOHAMMED ALDAKHIL" where
+        # the first name is common but surname is rare/regional)
+        if total_matches >= 1 and len(parts) >= 2:
+            confidence = 0.70 + min(0.20, total_matches * 0.05)
             results.append((potential_name, match.start(), match.end(), confidence))
 
     for match in name_pattern.finditer(text):
@@ -1024,9 +1039,12 @@ class PersonRecognizer(EntityRecognizer):
             # Only check short-to-moderate text to avoid excessive scanning
             if len(processed_text) < 2000:
                 # Find capitalized words (including accented chars) and check against names database
-                for m in re.finditer(r'\b([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,})\b', processed_text):
+                # Also match ALL CAPS words (common in forms, shipping labels, PDFs)
+                for m in re.finditer(r'\b([A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]{2,}|[A-ZÀ-ÖØ-Þ]{3,})\b', processed_text):
                     word = m.group(1)
-                    if _names_db.is_name(word):
+                    # Convert ALL CAPS to Title Case for lookup
+                    lookup_word = word.title() if word.isupper() else word
+                    if _names_db.is_name(lookup_word):
                         # Check if already detected at this position
                         _already = any(abs(d[1] - m.start()) < 3 for d in all_detections)
                         if not _already:
