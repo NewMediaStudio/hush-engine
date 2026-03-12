@@ -1,19 +1,27 @@
 """
-Face Detection using OpenCV Haar Cascades
+Face Detection using Apple Vision Framework (macOS)
 
-Lightweight face detection without heavy ML dependencies.
-Uses pre-trained Haar cascade classifier from OpenCV.
+Uses VNDetectFaceRectanglesRequest for hardware-accelerated face detection.
+Falls back to OpenCV Haar Cascades if Vision framework is unavailable.
 
-License: Apache 2.0 (OpenCV)
+License: MIT
 """
 
+import io
 import sys
-from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-import cv2
-import numpy as np
 from PIL import Image
+
+# Try Vision framework first (macOS native, zero-install)
+VISION_AVAILABLE = False
+try:
+    import Vision
+    from Quartz import CIImage
+    from Cocoa import NSData
+    VISION_AVAILABLE = True
+except ImportError:
+    pass
 
 
 @dataclass
@@ -24,38 +32,64 @@ class FaceDetection:
     entity_type: str = "FACE"
 
 
-class FaceDetector:
+def _vision_normalized_to_pixel_xywh(
+    vision_box,
+    img_width: int,
+    img_height: int
+) -> tuple:
     """
-    Detects faces in images using OpenCV Haar Cascades.
+    Convert Vision normalized bbox (bottom-left origin) to pixel (x, y, w, h)
+    with top-left origin, matching the OpenCV convention used throughout the engine.
 
-    Uses frontal face detection by default. Can also detect profile faces.
+    Args:
+        vision_box: CGRect with origin.x, origin.y, size.width, size.height (0-1, bottom-left)
+        img_width: Image width in pixels
+        img_height: Image height in pixels
+
+    Returns:
+        (x, y, width, height) in pixels with top-left origin
+    """
+    nx = vision_box.origin.x
+    ny = vision_box.origin.y
+    nw = vision_box.size.width
+    nh = vision_box.size.height
+
+    # Denormalize
+    x = int(nx * img_width)
+    w = int(nw * img_width)
+    h = int(nh * img_height)
+    # Flip Y-axis: Vision origin is bottom-left, PIL/OpenCV is top-left
+    y = int((1.0 - ny - nh) * img_height)
+
+    return (x, y, w, h)
+
+
+def _pil_to_ciimage(image: Image.Image):
+    """Convert PIL Image to CIImage in memory (same pattern as vision_ocr.py)."""
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    png_bytes = buffer.getvalue()
+
+    ns_data = NSData.dataWithBytes_length_(png_bytes, len(png_bytes))
+    ci_image = CIImage.imageWithData_(ns_data)
+    if ci_image is None:
+        raise ValueError("Failed to create CIImage from PIL Image")
+
+    return ci_image
+
+
+class VisionFaceDetector:
+    """
+    Detects faces in images using Apple Vision Framework.
+
+    Uses VNDetectFaceRectanglesRequest which provides:
+    - Hardware-accelerated detection on Apple Silicon
+    - Real confidence scores (unlike Haar's hardcoded values)
+    - Frontal and profile face detection in a single pass
     """
 
     def __init__(self, min_confidence: float = 0.5):
-        """
-        Initialize face detector.
-
-        Args:
-            min_confidence: Minimum confidence threshold (0.0 - 1.0)
-                           Maps to minNeighbors parameter in cascade classifier
-        """
         self.min_confidence = min_confidence
-
-        # Load Haar cascade classifiers
-        # These are bundled with OpenCV
-        cascade_path = cv2.data.haarcascades
-
-        self.face_cascade = cv2.CascadeClassifier(
-            cascade_path + 'haarcascade_frontalface_default.xml'
-        )
-        self.profile_cascade = cv2.CascadeClassifier(
-            cascade_path + 'haarcascade_profileface.xml'
-        )
-
-        if self.face_cascade.empty():
-            sys.stderr.write("[FaceDetector] Warning: Could not load frontal face cascade\n")
-        if self.profile_cascade.empty():
-            sys.stderr.write("[FaceDetector] Warning: Could not load profile face cascade\n")
 
     def _expand_bbox_for_head_shoulders(
         self,
@@ -82,12 +116,10 @@ class FaceDetector:
         """
         x, y, w, h = bbox
 
-        # Calculate expansion amounts
         top_pad = int(h * top_expand)
         side_pad = int(w * side_expand)
         bottom_pad = int(h * bottom_expand)
 
-        # Expand the box
         new_x = max(0, x - side_pad)
         new_y = max(0, y - top_pad)
         new_w = min(img_width - new_x, w + 2 * side_pad)
@@ -103,185 +135,99 @@ class FaceDetector:
         min_size: tuple = (30, 30)
     ) -> List[FaceDetection]:
         """
-        Detect faces in an image.
+        Detect faces in an image using Vision framework.
 
         Args:
             image: PIL Image to analyze
-            include_profiles: Also detect profile (side) faces
-            scale_factor: Image scale factor for multi-scale detection
+            include_profiles: Ignored (Vision detects all orientations natively)
+            scale_factor: Ignored (Vision handles multi-scale internally)
             min_size: Minimum face size in pixels (width, height)
 
         Returns:
             List of FaceDetection objects with bounding boxes
         """
-        # Convert PIL Image to OpenCV format (BGR)
-        img_array = np.array(image)
+        img_width, img_height = image.size
 
-        # Handle different image modes
-        if len(img_array.shape) == 2:
-            # Grayscale
-            gray = img_array
-        elif img_array.shape[2] == 4:
-            # RGBA - convert to RGB then grayscale
-            rgb = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
-            gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-        else:
-            # RGB
-            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        ci_image = _pil_to_ciimage(image)
 
-        # Map confidence threshold to minNeighbors
-        # Higher confidence = more neighbors required = fewer false positives
-        # confidence 0.3 -> minNeighbors 3
-        # confidence 0.5 -> minNeighbors 5
-        # confidence 0.8 -> minNeighbors 8
-        min_neighbors = max(3, int(self.min_confidence * 10))
+        # Check CIImage extent for resolution differences
+        ci_extent = ci_image.extent()
+        ci_width = ci_extent.size.width
+        ci_height = ci_extent.size.height
+        if abs(ci_width - img_width) > 1 or abs(ci_height - img_height) > 1:
+            img_width = int(ci_width)
+            img_height = int(ci_height)
 
-        # Get image dimensions for bbox clamping
-        img_height, img_width = gray.shape[:2]
+        request = Vision.VNDetectFaceRectanglesRequest.alloc().init()
+        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(ci_image, None)
+
+        success, error = handler.performRequests_error_([request], None)
+        if not success:
+            sys.stderr.write(f"[FaceDetector] Vision face detection failed: {error}\n")
+            return []
+
+        results = request.results()
+        if not results:
+            return []
 
         detections = []
-        seen_bboxes = set()
+        for observation in results:
+            confidence = float(observation.confidence())
+            if confidence < self.min_confidence:
+                continue
 
-        # Detect frontal faces
-        if not self.face_cascade.empty():
-            faces = self.face_cascade.detectMultiScale(
-                gray,
-                scaleFactor=scale_factor,
-                minNeighbors=min_neighbors,
-                minSize=min_size,
-                flags=cv2.CASCADE_SCALE_IMAGE
+            # Convert normalized bbox to pixel (x, y, w, h)
+            bbox = _vision_normalized_to_pixel_xywh(
+                observation.boundingBox(), img_width, img_height
             )
 
-            for (x, y, w, h) in faces:
-                # Expand bbox to include head and shoulders
-                expanded_bbox = self._expand_bbox_for_head_shoulders(
-                    (int(x), int(y), int(w), int(h)),
-                    img_width, img_height
-                )
-                bbox = expanded_bbox
-                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-                if bbox_key not in seen_bboxes:
-                    seen_bboxes.add(bbox_key)
-                    # Confidence is approximated - Haar cascades don't provide exact confidence
-                    # We use a fixed high confidence since minNeighbors filtering already applied
-                    detections.append(FaceDetection(
-                        bbox=bbox,
-                        confidence=0.85
-                    ))
+            # Filter by minimum size
+            if bbox[2] < min_size[0] or bbox[3] < min_size[1]:
+                continue
 
-        # Detect profile faces
-        if include_profiles and not self.profile_cascade.empty():
-            profiles = self.profile_cascade.detectMultiScale(
-                gray,
-                scaleFactor=scale_factor,
-                minNeighbors=min_neighbors,
-                minSize=min_size,
-                flags=cv2.CASCADE_SCALE_IMAGE
+            # Expand bbox to include head and shoulders
+            expanded_bbox = self._expand_bbox_for_head_shoulders(
+                bbox, img_width, img_height
             )
 
-            for (x, y, w, h) in profiles:
-                # Expand bbox to include head and shoulders
-                expanded_bbox = self._expand_bbox_for_head_shoulders(
-                    (int(x), int(y), int(w), int(h)),
-                    img_width, img_height
-                )
-                bbox = expanded_bbox
-                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-                # Avoid duplicates (frontal might overlap with profile)
-                if bbox_key not in seen_bboxes and not self._is_overlapping(bbox, seen_bboxes):
-                    seen_bboxes.add(bbox_key)
-                    detections.append(FaceDetection(
-                        bbox=bbox,
-                        confidence=0.80  # Slightly lower for profiles
-                    ))
-
-            # Also check flipped image for profiles facing the other direction
-            gray_flipped = cv2.flip(gray, 1)  # Horizontal flip
-            profiles_flipped = self.profile_cascade.detectMultiScale(
-                gray_flipped,
-                scaleFactor=scale_factor,
-                minNeighbors=min_neighbors,
-                minSize=min_size,
-                flags=cv2.CASCADE_SCALE_IMAGE
-            )
-
-            for (x, y, w, h) in profiles_flipped:
-                # Flip x coordinate back
-                x_orig = img_width - x - w
-                # Expand bbox to include head and shoulders
-                expanded_bbox = self._expand_bbox_for_head_shoulders(
-                    (int(x_orig), int(y), int(w), int(h)),
-                    img_width, img_height
-                )
-                bbox = expanded_bbox
-                bbox_key = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-                if bbox_key not in seen_bboxes and not self._is_overlapping(bbox, seen_bboxes):
-                    seen_bboxes.add(bbox_key)
-                    detections.append(FaceDetection(
-                        bbox=bbox,
-                        confidence=0.80
-                    ))
+            detections.append(FaceDetection(
+                bbox=expanded_bbox,
+                confidence=confidence
+            ))
 
         return detections
 
-    def _is_overlapping(self, bbox: tuple, seen_bboxes: set, threshold: float = 0.5) -> bool:
-        """
-        Check if bbox significantly overlaps with any existing bbox.
-
-        Args:
-            bbox: (x, y, w, h) tuple
-            seen_bboxes: Set of "x,y,w,h" strings
-            threshold: IoU threshold for considering overlap
-
-        Returns:
-            True if overlapping with existing detection
-        """
-        x1, y1, w1, h1 = bbox
-
-        for seen_key in seen_bboxes:
-            x2, y2, w2, h2 = map(int, seen_key.split(','))
-
-            # Calculate intersection
-            ix1 = max(x1, x2)
-            iy1 = max(y1, y2)
-            ix2 = min(x1 + w1, x2 + w2)
-            iy2 = min(y1 + h1, y2 + h2)
-
-            if ix2 > ix1 and iy2 > iy1:
-                intersection = (ix2 - ix1) * (iy2 - iy1)
-                area1 = w1 * h1
-                area2 = w2 * h2
-                union = area1 + area2 - intersection
-                iou = intersection / union if union > 0 else 0
-
-                if iou > threshold:
-                    return True
-
-        return False
-
     def detect_from_file(self, image_path: str) -> List[FaceDetection]:
-        """
-        Detect faces in an image file.
-
-        Args:
-            image_path: Path to image file
-
-        Returns:
-            List of FaceDetection objects
-        """
+        """Detect faces in an image file."""
         image = Image.open(image_path)
         return self.detect_faces(image)
 
 
+# Also provide the OpenCV fallback class name for compatibility
+FaceDetector = VisionFaceDetector
+
+
 # Singleton instance for reuse
-_detector_instance: Optional[FaceDetector] = None
+_detector_instance: Optional[VisionFaceDetector] = None
 
 
-def get_face_detector(min_confidence: float = 0.5) -> FaceDetector:
-    """Get or create face detector singleton."""
+def get_face_detector(min_confidence: float = 0.5):
+    """Get or create face detector singleton.
+
+    Uses Vision framework on macOS, falls back to OpenCV Haar Cascades.
+    """
     global _detector_instance
     if _detector_instance is None:
-        _detector_instance = FaceDetector(min_confidence)
+        if VISION_AVAILABLE:
+            _detector_instance = VisionFaceDetector(min_confidence)
+        else:
+            try:
+                from hush_engine.detectors.face_detector_cv import FaceDetector as CVFaceDetector
+                _detector_instance = CVFaceDetector(min_confidence)
+                sys.stderr.write("[FaceDetector] Using OpenCV fallback\n")
+            except ImportError:
+                sys.stderr.write("[FaceDetector] No face detection backend available\n")
+                _detector_instance = VisionFaceDetector(min_confidence)  # Will fail gracefully
     return _detector_instance
 
 

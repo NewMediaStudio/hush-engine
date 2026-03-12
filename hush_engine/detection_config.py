@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 # Engine version - single source of truth
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 
 # Detection library/integration toggles
 # These control which detection backends are enabled
@@ -21,13 +21,22 @@ DEFAULT_INTEGRATIONS = {
     "lgbm_ner": True,        # LightGBM token classifiers (~10MB, 5-10x faster)
     "name_dataset": True,    # Dictionary lookup for names (~5MB)
 
-    # Standard NER (spaCy - moderate memory, good accuracy)
-    "spacy": True,           # spaCy NER (50-100MB, reliable baseline)
+    # macOS native NLP (v1.8.0 - replaces spaCy for Minimal tier)
+    "nltagger": True,        # macOS NLTagger NER/lemmatization (zero-install)
+
+    # Standard NER (spaCy - now optional, install with: pip install hush-engine[spacy])
+    "spacy": False,          # spaCy NER (50-100MB, reliable baseline)
 
     # Heavy NER models (disabled by default - install with: pip install hush-engine[accurate])
     "gliner": False,         # GLiNER zero-shot PII model (~1GB)
     "flair": False,          # Flair NER (~400MB, high accuracy)
     "transformers": False,   # Transformers BERT NER (~600MB, high precision)
+
+    # Vision detectors (v1.8.0 - macOS native, replaces OpenCV/pyzbar)
+    "vision_face": True,     # Vision VNDetectFaceRectanglesRequest (zero-install)
+    "vision_qr": True,       # Vision VNDetectBarcodesRequest (zero-install)
+    "opencv_face": False,    # OpenCV Haar cascade fallback (optional)
+    "opencv_qr": False,      # OpenCV QRCodeDetector fallback (optional)
 
     # Address detection
     "libpostal": True,       # libpostal address parsing (99.45% accuracy)
