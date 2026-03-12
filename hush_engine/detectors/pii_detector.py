@@ -357,15 +357,34 @@ class PIIDetector:
         self._enable_libpostal = enable_libpostal
 
         # Configure NLP engine for context-aware detection
-        # Uses spaCy for lemmatization and context enhancement
-        try:
-            nlp_config = {
-                "nlp_engine_name": "spacy",
-                "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}]
-            }
-            provider = NlpEngineProvider(nlp_configuration=nlp_config)
-            nlp_engine = provider.create_engine()
+        # v1.8.0: Try NLTagger (macOS native) first, fall back to spaCy, then regex-only
+        nlp_engine = None
+        self._nlp_backend = None
 
+        # Try 1: macOS NLTagger (zero-install, default for Minimal tier)
+        try:
+            from hush_engine.nlp.nltagger_engine import NLTaggerNlpEngine, NLTAGGER_AVAILABLE
+            if NLTAGGER_AVAILABLE:
+                nlp_engine = NLTaggerNlpEngine()
+                nlp_engine.load()
+                self._nlp_backend = "nltagger"
+        except Exception:
+            pass
+
+        # Try 2: spaCy (optional, install with: pip install hush-engine[spacy])
+        if nlp_engine is None:
+            try:
+                nlp_config = {
+                    "nlp_engine_name": "spacy",
+                    "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}]
+                }
+                provider = NlpEngineProvider(nlp_configuration=nlp_config)
+                nlp_engine = provider.create_engine()
+                self._nlp_backend = "spacy"
+            except Exception:
+                pass
+
+        if nlp_engine is not None:
             # Context enhancer: boost score by 0.35 when context words found
             # within a 5-token window (e.g., "Patient John Smith" boosts PERSON)
             context_enhancer = LemmaContextAwareEnhancer(
@@ -380,72 +399,62 @@ class PIIDetector:
                 context_aware_enhancer=context_enhancer
             )
             self._nlp_enabled = True
-        except Exception:
-            # Fallback to regex-only mode if spaCy not available
+        else:
+            # Fallback to regex-only mode if no NLP backend available
             self.analyzer = AnalyzerEngine(nlp_engine=None)
             self._nlp_enabled = False
 
-        # Add custom recognizers for technical secrets
+        # v1.8.0: Split recognizer loading into core (regex-only, always loaded)
+        # and extended (NER-dependent, loaded on first analyze_text call).
+        # This reduces idle RAM by deferring heavy recognizer initialization.
+        self._extended_loaded = False
+        self._enable_libpostal_deferred = enable_libpostal
+
+        # --- Core recognizers (regex-based, fast, always needed) ---
         self._add_technical_recognizers()
-        # Add credit card recognizers with common patterns
         self._add_credit_card_recognizers()
-        # Add location recognizers (e.g. Canadian address format)
-        self._add_location_recognizers()
-        # Add date/time recognizers (international date formats)
-        self._add_datetime_recognizers()
-        # Add age recognizers (age in years, "X years old", "Age: X")
-        self._add_age_recognizers()
-        # Add financial recognizers (currency, SWIFT codes, etc.)
-        self._add_financial_recognizers()
-        # Add company recognizers
-        self._add_company_recognizers()
-        # Add gender identity recognizers
-        self._add_gender_recognizers()
-        # Add coordinate recognizers (GPS, lat/long)
-        self._add_coordinate_recognizers()
-        # Add medical recognizers (conditions, medications, blood types, etc.)
-        self._add_medical_recognizers()
-        # Add Fast Data Science medical NER (broader coverage)
-        self._add_fast_medical_recognizer()
-        # Add phone number recognizers with NA area code validation
         self._add_phone_recognizers()
-        # Add ID document recognizers (passports, driver's licenses)
-        self._add_id_document_recognizers()
-        # Add vehicle recognizers (VIN)
-        self._add_vehicle_recognizers()
-        # Add device ID recognizers (IMEI, MAC address, UUID)
-        self._add_device_recognizers()
-        # Add biometric ID recognizers (BIO-, fingerprint IDs, etc.)
-        self._add_biometric_recognizers()
-        # Add credential recognizers (passwords, API keys, PINs)
-        self._add_credential_recognizers()
-        # Add username recognizers (alphanumeric usernames, dot-separated)
-        self._add_username_recognizers()
-        # Add generic ID recognizers (alphanumeric codes)
-        self._add_id_recognizers()
-        # Add network recognizers (MAC addresses, cookies, session IDs)
-        self._add_network_recognizers()
-        # Add IP address recognizers (IPv4, IPv6)
+        self._add_datetime_recognizers()
+        self._add_age_recognizers()
+        self._add_financial_recognizers()
         self._add_ip_address_recognizers()
-        # Add SSN recognizer (emits NATIONAL_ID for unified ID handling)
-        self._add_ssn_recognizers()
-        # Add international national ID recognizers
-        self._add_international_id_recognizers()
-        # Add person name recognizers (title + name patterns)
-        self._add_person_recognizers()
-        # Remove Presidio's default SpacyRecognizer for PERSON to avoid duplicate detection
-        self._remove_default_person_recognizers()
-        # Remove Presidio's default US_SSN recognizer (we emit NATIONAL_ID instead)
-        self._remove_default_ssn_recognizers()
-        # Add URL recognizers (http, https, www, subdomains)
         self._add_url_recognizers()
-        # Add obfuscated email recognizers ([at], spaced emails)
         self._add_obfuscated_email_recognizers()
-        # Add generic alphanumeric ID patterns (customer IDs, reference numbers, etc.)
+        self._add_ssn_recognizers()
+        self._add_international_id_recognizers()
+        self._add_credential_recognizers()
+        self._add_id_document_recognizers()
+        # Remove Presidio defaults that we replace with custom implementations
+        self._remove_default_person_recognizers()
+        self._remove_default_ssn_recognizers()
+
+    def _load_extended_recognizers(self):
+        """Load extended recognizers on first analyze_text() call.
+
+        These include NER-dependent recognizers and heavier pattern sets
+        that aren't needed for every detection scenario.
+        """
+        if self._extended_loaded:
+            return
+        self._extended_loaded = True
+
+        self._add_location_recognizers()
+        self._add_company_recognizers()
+        self._add_gender_recognizers()
+        self._add_coordinate_recognizers()
+        self._add_medical_recognizers()
+        self._add_fast_medical_recognizer()
+        self._add_vehicle_recognizers()
+        self._add_device_recognizers()
+        self._add_biometric_recognizers()
+        self._add_username_recognizers()
+        self._add_id_recognizers()
+        self._add_network_recognizers()
         self._add_generic_id_recognizers()
-        # Add libpostal-based address detection (99.45% accuracy on global addresses)
-        # Note: libpostal is the slowest recognizer (~30-40% of detection time)
-        if enable_libpostal:
+        # Person NER (heaviest recognizer - multi-NER cascade)
+        self._add_person_recognizers()
+        # libpostal address detection (slowest recognizer)
+        if self._enable_libpostal_deferred:
             self._add_libpostal_recognizer()
 
         # Denylist of common words that should not be detected as PII
@@ -8930,6 +8939,9 @@ class PIIDetector:
         Returns:
             List of detected PII entities with locale information
         """
+        # v1.8.0: Load extended recognizers on first call (lazy loading)
+        self._load_extended_recognizers()
+
         # Auto-detect locale if requested and not provided
         effective_locales = locales
         if auto_detect_locale and locales is None:

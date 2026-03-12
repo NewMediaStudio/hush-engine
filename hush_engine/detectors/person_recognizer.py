@@ -27,7 +27,11 @@ from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplan
 # Lazy-loaded NER engines
 # ============================================================================
 
-# spaCy NER (standard, fast)
+# macOS NLTagger NER (v1.8.0 - zero-install, replaces spaCy for Minimal tier)
+_nltagger_ner = None
+NLTAGGER_NER_AVAILABLE = False
+
+# spaCy NER (standard, fast - now optional)
 _spacy_nlp = None
 SPACY_AVAILABLE = False
 
@@ -124,6 +128,29 @@ def get_address_lgbm_model():
 def is_address_lgbm_available() -> bool:
     """Check if ADDRESS LightGBM model is available."""
     return ADDRESS_LGBM_AVAILABLE
+
+
+def _load_nltagger_ner():
+    """Lazy-load macOS NLTagger for NER (zero-install, v1.8.0).
+
+    Uses Apple's NaturalLanguage framework for person name detection.
+    """
+    global _nltagger_ner, NLTAGGER_NER_AVAILABLE
+
+    if _nltagger_ner is not None:
+        return
+
+    try:
+        import NaturalLanguage
+        tagger = NaturalLanguage.NLTagger.alloc().initWithTagSchemes_([
+            NaturalLanguage.NLTagSchemeNameType,
+        ])
+        _nltagger_ner = tagger
+        NLTAGGER_NER_AVAILABLE = True
+        sys.stderr.write("[PersonRecognizer] Loaded macOS NLTagger NER\n")
+    except ImportError:
+        NLTAGGER_NER_AVAILABLE = False
+        sys.stderr.write("[PersonRecognizer] NLTagger not available (not macOS)\n")
 
 
 def _load_spacy():
@@ -252,6 +279,77 @@ def _load_transformers_ner():
 # ============================================================================
 # NER Backend Functions
 # ============================================================================
+
+def detect_with_nltagger(text: str) -> List[Tuple[str, int, int, float]]:
+    """
+    Detect PERSON entities using macOS NLTagger (v1.8.0).
+
+    Uses Apple's NaturalLanguage framework NLTagSchemeNameType for NER.
+    Zero-install alternative to spaCy for the Minimal tier.
+
+    Returns: List of (text, start, end, confidence) tuples
+    """
+    _load_nltagger_ner()
+
+    if not NLTAGGER_NER_AVAILABLE or _nltagger_ner is None:
+        return []
+
+    import NaturalLanguage
+
+    results = []
+    _nltagger_ner.setString_(text)
+
+    # Collect person name spans
+    current_name = ""
+    current_start = -1
+
+    def _process_tag(tag, token_range, stop):
+        nonlocal current_name, current_start, results
+
+        start = token_range.location
+        length = token_range.length
+        token_text = text[start:start + length]
+        tag_str = str(tag) if tag else ""
+
+        if tag_str == "PersonalName":
+            if current_start < 0:
+                current_start = start
+                current_name = token_text
+            else:
+                # Extend current entity (include any whitespace between tokens)
+                current_name = text[current_start:start + length]
+        else:
+            # Flush accumulated person name
+            if current_name.strip() and current_start >= 0:
+                name = current_name.strip()
+                end = current_start + len(current_name)
+                # Base score comparable to spaCy (0.68 single word, 0.72 multi-word)
+                base_score = 0.68
+                if len(name.split()) >= 2:
+                    base_score = 0.72
+                results.append((name, current_start, end, base_score))
+            current_name = ""
+            current_start = -1
+
+    _nltagger_ner.enumerateTagsInRange_unit_scheme_options_usingBlock_(
+        (0, len(text)),
+        NaturalLanguage.NLTokenUnitWord,
+        NaturalLanguage.NLTagSchemeNameType,
+        NaturalLanguage.NLTaggerOmitWhitespace | NaturalLanguage.NLTaggerOmitPunctuation,
+        _process_tag,
+    )
+
+    # Flush final entity
+    if current_name.strip() and current_start >= 0:
+        name = current_name.strip()
+        end = current_start + len(current_name)
+        base_score = 0.68
+        if len(name.split()) >= 2:
+            base_score = 0.72
+        results.append((name, current_start, end, base_score))
+
+    return results
+
 
 def detect_with_spacy(text: str) -> List[Tuple[str, int, int, float]]:
     """
@@ -893,7 +991,8 @@ class PersonRecognizer(EntityRecognizer):
         supported_language: str = "en",
         supported_entities: Optional[List[str]] = None,
         use_lgbm_ner: bool = True,
-        use_spacy: bool = True,
+        use_nltagger: bool = True,
+        use_spacy: bool = False,
         use_gliner: bool = False,
         use_flair: bool = False,
         use_transformers: bool = False,
@@ -910,7 +1009,8 @@ class PersonRecognizer(EntityRecognizer):
             supported_language: Language code
             supported_entities: Entity types to detect
             use_lgbm_ner: Enable LightGBM NER (lightweight, fast)
-            use_spacy: Enable spaCy NER
+            use_nltagger: Enable macOS NLTagger NER (v1.8.0, zero-install)
+            use_spacy: Enable spaCy NER (optional, install with pip install hush-engine[spacy])
             use_gliner: Enable GLiNER zero-shot NER
             use_flair: Enable Flair NER (high accuracy)
             use_transformers: Enable Transformers BERT NER (high precision)
@@ -924,6 +1024,7 @@ class PersonRecognizer(EntityRecognizer):
         # Set instance variables BEFORE super().__init__() because the parent
         # class calls load() which invokes _preload_models() that uses these
         self.use_lgbm_ner = use_lgbm_ner
+        self.use_nltagger = use_nltagger
         self.use_spacy = use_spacy
         self.use_gliner = use_gliner
         self.use_flair = use_flair
@@ -945,6 +1046,8 @@ class PersonRecognizer(EntityRecognizer):
         """Preload configured NER models."""
         if self.use_lgbm_ner:
             _load_lgbm_ner()
+        if self.use_nltagger:
+            _load_nltagger_ner()
         if self.use_spacy:
             _load_spacy()
         if self.use_gliner:
@@ -1052,7 +1155,12 @@ class PersonRecognizer(EntityRecognizer):
         except ImportError:
             pass
 
-        # Step 4: Standard NER (spaCy - fast, reliable)
+        # Step 4: macOS NLTagger NER (v1.8.0 - zero-install, fast)
+        if self.use_nltagger:
+            for text_match, start, end, score in detect_with_nltagger(processed_text):
+                all_detections.append((text_match, start, end, score, "nltagger"))
+
+        # Step 4b: Standard NER (spaCy - optional, install with pip install hush-engine[spacy])
         if self.use_spacy:
             for text_match, start, end, score in detect_with_spacy(processed_text):
                 all_detections.append((text_match, start, end, score, "spacy"))
@@ -1585,7 +1693,8 @@ def get_person_recognizer(
     """
     if mode == "fast":
         return PersonRecognizer(
-            use_spacy=True,
+            use_nltagger=True,
+            use_spacy=False,
             use_gliner=False,
             use_flair=False,
             use_transformers=False,
@@ -1595,6 +1704,7 @@ def get_person_recognizer(
         )
     elif mode == "accurate":
         return PersonRecognizer(
+            use_nltagger=True,
             use_spacy=True,
             use_gliner=True,
             use_flair=True,
@@ -1606,7 +1716,8 @@ def get_person_recognizer(
         )
     else:  # balanced
         return PersonRecognizer(
-            use_spacy=True,
+            use_nltagger=True,
+            use_spacy=False,
             use_gliner=False,
             use_flair=False,
             use_transformers=False,
@@ -1618,15 +1729,17 @@ def get_person_recognizer(
 
 def is_person_ner_available() -> bool:
     """Check if any NER engine is available for person detection."""
+    _load_nltagger_ner()
     _load_spacy()
     _load_gliner()
     _load_flair()
     _load_transformers_ner()
-    return SPACY_AVAILABLE or GLINER_AVAILABLE or FLAIR_AVAILABLE or TRANSFORMERS_NER_AVAILABLE
+    return NLTAGGER_NER_AVAILABLE or SPACY_AVAILABLE or GLINER_AVAILABLE or FLAIR_AVAILABLE or TRANSFORMERS_NER_AVAILABLE
 
 
 def get_available_engines() -> List[str]:
     """Get list of available NER engines."""
+    _load_nltagger_ner()
     _load_spacy()
     _load_gliner()
     _load_flair()
@@ -1634,6 +1747,8 @@ def get_available_engines() -> List[str]:
     _load_name_dataset()
 
     engines = ["patterns"]  # Always available
+    if NLTAGGER_NER_AVAILABLE:
+        engines.append("nltagger")
     if SPACY_AVAILABLE:
         engines.append("spacy")
     if GLINER_AVAILABLE:

@@ -14,11 +14,52 @@ import mimetypes
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from ocr import VisionOCR
-from detectors import PIIDetector, TableDetector, ContextAwarePIIDetector
-from detectors.face_detector import FaceDetector
-from detectors.qr_detector import QRDetector
-from detectors.barcode_detector import BarcodeDetector
+# v1.8.0: Deferred imports for heavy modules to reduce startup time and idle RAM.
+# These are loaded on first access via class properties or function calls.
+# VisionOCR, PIIDetector, and vision detectors are the heaviest modules.
+_VisionOCR = None
+_PIIDetector = None
+_TableDetector = None
+_ContextAwarePIIDetector = None
+
+
+def _get_vision_ocr_class():
+    global _VisionOCR
+    if _VisionOCR is None:
+        from ocr import VisionOCR as _cls
+        _VisionOCR = _cls
+    return _VisionOCR
+
+
+def _get_pii_detector_class():
+    global _PIIDetector
+    if _PIIDetector is None:
+        from detectors import PIIDetector as _cls
+        _PIIDetector = _cls
+    return _PIIDetector
+
+
+def _get_table_detector_class():
+    global _TableDetector
+    if _TableDetector is None:
+        from detectors import TableDetector as _cls
+        _TableDetector = _cls
+    return _TableDetector
+
+
+def _get_face_detector():
+    from detectors.face_detector import get_face_detector
+    return get_face_detector()
+
+
+def _get_qr_detector():
+    from detectors.qr_detector import get_qr_detector
+    return get_qr_detector()
+
+
+def _get_barcode_detector():
+    from detectors.barcode_detector import get_barcode_detector
+    return get_barcode_detector()
 
 # Spatial filtering for precision improvement
 try:
@@ -393,6 +434,7 @@ class FileRouter:
     def ocr(self):
         """Lazy-load OCR engine"""
         if self._ocr is None:
+            VisionOCR = _get_vision_ocr_class()
             self._ocr = VisionOCR(recognition_level="accurate")
         return self._ocr
 
@@ -400,6 +442,7 @@ class FileRouter:
     def detector(self):
         """Lazy-load PII detector"""
         if self._detector is None:
+            PIIDetector = _get_pii_detector_class()
             self._detector = PIIDetector()
         return self._detector
 
@@ -407,21 +450,21 @@ class FileRouter:
     def face_detector(self):
         """Lazy-load face detector"""
         if self._face_detector is None:
-            self._face_detector = FaceDetector()
+            self._face_detector = _get_face_detector()
         return self._face_detector
 
     @property
     def qr_detector(self):
         """Lazy-load QR code detector"""
         if self._qr_detector is None:
-            self._qr_detector = QRDetector()
+            self._qr_detector = _get_qr_detector()
         return self._qr_detector
 
     @property
     def barcode_detector(self):
         """Lazy-load barcode detector"""
         if self._barcode_detector is None:
-            self._barcode_detector = BarcodeDetector()
+            self._barcode_detector = _get_barcode_detector()
         return self._barcode_detector
 
     @property
@@ -449,6 +492,7 @@ class FileRouter:
     def table_detector(self):
         """Lazy-load table structure detector"""
         if self._table_detector is None:
+            TableDetector = _get_table_detector_class()
             self._table_detector = TableDetector()
         return self._table_detector
 
@@ -481,6 +525,7 @@ class FileRouter:
     def context_aware_detector(self):
         """Lazy-load context-aware PII detector"""
         if self._context_aware_detector is None:
+            from detectors import ContextAwarePIIDetector
             self._context_aware_detector = ContextAwarePIIDetector(
                 self.detector, self.table_detector
             )
