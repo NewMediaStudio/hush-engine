@@ -1,18 +1,27 @@
 """
-QR Code Detection using OpenCV
+QR Code Detection using Apple Vision Framework (macOS)
 
-Detects QR codes and barcodes in images for redaction.
-Uses OpenCV's built-in QR code detector.
+Detects QR codes in images for redaction using VNDetectBarcodesRequest.
+Falls back to OpenCV QRCodeDetector if Vision framework is unavailable.
 
-License: Apache 2.0 (OpenCV)
+License: MIT
 """
 
+import io
 import sys
 from typing import List, Optional
 from dataclasses import dataclass
-import cv2
-import numpy as np
 from PIL import Image
+
+# Try Vision framework first (macOS native, zero-install)
+VISION_AVAILABLE = False
+try:
+    import Vision
+    from Quartz import CIImage
+    from Cocoa import NSData
+    VISION_AVAILABLE = True
+except ImportError:
+    pass
 
 
 @dataclass
@@ -24,14 +33,43 @@ class QRDetection:
     entity_type: str = "QR_CODE"
 
 
-class QRDetector:
-    """
-    Detects QR codes and barcodes in images using OpenCV.
-    """
+def _vision_bbox_to_pixel_xywh(vision_box, img_width: int, img_height: int) -> tuple:
+    """Convert Vision normalized CGRect to pixel (x, y, w, h) with top-left origin."""
+    nx = vision_box.origin.x
+    ny = vision_box.origin.y
+    nw = vision_box.size.width
+    nh = vision_box.size.height
 
-    def __init__(self):
-        """Initialize QR code detector."""
-        self.qr_detector = cv2.QRCodeDetector()
+    x = int(nx * img_width)
+    w = int(nw * img_width)
+    h = int(nh * img_height)
+    y = int((1.0 - ny - nh) * img_height)
+
+    return (x, y, w, h)
+
+
+def _pil_to_ciimage(image: Image.Image):
+    """Convert PIL Image to CIImage in memory."""
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    png_bytes = buffer.getvalue()
+
+    ns_data = NSData.dataWithBytes_length_(png_bytes, len(png_bytes))
+    ci_image = CIImage.imageWithData_(ns_data)
+    if ci_image is None:
+        raise ValueError("Failed to create CIImage from PIL Image")
+    return ci_image
+
+
+class VisionQRDetector:
+    """
+    Detects QR codes in images using Apple Vision Framework.
+
+    Uses VNDetectBarcodesRequest with QR symbology which provides:
+    - Hardware-accelerated detection on Apple Silicon
+    - Native QR code decoding (payload extraction)
+    - Multi-QR detection in a single pass
+    """
 
     def detect_qr_codes(
         self,
@@ -48,122 +86,97 @@ class QRDetector:
         Returns:
             List of QRDetection objects with bounding boxes
         """
-        # Convert PIL Image to OpenCV format
-        img_array = np.array(image)
+        img_width, img_height = image.size
 
-        # Handle different image modes
-        if len(img_array.shape) == 2:
-            # Grayscale - convert to BGR for OpenCV
-            img_bgr = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
-        elif img_array.shape[2] == 4:
-            # RGBA - convert to BGR
-            img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
-        else:
-            # RGB - convert to BGR
-            img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+        ci_image = _pil_to_ciimage(image)
 
-        img_height, img_width = img_bgr.shape[:2]
+        # Check CIImage extent for resolution differences
+        ci_extent = ci_image.extent()
+        ci_width = ci_extent.size.width
+        ci_height = ci_extent.size.height
+        if abs(ci_width - img_width) > 1 or abs(ci_height - img_height) > 1:
+            img_width = int(ci_width)
+            img_height = int(ci_height)
+
+        request = Vision.VNDetectBarcodesRequest.alloc().init()
+        # Filter to QR codes only (barcodes handled by barcode_detector.py)
+        request.setSymbologies_([Vision.VNBarcodeSymbologyQR])
+
+        handler = Vision.VNImageRequestHandler.alloc().initWithCIImage_options_(ci_image, None)
+        success, error = handler.performRequests_error_([request], None)
+
+        if not success:
+            sys.stderr.write(f"[QRDetector] Vision QR detection failed: {error}\n")
+            return []
+
+        results = request.results()
+        if not results:
+            return []
+
         detections = []
+        for observation in results:
+            # Get bounding box in pixel coordinates
+            bbox = _vision_bbox_to_pixel_xywh(
+                observation.boundingBox(), img_width, img_height
+            )
+            x, y, w, h = bbox
 
-        # Try to detect and decode QR codes
-        try:
-            # detectAndDecodeMulti returns: retval, decoded_info, points, straight_qrcode
-            retval, decoded_info, points, _ = self.qr_detector.detectAndDecodeMulti(img_bgr)
+            # Expand bbox slightly
+            pad_x = int(w * expand_bbox)
+            pad_y = int(h * expand_bbox)
+            x = max(0, x - pad_x)
+            y = max(0, y - pad_y)
+            w = min(img_width - x, w + 2 * pad_x)
+            h = min(img_height - y, h + 2 * pad_y)
 
-            if retval and points is not None:
-                for i, pts in enumerate(points):
-                    if pts is not None and len(pts) >= 4:
-                        # Get bounding box from corner points
-                        pts = pts.astype(int)
-                        x_coords = pts[:, 0]
-                        y_coords = pts[:, 1]
-
-                        x_min = int(np.min(x_coords))
-                        y_min = int(np.min(y_coords))
-                        x_max = int(np.max(x_coords))
-                        y_max = int(np.max(y_coords))
-
-                        w = x_max - x_min
-                        h = y_max - y_min
-
-                        # Expand bbox slightly
-                        pad_x = int(w * expand_bbox)
-                        pad_y = int(h * expand_bbox)
-
-                        x_min = max(0, x_min - pad_x)
-                        y_min = max(0, y_min - pad_y)
-                        w = min(img_width - x_min, w + 2 * pad_x)
-                        h = min(img_height - y_min, h + 2 * pad_y)
-
-                        # Get decoded data if available
-                        data = decoded_info[i] if decoded_info and i < len(decoded_info) else ""
-
-                        detections.append(QRDetection(
-                            bbox=(x_min, y_min, w, h),
-                            confidence=0.95,  # High confidence for detected QR codes
-                            data=data
-                        ))
-
-        except Exception as e:
-            sys.stderr.write(f"[QRDetector] Error detecting QR codes: {e}\n")
-
-        # Also try basic QR detection for single codes (fallback)
-        if not detections:
+            # Get decoded data
+            data = ""
             try:
-                data, points, _ = self.qr_detector.detectAndDecode(img_bgr)
-                if points is not None and len(points) > 0:
-                    pts = points[0].astype(int)
-                    x_coords = pts[:, 0]
-                    y_coords = pts[:, 1]
+                payload = observation.payloadStringValue()
+                if payload:
+                    data = str(payload)
+            except Exception:
+                pass
 
-                    x_min = int(np.min(x_coords))
-                    y_min = int(np.min(y_coords))
-                    x_max = int(np.max(x_coords))
-                    y_max = int(np.max(y_coords))
+            confidence = float(observation.confidence())
 
-                    w = x_max - x_min
-                    h = y_max - y_min
-
-                    # Expand bbox slightly
-                    pad_x = int(w * expand_bbox)
-                    pad_y = int(h * expand_bbox)
-
-                    x_min = max(0, x_min - pad_x)
-                    y_min = max(0, y_min - pad_y)
-                    w = min(img_width - x_min, w + 2 * pad_x)
-                    h = min(img_height - y_min, h + 2 * pad_y)
-
-                    detections.append(QRDetection(
-                        bbox=(x_min, y_min, w, h),
-                        confidence=0.95,
-                        data=data if data else ""
-                    ))
-            except Exception as e:
-                sys.stderr.write(f"[QRDetector] Fallback detection error: {e}\n")
+            detections.append(QRDetection(
+                bbox=(x, y, w, h),
+                confidence=confidence,
+                data=data
+            ))
 
         return detections
 
     def detect_from_file(self, image_path: str) -> List[QRDetection]:
-        """
-        Detect QR codes in an image file.
-
-        Args:
-            image_path: Path to image file
-
-        Returns:
-            List of QRDetection objects
-        """
+        """Detect QR codes in an image file."""
         image = Image.open(image_path)
         return self.detect_qr_codes(image)
 
 
+# Provide the original class name for compatibility
+QRDetector = VisionQRDetector
+
+
 # Singleton instance for reuse
-_detector_instance: Optional[QRDetector] = None
+_detector_instance: Optional[VisionQRDetector] = None
 
 
-def get_qr_detector() -> QRDetector:
-    """Get or create QR detector singleton."""
+def get_qr_detector():
+    """Get or create QR detector singleton.
+
+    Uses Vision framework on macOS, falls back to OpenCV.
+    """
     global _detector_instance
     if _detector_instance is None:
-        _detector_instance = QRDetector()
+        if VISION_AVAILABLE:
+            _detector_instance = VisionQRDetector()
+        else:
+            try:
+                from hush_engine.detectors.qr_detector_cv import QRDetector as CVQRDetector
+                _detector_instance = CVQRDetector()
+                sys.stderr.write("[QRDetector] Using OpenCV fallback\n")
+            except ImportError:
+                sys.stderr.write("[QRDetector] No QR detection backend available\n")
+                _detector_instance = VisionQRDetector()  # Will fail gracefully
     return _detector_instance

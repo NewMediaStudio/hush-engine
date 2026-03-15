@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.7.0"
+version = "1.8.0"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
 readme = "README.md"
 license = {text = "MIT"}
@@ -26,9 +26,8 @@ classifiers = [
 ]
 
 dependencies = [
-    # IMPORTANT: numpy<2 required for spacy/thinc binary compatibility
-    # opencv-python claims numpy>=2 but works fine with 1.26.x
-    "numpy>=1.24.0,<2.0.0",
+    # Core numerics - relaxed numpy constraint now that spaCy is optional
+    "numpy>=1.24.0",
     "presidio-analyzer>=2.2.0",
     "presidio-anonymizer>=2.2.0",
     "Pillow>=10.0.0",
@@ -36,18 +35,15 @@ dependencies = [
     "img2pdf>=0.6.3",
     "pandas>=2.0.0",
     "openpyxl>=3.1.0",
-    "spacy>=3.7.0",
     "faker>=20.0.0",
+    # macOS native frameworks (Vision, NaturalLanguage, Cocoa)
     "pyobjc-framework-Vision>=9.0",
     "pyobjc-framework-Cocoa>=9.0",
+    "pyobjc-framework-NaturalLanguage>=9.0",  # v1.8.0: NLTagger for NER/lemmatization
     "watchdog>=3.0.0",
     # Image optimization (commercial-friendly licenses)
     "zopfli>=0.2.0",  # Apache 2.0 - PNG compression
     "mozjpeg-lossless-optimization>=1.0.0",  # BSD-3 - JPEG optimization
-    # Face detection (Apache 2.0 license)
-    "opencv-python>=4.8.0",  # Haar cascade face detection
-    # Barcode detection (MIT license)
-    "pyzbar>=0.1.9",  # Linear barcode detection
     # PII Validation (LGPL-2.1 license)
     "python-stdnum>=2.2",  # National ID, IBAN, BIC validation for 35+ countries
     "phonenumbers>=9.0.0",  # International phone validation for 249 countries
@@ -63,15 +59,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# spaCy NLP engine (v1.8.0: now optional, replaced by NLTagger for Minimal tier)
+spacy = [
+    "spacy>=3.7.0",  # Industrial-grade NER (~100-200MB with model)
+]
+# OpenCV + pyzbar (v1.8.0: now optional, replaced by Vision framework)
+opencv = [
+    "opencv-python>=4.8.0",  # Haar cascade face detection fallback
+    "pyzbar>=0.1.9",  # Linear barcode detection fallback
+]
 # Heavy NER models for maximum accuracy (adds ~2GB)
 accurate = [
     "flair>=0.13.0",  # MIT license - Flair NER models (~400MB)
     "transformers>=4.30.0",  # Apache 2.0 - HuggingFace transformer models (~600MB)
     "gliner>=0.2.0",  # Apache 2.0 - Zero-shot NER (~1GB)
 ]
-# All heavy models
+# Everything
 full = [
-    "hush-engine[accurate]",
+    "hush-engine[spacy,opencv,accurate]",
 ]
 dev = [
     "presidio-evaluator>=0.1.0",  # Token-level evaluation and debugging

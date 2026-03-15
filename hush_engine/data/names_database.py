@@ -17,15 +17,8 @@ Usage:
     db.is_name("Maria")       # True
 """
 
-from typing import Set, Dict, Any
+from typing import Set, Dict, Any, Optional
 import re
-
-from hush_engine.data.popular_names.generated_popular_names import (
-    ALL_FIRST_NAMES,
-    ALL_LAST_NAMES,
-    FORENAMES_BY_LOCALE,
-    SURNAMES_BY_LOCALE,
-)
 
 # Name titles (prefixes that indicate a name follows)
 NAME_TITLES = {
@@ -60,12 +53,55 @@ class NamesDatabase:
             return
         self._initialized = True
 
-        self.first_names: Set[str] = ALL_FIRST_NAMES
-        self.last_names: Set[str] = ALL_LAST_NAMES
-        self.all_names: Set[str] = self.first_names | self.last_names
-        self.forenames_by_locale: Dict[str, Set[str]] = FORENAMES_BY_LOCALE
-        self.surnames_by_locale: Dict[str, Set[str]] = SURNAMES_BY_LOCALE
+        # v1.8.0: Lazy-load name data on first access instead of at import time.
+        # This avoids importing the ~150KB generated_popular_names module until needed.
+        self._first_names: Optional[Set[str]] = None
+        self._last_names: Optional[Set[str]] = None
+        self._all_names: Optional[Set[str]] = None
+        self._forenames_by_locale: Optional[Dict[str, Set[str]]] = None
+        self._surnames_by_locale: Optional[Dict[str, Set[str]]] = None
         self.titles: Set[str] = NAME_TITLES
+
+    def _load_names(self):
+        """Lazy-load name data from generated file."""
+        if self._first_names is not None:
+            return
+        from hush_engine.data.popular_names.generated_popular_names import (
+            ALL_FIRST_NAMES,
+            ALL_LAST_NAMES,
+            FORENAMES_BY_LOCALE,
+            SURNAMES_BY_LOCALE,
+        )
+        self._first_names = ALL_FIRST_NAMES
+        self._last_names = ALL_LAST_NAMES
+        self._all_names = self._first_names | self._last_names
+        self._forenames_by_locale = FORENAMES_BY_LOCALE
+        self._surnames_by_locale = SURNAMES_BY_LOCALE
+
+    @property
+    def first_names(self) -> Set[str]:
+        self._load_names()
+        return self._first_names
+
+    @property
+    def last_names(self) -> Set[str]:
+        self._load_names()
+        return self._last_names
+
+    @property
+    def all_names(self) -> Set[str]:
+        self._load_names()
+        return self._all_names
+
+    @property
+    def forenames_by_locale(self) -> Dict[str, Set[str]]:
+        self._load_names()
+        return self._forenames_by_locale
+
+    @property
+    def surnames_by_locale(self) -> Dict[str, Set[str]]:
+        self._load_names()
+        return self._surnames_by_locale
 
     def is_first_name(self, name: str) -> bool:
         return name.lower().strip() in self.first_names
