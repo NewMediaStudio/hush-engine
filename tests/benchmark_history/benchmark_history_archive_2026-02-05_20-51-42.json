@@ -1,0 +1,211 @@
+{
+  "archived_at": "2026-02-05T20:51:42.381944",
+  "runs": [
+    {
+      "timestamp": "2026-02-03T21:04:47.508217",
+      "samples": 100,
+      "sets": 1,
+      "engine_version": "1.0.0",
+      "ground_truth_count": 144,
+      "csv_total_detections": 284,
+      "csv_overall_recall": 0.5694444444444444,
+      "csv_recall_by_type": {
+        "PERSON": {
+          "tp": 14,
+          "total": 31,
+          "recall": 0.45161290322580644
+        },
+        "EMAIL": {
+          "tp": 16,
+          "total": 17,
+          "recall": 0.9411764705882353
+        },
+        "PHONE": {
+          "tp": 14,
+          "total": 18,
+          "recall": 0.7777777777777778
+        },
+        "DATE": {
+          "tp": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "CREDIT_CARD": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "SSN": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "COMPANY": {
+          "tp": 3,
+          "total": 13,
+          "recall": 0.23076923076923078
+        },
+        "ADDRESS": {
+          "tp": 4,
+          "total": 7,
+          "recall": 0.5714285714285714
+        },
+        "DATE_TIME": {
+          "tp": 18,
+          "total": 20,
+          "recall": 0.9
+        },
+        "URL": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "AGE": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "GENDER": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "ID": {
+          "tp": 0,
+          "total": 5,
+          "recall": 0.0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "total": 8,
+          "recall": 0.0
+        },
+        "NETWORK": {
+          "tp": 2,
+          "total": 4,
+          "recall": 0.5
+        },
+        "IP_ADDRESS": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "FINANCIAL": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "pdf_total_detections": 288,
+      "pdf_overall_recall": 0.5763888888888888,
+      "pdf_recall_by_type": {
+        "PERSON": {
+          "tp": 15,
+          "total": 31,
+          "recall": 0.4838709677419355
+        },
+        "EMAIL": {
+          "tp": 16,
+          "total": 17,
+          "recall": 0.9411764705882353
+        },
+        "PHONE": {
+          "tp": 14,
+          "total": 18,
+          "recall": 0.7777777777777778
+        },
+        "DATE": {
+          "tp": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "CREDIT_CARD": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "SSN": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "COMPANY": {
+          "tp": 3,
+          "total": 13,
+          "recall": 0.23076923076923078
+        },
+        "ADDRESS": {
+          "tp": 4,
+          "total": 7,
+          "recall": 0.5714285714285714
+        },
+        "DATE_TIME": {
+          "tp": 18,
+          "total": 20,
+          "recall": 0.9
+        },
+        "URL": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "AGE": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "GENDER": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "ID": {
+          "tp": 0,
+          "total": 5,
+          "recall": 0.0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "total": 8,
+          "recall": 0.0
+        },
+        "NETWORK": {
+          "tp": 2,
+          "total": 4,
+          "recall": 0.5
+        },
+        "IP_ADDRESS": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "FINANCIAL": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "duration_seconds": 100.23058986663818
+    }
+  ]
+}

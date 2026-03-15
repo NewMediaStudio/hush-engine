@@ -1,0 +1,304 @@
+{
+  "archived_at": "2026-02-08T22:14:18.568948",
+  "runs": [
+    {
+      "timestamp": "2026-02-08T10:10:29.346154",
+      "samples": 1000,
+      "sets": 10,
+      "engine_version": "1.4.0",
+      "ground_truth_count": 6214,
+      "csv_total_detections": 4767,
+      "csv_overall_recall": 0.9231048240841494,
+      "csv_overall_precision": 0.5263758849052295,
+      "csv_overall_f1": 0.6704471685951093,
+      "csv_metrics_by_type": {
+        "CREDENTIAL": {
+          "tp": 15,
+          "tp_precision": 34,
+          "fp": 0,
+          "total": 687,
+          "detected": 34,
+          "precision": 1.0,
+          "recall": 0.021834061135371178,
+          "f1": 0.042735042735042736
+        },
+        "ID": {
+          "tp": 358,
+          "tp_precision": 12,
+          "fp": 36,
+          "total": 360,
+          "detected": 48,
+          "precision": 0.25,
+          "recall": 0.9944444444444445,
+          "f1": 0.39955357142857145
+        },
+        "NATIONAL_ID": {
+          "tp": 827,
+          "tp_precision": 151,
+          "fp": 222,
+          "total": 831,
+          "detected": 373,
+          "precision": 0.40482573726541554,
+          "recall": 0.9951865222623345,
+          "f1": 0.575533699579677
+        },
+        "PERSON": {
+          "tp": 998,
+          "tp_precision": 655,
+          "fp": 717,
+          "total": 1022,
+          "detected": 1372,
+          "precision": 0.4774052478134111,
+          "recall": 0.9765166340508806,
+          "f1": 0.6412919036271758
+        },
+        "DATE_TIME": {
+          "tp": 843,
+          "tp_precision": 341,
+          "fp": 122,
+          "total": 932,
+          "detected": 463,
+          "precision": 0.7365010799136069,
+          "recall": 0.9045064377682404,
+          "f1": 0.8119036153425757
+        },
+        "PHONE": {
+          "tp": 223,
+          "tp_precision": 50,
+          "fp": 415,
+          "total": 223,
+          "detected": 465,
+          "precision": 0.10752688172043011,
+          "recall": 1.0,
+          "f1": 0.19417475728155342
+        },
+        "ADDRESS": {
+          "tp": 1341,
+          "tp_precision": 382,
+          "fp": 164,
+          "total": 1472,
+          "detected": 546,
+          "precision": 0.6996336996336996,
+          "recall": 0.9110054347826086,
+          "f1": 0.7914499146381971
+        },
+        "EMAIL": {
+          "tp": 127,
+          "tp_precision": 116,
+          "fp": 164,
+          "total": 256,
+          "detected": 280,
+          "precision": 0.4142857142857143,
+          "recall": 0.49609375,
+          "f1": 0.45151403702341547
+        },
+        "IP_ADDRESS": {
+          "tp": 239,
+          "tp_precision": 568,
+          "fp": 216,
+          "total": 239,
+          "detected": 784,
+          "precision": 0.7244897959183674,
+          "recall": 1.0,
+          "f1": 0.8402366863905326
+        },
+        "GENDER": {
+          "tp": 134,
+          "tp_precision": 30,
+          "fp": 18,
+          "total": 179,
+          "detected": 48,
+          "precision": 0.625,
+          "recall": 0.7486033519553073,
+          "f1": 0.681240467717336
+        },
+        "COORDINATES": {
+          "tp": 13,
+          "tp_precision": 11,
+          "fp": 85,
+          "total": 13,
+          "detected": 96,
+          "precision": 0.11458333333333333,
+          "recall": 1.0,
+          "f1": 0.205607476635514
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 108,
+          "total": 0,
+          "detected": 108,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 72,
+          "total": 0,
+          "detected": 72,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 34,
+          "total": 0,
+          "detected": 34,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "URL": {
+          "tp": 0,
+          "fp": 5,
+          "total": 0,
+          "detected": 5,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 13,
+          "total": 0,
+          "detected": 13,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "BIOMETRIC": {
+          "tp": 0,
+          "fp": 17,
+          "total": 0,
+          "detected": 17,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 7,
+          "total": 0,
+          "detected": 7,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "detected": 2,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "csv_recall_by_type": {
+        "CREDENTIAL": {
+          "tp": 15,
+          "total": 687,
+          "recall": 0.021834061135371178
+        },
+        "ID": {
+          "tp": 358,
+          "total": 360,
+          "recall": 0.9944444444444445
+        },
+        "NATIONAL_ID": {
+          "tp": 827,
+          "total": 831,
+          "recall": 0.9951865222623345
+        },
+        "PERSON": {
+          "tp": 998,
+          "total": 1022,
+          "recall": 0.9765166340508806
+        },
+        "DATE_TIME": {
+          "tp": 843,
+          "total": 932,
+          "recall": 0.9045064377682404
+        },
+        "PHONE": {
+          "tp": 223,
+          "total": 223,
+          "recall": 1.0
+        },
+        "ADDRESS": {
+          "tp": 1341,
+          "total": 1472,
+          "recall": 0.9110054347826086
+        },
+        "EMAIL": {
+          "tp": 127,
+          "total": 256,
+          "recall": 0.49609375
+        },
+        "IP_ADDRESS": {
+          "tp": 239,
+          "total": 239,
+          "recall": 1.0
+        },
+        "GENDER": {
+          "tp": 134,
+          "total": 179,
+          "recall": 0.7486033519553073
+        },
+        "COORDINATES": {
+          "tp": 13,
+          "total": 13,
+          "recall": 1.0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "URL": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "BIOMETRIC": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "total": 0,
+          "recall": 0
+        }
+      },
+      "pdf_total_detections": 0,
+      "pdf_overall_recall": null,
+      "pdf_overall_precision": null,
+      "pdf_overall_f1": null,
+      "pdf_metrics_by_type": {},
+      "pdf_recall_by_type": {},
+      "duration_seconds": 197.72621989250183
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "archived_at": "2026-02-08T23:52:24.940482",
+  "runs": [
+    {
+      "timestamp": "2026-02-08T12:58:04.581029",
+      "samples": 1000,
+      "sets": 10,
+      "engine_version": "1.4.0",
+      "ground_truth_count": 6248,
+      "csv_total_detections": 3639,
+      "csv_overall_recall": 0.8619763694951665,
+      "csv_overall_precision": 0.4660361134995701,
+      "csv_overall_f1": 0.6049824415236147,
+      "csv_metrics_by_type": {
+        "ADDRESS": {
+          "tp": 1334,
+          "tp_precision": 357,
+          "fp": 118,
+          "total": 1334,
+          "detected": 475,
+          "precision": 0.751578947368421,
+          "recall": 1.0,
+          "f1": 0.858173076923077
+        },
+        "IP_ADDRESS": {
+          "tp": 81,
+          "tp_precision": 81,
+          "fp": 193,
+          "total": 283,
+          "detected": 274,
+          "precision": 0.2956204379562044,
+          "recall": 0.2862190812720848,
+          "f1": 0.29084380610412924
+        },
+        "PERSON": {
+          "tp": 1019,
+          "tp_precision": 449,
+          "fp": 577,
+          "total": 1030,
+          "detected": 1026,
+          "precision": 0.43762183235867447,
+          "recall": 0.9893203883495145,
+          "f1": 0.6068195261955855
+        },
+        "DATE_TIME": {
+          "tp": 947,
+          "tp_precision": 361,
+          "fp": 103,
+          "total": 963,
+          "detected": 464,
+          "precision": 0.7780172413793104,
+          "recall": 0.9833852544132918,
+          "f1": 0.8687289641967294
+        },
+        "COORDINATES": {
+          "tp": 25,
+          "tp_precision": 15,
+          "fp": 99,
+          "total": 25,
+          "detected": 114,
+          "precision": 0.13157894736842105,
+          "recall": 1.0,
+          "f1": 0.23255813953488372
+        },
+        "PHONE": {
+          "tp": 238,
+          "tp_precision": 56,
+          "fp": 383,
+          "total": 238,
+          "detected": 439,
+          "precision": 0.1275626423690205,
+          "recall": 1.0,
+          "f1": 0.22626262626262628
+        },
+        "CREDENTIAL": {
+          "tp": 19,
+          "tp_precision": 36,
+          "fp": 0,
+          "total": 637,
+          "detected": 36,
+          "precision": 1.0,
+          "recall": 0.029827315541601257,
+          "f1": 0.05792682926829268
+        },
+        "GENDER": {
+          "tp": 157,
+          "tp_precision": 30,
+          "fp": 21,
+          "total": 215,
+          "detected": 51,
+          "precision": 0.5882352941176471,
+          "recall": 0.7302325581395349,
+          "f1": 0.6515874662793111
+        },
+        "EMAIL": {
+          "tp": 146,
+          "tp_precision": 137,
+          "fp": 188,
+          "total": 303,
+          "detected": 325,
+          "precision": 0.42153846153846153,
+          "recall": 0.48184818481848185,
+          "f1": 0.44968019694023226
+        },
+        "ID": {
+          "tp": 0,
+          "tp_precision": 0,
+          "fp": 23,
+          "total": 327,
+          "detected": 23,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 893,
+          "tp_precision": 155,
+          "fp": 257,
+          "total": 893,
+          "detected": 412,
+          "precision": 0.3762135922330097,
+          "recall": 1.0,
+          "f1": 0.54673721340388
+        }
+      },
+      "csv_recall_by_type": {
+        "ADDRESS": {
+          "tp": 1334,
+          "total": 1334,
+          "recall": 1.0
+        },
+        "IP_ADDRESS": {
+          "tp": 81,
+          "total": 283,
+          "recall": 0.2862190812720848
+        },
+        "PERSON": {
+          "tp": 1019,
+          "total": 1030,
+          "recall": 0.9893203883495145
+        },
+        "DATE_TIME": {
+          "tp": 947,
+          "total": 963,
+          "recall": 0.9833852544132918
+        },
+        "COORDINATES": {
+          "tp": 25,
+          "total": 25,
+          "recall": 1.0
+        },
+        "PHONE": {
+          "tp": 238,
+          "total": 238,
+          "recall": 1.0
+        },
+        "CREDENTIAL": {
+          "tp": 19,
+          "total": 637,
+          "recall": 0.029827315541601257
+        },
+        "GENDER": {
+          "tp": 157,
+          "total": 215,
+          "recall": 0.7302325581395349
+        },
+        "EMAIL": {
+          "tp": 146,
+          "total": 303,
+          "recall": 0.48184818481848185
+        },
+        "ID": {
+          "tp": 0,
+          "total": 327,
+          "recall": 0.0
+        },
+        "NATIONAL_ID": {
+          "tp": 893,
+          "total": 893,
+          "recall": 1.0
+        }
+      },
+      "pdf_total_detections": 0,
+      "pdf_overall_recall": null,
+      "pdf_overall_precision": null,
+      "pdf_overall_f1": null,
+      "pdf_metrics_by_type": {},
+      "pdf_recall_by_type": {},
+      "duration_seconds": 218.68936276435852
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "archived_at": "2026-02-05T21:46:59.931878",
+  "runs": [
+    {
+      "timestamp": "2026-02-04T05:18:21.877566",
+      "samples": 100,
+      "sets": 1,
+      "engine_version": "1.0.0",
+      "ground_truth_count": 428,
+      "csv_total_detections": 1395,
+      "csv_overall_recall": 0.7593457943925234,
+      "csv_recall_by_type": {
+        "PERSON": {
+          "tp": 99,
+          "total": 100,
+          "recall": 0.99
+        },
+        "EMAIL": {
+          "tp": 92,
+          "total": 100,
+          "recall": 0.92
+        },
+        "PHONE": {
+          "tp": 56,
+          "total": 100,
+          "recall": 0.56
+        },
+        "ADDRESS": {
+          "tp": 68,
+          "total": 100,
+          "recall": 0.68
+        },
+        "URL": {
+          "tp": 10,
+          "total": 28,
+          "recall": 0.35714285714285715
+        }
+      },
+      "pdf_total_detections": 1531,
+      "pdf_overall_recall": 0.7476635514018691,
+      "pdf_recall_by_type": {
+        "PERSON": {
+          "tp": 98,
+          "total": 100,
+          "recall": 0.98
+        },
+        "EMAIL": {
+          "tp": 92,
+          "total": 100,
+          "recall": 0.92
+        },
+        "PHONE": {
+          "tp": 53,
+          "total": 100,
+          "recall": 0.53
+        },
+        "ADDRESS": {
+          "tp": 67,
+          "total": 100,
+          "recall": 0.67
+        },
+        "URL": {
+          "tp": 10,
+          "total": 28,
+          "recall": 0.35714285714285715
+        }
+      },
+      "duration_seconds": 175.95006012916565
+    }
+  ]
+}
