@@ -1,0 +1,132 @@
+{
+  "archived_at": "2026-02-08T22:01:08.953726",
+  "runs": [
+    {
+      "timestamp": "2026-02-08T08:52:58.200861",
+      "samples": 10,
+      "sets": 1,
+      "engine_version": "1.4.0",
+      "ground_truth_count": 25,
+      "csv_total_detections": 33,
+      "csv_overall_recall": 0.84,
+      "csv_overall_precision": 0.7575757575757576,
+      "csv_overall_f1": 0.7966616084977238,
+      "csv_metrics_by_type": {
+        "COMPANY": {
+          "tp": 2,
+          "tp_precision": 2,
+          "fp": 0,
+          "total": 3,
+          "detected": 2,
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1": 0.8
+        },
+        "ADDRESS": {
+          "tp": 4,
+          "tp_precision": 7,
+          "fp": 2,
+          "total": 4,
+          "detected": 9,
+          "precision": 0.7777777777777778,
+          "recall": 1.0,
+          "f1": 0.8750000000000001
+        },
+        "PERSON": {
+          "tp": 6,
+          "tp_precision": 6,
+          "fp": 6,
+          "total": 8,
+          "detected": 12,
+          "precision": 0.5,
+          "recall": 0.75,
+          "f1": 0.6
+        },
+        "EMAIL": {
+          "tp": 4,
+          "tp_precision": 4,
+          "fp": 0,
+          "total": 4,
+          "detected": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 4,
+          "tp_precision": 4,
+          "fp": 0,
+          "total": 4,
+          "detected": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 0,
+          "tp_precision": 1,
+          "fp": 0,
+          "total": 1,
+          "detected": 1,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "NATIONAL_ID": {
+          "tp": 1,
+          "tp_precision": 1,
+          "fp": 0,
+          "total": 1,
+          "detected": 1,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "csv_recall_by_type": {
+        "COMPANY": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "ADDRESS": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "PERSON": {
+          "tp": 6,
+          "total": 8,
+          "recall": 0.75
+        },
+        "EMAIL": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "AGE": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "NATIONAL_ID": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "pdf_total_detections": 0,
+      "pdf_overall_recall": null,
+      "pdf_overall_precision": null,
+      "pdf_overall_f1": null,
+      "pdf_metrics_by_type": {},
+      "pdf_recall_by_type": {},
+      "duration_seconds": 20.720563888549805
+    }
+  ]
+}

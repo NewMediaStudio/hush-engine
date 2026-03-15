@@ -1,0 +1,16 @@
+{
+  "status": "stopped",
+  "phase": "Stopped by user",
+  "progress": 45,
+  "total_samples": 1000,
+  "samples_processed": 418,
+  "detections": 2758,
+  "current_set": 5,
+  "total_sets": 10,
+  "current_sample_in_set": 18,
+  "samples_in_current_set": 100,
+  "start_time": "2026-02-11T17:00:48.817502",
+  "elapsed_seconds": 114.428813,
+  "samples_per_second": 3.652926120976191,
+  "current_phase": "csv_detection"
+}

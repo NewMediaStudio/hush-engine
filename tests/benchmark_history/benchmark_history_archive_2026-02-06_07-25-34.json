@@ -1,0 +1,111 @@
+{
+  "archived_at": "2026-02-06T07:25:34.955704",
+  "runs": [
+    {
+      "timestamp": "2026-02-04T05:45:41.708321",
+      "samples": 500,
+      "sets": 5,
+      "engine_version": "1.0.0",
+      "ground_truth_count": 301,
+      "csv_total_detections": 476,
+      "csv_overall_recall": 0.3554817275747508,
+      "csv_recall_by_type": {
+        "AGE": {
+          "tp": 6,
+          "total": 21,
+          "recall": 0.2857142857142857
+        },
+        "SSN": {
+          "tp": 5,
+          "total": 27,
+          "recall": 0.18518518518518517
+        },
+        "PERSON": {
+          "tp": 33,
+          "total": 74,
+          "recall": 0.44594594594594594
+        },
+        "PHONE": {
+          "tp": 18,
+          "total": 49,
+          "recall": 0.3673469387755102
+        },
+        "ORG": {
+          "tp": 0,
+          "total": 14,
+          "recall": 0.0
+        },
+        "EMAIL": {
+          "tp": 36,
+          "total": 48,
+          "recall": 0.75
+        },
+        "DATE": {
+          "tp": 0,
+          "total": 45,
+          "recall": 0.0
+        },
+        "ADDRESS": {
+          "tp": 5,
+          "total": 16,
+          "recall": 0.3125
+        },
+        "CREDIT_CARD": {
+          "tp": 4,
+          "total": 7,
+          "recall": 0.5714285714285714
+        }
+      },
+      "pdf_total_detections": 484,
+      "pdf_overall_recall": 0.3521594684385382,
+      "pdf_recall_by_type": {
+        "AGE": {
+          "tp": 6,
+          "total": 21,
+          "recall": 0.2857142857142857
+        },
+        "SSN": {
+          "tp": 5,
+          "total": 27,
+          "recall": 0.18518518518518517
+        },
+        "PERSON": {
+          "tp": 30,
+          "total": 74,
+          "recall": 0.40540540540540543
+        },
+        "PHONE": {
+          "tp": 20,
+          "total": 49,
+          "recall": 0.40816326530612246
+        },
+        "ORG": {
+          "tp": 0,
+          "total": 14,
+          "recall": 0.0
+        },
+        "EMAIL": {
+          "tp": 36,
+          "total": 48,
+          "recall": 0.75
+        },
+        "DATE": {
+          "tp": 0,
+          "total": 45,
+          "recall": 0.0
+        },
+        "ADDRESS": {
+          "tp": 5,
+          "total": 16,
+          "recall": 0.3125
+        },
+        "CREDIT_CARD": {
+          "tp": 4,
+          "total": 7,
+          "recall": 0.5714285714285714
+        }
+      },
+      "duration_seconds": 145.61904287338257
+    }
+  ]
+}
