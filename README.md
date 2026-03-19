@@ -127,22 +127,37 @@ for detection in detections:
     print(f"{detection.entity_type}: {detection.start}-{detection.end}")
 ```
 
-## Supported PII Types
+## Supported PII Types (27 Entity Types)
 
-| Category | Entity Types | Notes |
-|----------|-------------|-------|
-| **Personal** | PERSON, EMAIL_ADDRESS, PHONE_NUMBER, DATE_TIME, AGE | Multi-NER cascade for names (89% recall) |
-| **Financial** | CREDIT_CARD, IBAN_CODE, FINANCIAL (SWIFT/BIC), crypto wallets | Luhn/Mod-97 validated |
-| **Government** | NATIONAL_ID (SSN, passport, driver's license) | 35+ countries via python-stdnum |
-| **Medical** | MEDICAL (diagnoses, medications, ICD-10, lab results) | Fast Data Science NER |
-| **Technical** | CREDENTIAL (API keys, tokens), IP_ADDRESS, URL | AWS, Stripe, GitHub tokens |
-| **Network** | NETWORK (MAC, IMEI, UUID, cookies, device IDs) | Device identifiers |
-| **Location** | ADDRESS (addresses, cities, countries, coordinates) | 800+ cities, countries databases, libpostal |
-| **Biometric** | BIOMETRIC, FACE | Fingerprint IDs, facial recognition, OpenCV |
-| **Demographics** | GENDER, AGE | "25 years old", "Age: 45" |
-| **Organization** | COMPANY, ORGANIZATION | Dictionary + NER based |
-| **Vehicle** | VEHICLE (VIN, license plates) | VIN validation |
-| **Generic** | ID (customer ID, employee ID, generic IDs) | Pattern-based |
+| Category | Entity Type | Description | Notes |
+|----------|------------|-------------|-------|
+| **Personal** | `PERSON` | Names (first, last, full) | Multi-NER cascade (89% recall) |
+| | `EMAIL_ADDRESS` | Email addresses | Regex + validation |
+| | `PHONE_NUMBER` | Phone numbers | 150+ international patterns via libphonenumber |
+| | `DATE_TIME` | Dates and times | Multiple formats incl. DD/MM/YYYY |
+| | `AGE` | Age information | "25 years old", "Age: 45" |
+| | `GENDER` | Gender references | Demographic detection |
+| | `NRP` | Nationality, religion, political group | Demographic classification |
+| **Financial** | `CREDIT_CARD` | Credit card numbers | Luhn-validated |
+| | `FINANCIAL` | SWIFT/BIC, IBAN, crypto wallets | Mod-97 validated, 116 IBAN countries |
+| | `AWS_ACCESS_KEY` | AWS access keys | Pattern-matched |
+| | `STRIPE_KEY` | Stripe API keys | Pattern-matched |
+| **Government** | `NATIONAL_ID` | SSN, passport, driver's license | 35+ countries via python-stdnum |
+| **Medical** | `MEDICAL` | Diagnoses, medications, ICD-10, lab results | Fast Data Science NER |
+| **Technical** | `CREDENTIAL` | Passwords, PINs, API keys, tokens | Shannon entropy analysis |
+| | `IP_ADDRESS` | IPv4/IPv6 addresses | Version string disambiguation |
+| | `URL` | URLs and web addresses | urlextract integration |
+| **Network** | `NETWORK` | MAC, IMEI, UUID, cookies, device IDs | Device identifiers |
+| **Location** | `LOCATION` | Addresses, cities, countries, places | 800+ cities, libpostal (99.45% accuracy) |
+| | `COORDINATES` | GPS/geographic coordinates | Lat/long detection |
+| **Visual** | `FACE` | Faces in images | macOS Vision framework (v1.8.0) |
+| | `QR_CODE` | QR codes in images | macOS Vision framework (v1.8.0) |
+| | `BARCODE` | Barcodes in images | macOS Vision framework (v1.8.0) |
+| **Biometric** | `BIOMETRIC` | Fingerprint IDs, biometric data | Pattern-based |
+| **Organization** | `COMPANY` | Company names | S&P 500 + international database |
+| | `ORGANIZATION` | Organizations | Dictionary + NER based |
+| **Vehicle** | `VEHICLE` | VIN, license plates | VIN validation |
+| **Generic** | `ID` | Customer ID, employee ID, generic IDs | Pattern-based |
 
 See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for detailed entity documentation with regulatory context (HIPAA, GDPR, CCPA).
 
