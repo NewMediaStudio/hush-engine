@@ -28445,7 +28445,7 @@
       "datasets_tested": [
         "sample_3000.json"
       ],
-      "llm_benchmark": true,
+      "llm_benchmark": false,
       "model_id": "hush_engine",
       "model_display_name": "Hush Engine v1.8.0",
       "parse_failure_rate": 0,

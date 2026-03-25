@@ -67,6 +67,77 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label">Benchmark Mode</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="bench-mode" id="mode-hush" value="hush" checked onchange="toggleLLMModels()">
+                        <label for="mode-hush">Hush Engine</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="bench-mode" id="mode-llm" value="llm" onchange="toggleLLMModels()">
+                        <label for="mode-llm">LLM Comparison</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="bench-mode" id="mode-both" value="both" onchange="toggleLLMModels()">
+                        <label for="mode-both">Hush + LLMs</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="llm-models-group" style="display: none;">
+                <label class="form-label">LLM Models (via Ollama)</label>
+                <div class="checkbox-group" style="flex-direction: column; gap: 0.5rem;">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-llama1b" value="llama3.2:1b" checked>
+                        <label for="llm-llama1b">Llama 3.2 (1B) <span class="dataset-detail">1.3 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-llama3b" value="llama3.2:3b">
+                        <label for="llm-llama3b">Llama 3.2 (3B) <span class="dataset-detail">3.4 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-mistral" value="mistral:7b">
+                        <label for="llm-mistral">Mistral 7B <span class="dataset-detail">7.2 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-llama8b" value="llama3.1:8b">
+                        <label for="llm-llama8b">Llama 3.1 (8B) <span class="dataset-detail">8.5 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-gemma2" value="gemma2:latest">
+                        <label for="llm-gemma2">Gemma 2 (9B) <span class="dataset-detail">5.4 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-qwen" value="qwen2.5:latest">
+                        <label for="llm-qwen">Qwen 2.5 (7B) <span class="dataset-detail">4.7 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-phi4" value="phi4:latest">
+                        <label for="llm-phi4">Phi-4 (14B) <span class="dataset-detail">9.1 GB</span></label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="llm-llama70b" value="llama3.1:70b">
+                        <label for="llm-llama70b">Llama 3.1 (70B) <span class="dataset-detail">70 GB</span></label>
+                    </div>
+                </div>
+                <div class="form-help">Models must be installed in Ollama. Run <code>ollama pull model_name</code> first.</div>
+            </div>
+
+            <div class="form-group" id="llm-prompt-group" style="display: none;">
+                <label class="form-label">Prompt Style</label>
+                <div class="radio-group">
+                    <div class="radio-item">
+                        <input type="radio" name="prompt-style" id="prompt-zero" value="zero-shot" checked>
+                        <label for="prompt-zero">Zero-shot</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" name="prompt-style" id="prompt-few" value="few-shot">
+                        <label for="prompt-few">Few-shot</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label">Datasets</label>
                 <div class="checkbox-group" style="flex-direction: column; gap: 0.5rem;">
                     <div class="checkbox-item">

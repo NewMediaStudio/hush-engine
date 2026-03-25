@@ -529,9 +529,17 @@ function toggleLoopCount() {
     document.getElementById('loop-count-container').style.display = document.getElementById('loop-mode').checked ? 'flex' : 'none';
 }
 
+function toggleLLMModels() {
+    const mode = document.querySelector('input[name="bench-mode"]:checked').value;
+    const showLLM = mode === 'llm' || mode === 'both';
+    document.getElementById('llm-models-group').style.display = showLLM ? 'block' : 'none';
+    document.getElementById('llm-prompt-group').style.display = showLLM ? 'block' : 'none';
+}
+
 async function startBenchmark() {
     const samples = document.getElementById('sample-count').value;
     const format = document.querySelector('input[name="test-format"]:checked').value;
+    const benchMode = document.querySelector('input[name="bench-mode"]:checked').value;
     const fastMode = document.getElementById('fast-mode').checked;
     const keepFiles = document.getElementById('keep-files').checked;
     const saveFeedback = document.getElementById('save-feedback').checked;
@@ -543,6 +551,44 @@ async function startBenchmark() {
     const loopMode = document.getElementById('loop-mode').checked;
     const loopCount = document.getElementById('loop-count').value;
 
+    // LLM comparison mode
+    if (benchMode === 'llm' || benchMode === 'both') {
+        const llmCheckboxes = document.querySelectorAll('#llm-models-group .checkbox-item input:checked');
+        const selectedModels = Array.from(llmCheckboxes).map(cb => cb.value);
+        const promptStyle = document.querySelector('input[name="prompt-style"]:checked').value;
+
+        if (selectedModels.length === 0 && benchMode === 'llm') { alert('Please select at least one LLM model'); return; }
+
+        let llmArgs = `--datasets ${selectedDatasets.join(',')} --samples ${samples}`;
+        if (selectedModels.length > 0) llmArgs += ` --models ${selectedModels.join(',')}`;
+        if (benchMode === 'llm') llmArgs += ' --hush-only';  // Skip hush if llm-only... actually opposite
+        if (promptStyle === 'few-shot') llmArgs += ' --few-shot';
+
+        // For "both" mode, we need hush + LLMs; for "llm" mode, just LLMs (hush always runs as baseline)
+        const llmCmd = `python3 tests/benchmark_llm_comparison.py ${llmArgs}`;
+
+        closeRunDrawer();
+        const runBtn = document.getElementById('run-test-btn');
+        runBtn.classList.add('hidden');
+        runBtn.disabled = true;
+        const banner = document.getElementById('progress-banner');
+        banner.classList.add('visible');
+        updateProgressUI({ status: 'running', phase: 'LLM Comparison Benchmark', progress: 5, total_samples: parseInt(samples), samples_processed: 0, detections: 0, start_time: new Date().toISOString(), elapsed_seconds: 0 });
+        document.getElementById('progress-phase').innerHTML = `<span style="font-size: 0.8rem; color: var(--muted);">Run in terminal:</span><br><code style="background: rgba(0,0,0,0.3); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem; display: inline-block; margin-top: 0.5rem; cursor: pointer;" onclick="navigator.clipboard.writeText('${llmCmd}'); this.style.background='rgba(74,222,128,0.2)';" title="Click to copy">${llmCmd}</code>`;
+
+        // Also try to start via API
+        try {
+            await fetch('/api/benchmark/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ samples: parseInt(samples), datasets: selectedDatasets, models: selectedModels, prompt_style: promptStyle, bench_mode: benchMode, args: llmArgs, llm_benchmark: true })
+            });
+        } catch (e) { /* fallback to terminal command shown above */ }
+        startProgressMonitoring();
+        return;
+    }
+
+    // Standard Hush Engine benchmark
     let args = `--datasets ${selectedDatasets.join(',')} --samples ${samples}`;
     if (format === 'csv') args += ' --no-pdf';
     if (format === 'pdf') args += ' --pdf-only';
