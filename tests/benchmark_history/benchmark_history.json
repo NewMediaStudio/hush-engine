@@ -29058,6 +29058,277 @@
       "model_display_name": "Llama 3.2 (1B)",
       "parse_failure_rate": 0.035,
       "avg_latency_ms": 2058.0612670038827
+    },
+    {
+      "timestamp": "2026-03-25T16:52:29.014022",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:gemma2:latest",
+      "ground_truth_count": 2522,
+      "csv_total_detections": 2684,
+      "csv_overall_recall": 0.992466296590008,
+      "csv_overall_precision": 0.9992015968063872,
+      "csv_overall_f1": 0.9958225581857967,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 722,
+          "tp_precision": 723,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 722,
+          "detected": 726,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 316,
+          "tp_precision": 316,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 316,
+          "detected": 316,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 473,
+          "tp_precision": 473,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 473,
+          "detected": 473,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 366,
+          "tp_precision": 578,
+          "tp_cross": 2,
+          "fp": 0,
+          "total": 366,
+          "detected": 578,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 67,
+          "tp_precision": 67,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 67,
+          "detected": 67,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PHONE": {
+          "tp": 199,
+          "tp_precision": 199,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 199,
+          "detected": 199,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 101,
+          "tp_precision": 29,
+          "tp_cross": 25,
+          "fp": 0,
+          "total": 120,
+          "detected": 60,
+          "precision": 1.0,
+          "recall": 0.8416666666666667,
+          "f1": 0.9140271493212669
+        },
+        "NATIONAL_ID": {
+          "tp": 128,
+          "tp_precision": 128,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 128,
+          "detected": 132,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDIT_CARD": {
+          "tp": 131,
+          "tp_precision": 131,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 131,
+          "detected": 131,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "detected": 2,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 2441.518050159153,
+      "samples_per_sec": 0.4095812439047149,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "gemma2:latest",
+      "model_display_name": "Gemma 2 (9B)",
+      "parse_failure_rate": 0.0,
+      "avg_latency_ms": 2441.518050159153
+    },
+    {
+      "timestamp": "2026-03-25T16:52:29.033203",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:gemini-2.5-flash",
+      "ground_truth_count": 2522,
+      "csv_total_detections": 2564,
+      "csv_overall_recall": 1.0,
+      "csv_overall_precision": 0.9790372670807453,
+      "csv_overall_f1": 0.9894076108277755,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 722,
+          "tp_precision": 720,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 722,
+          "detected": 720,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 316,
+          "tp_precision": 315,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 316,
+          "detected": 315,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 473,
+          "tp_precision": 470,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 473,
+          "detected": 470,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDIT_CARD": {
+          "tp": 131,
+          "tp_precision": 130,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 131,
+          "detected": 130,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "NATIONAL_ID": {
+          "tp": 128,
+          "tp_precision": 128,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 128,
+          "detected": 128,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PHONE": {
+          "tp": 199,
+          "tp_precision": 198,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 199,
+          "detected": 198,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 366,
+          "tp_precision": 362,
+          "tp_cross": 4,
+          "fp": 0,
+          "total": 366,
+          "detected": 362,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 67,
+          "tp_precision": 67,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 67,
+          "detected": 67,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 120,
+          "tp_precision": 120,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 120,
+          "detected": 120,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ID": {
+          "tp": 0,
+          "fp": 51,
+          "total": 0,
+          "detected": 51,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 3,
+          "total": 0,
+          "detected": 3,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 1766.3100819558551,
+      "samples_per_sec": 0.5661520081981805,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "gemini-2.5-flash",
+      "model_display_name": "Gemini 2.5 Flash",
+      "parse_failure_rate": 0.005,
+      "avg_latency_ms": 1766.3100819558551
     }
   ],
   "total_runs": 340,
