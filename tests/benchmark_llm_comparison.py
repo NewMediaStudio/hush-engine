@@ -61,7 +61,7 @@ from llm_comparison.prompt_templates import build_prompt
 from llm_comparison.output_parser import parse_llm_pii_output
 from llm_comparison.model_registry import (
     MODELS, get_llm_model_ids, get_ollama_model_ids, get_claude_model_ids,
-    is_claude_model, estimate_cost_per_1k_docs,
+    is_claude_model, is_gemini_model, estimate_cost_per_1k_docs,
 )
 from llm_comparison.memory_profiler import HushMemoryProfiler, get_ollama_model_memory_mb
 from llm_comparison.result_store import ResultStore
@@ -72,6 +72,13 @@ try:
     HAS_CLAUDE = True
 except ImportError:
     HAS_CLAUDE = False
+
+# Gemini client (optional)
+try:
+    from llm_comparison.gemini_client import GeminiClient
+    HAS_GEMINI = True
+except (ImportError, Exception):
+    HAS_GEMINI = False
 
 # Default paths
 TESTS_DIR = Path(__file__).parent
@@ -301,12 +308,14 @@ def run_llm_model(client: OllamaClient, model_id: str, rows: list,
     _print_model_result(display_name, summary)
 
 
-def run_claude_model(claude_client, model_id: str, rows: list,
-                     dataset_name: str, store: ResultStore, few_shot: bool = False):
-    """Run a Claude API model on all samples."""
+def run_api_model(api_client, model_id: str, rows: list,
+                  dataset_name: str, store: ResultStore, few_shot: bool = False):
+    """Run an API-based model (Claude, Gemini) on all samples."""
     model_info = MODELS.get(model_id, {})
     display_name = model_info.get("display_name", model_id)
-    claude_model_id = model_info.get("claude_model_id", model_id)
+    api_model_id = (model_info.get("claude_model_id")
+                    or model_info.get("gemini_model_id")
+                    or model_id)
 
     completed = store.get_completed_indices(model_id, dataset_name)
     remaining = [(i, row) for i, row in enumerate(rows) if i not in completed]
@@ -319,7 +328,7 @@ def run_claude_model(claude_client, model_id: str, rows: list,
 
     # Warmup
     try:
-        claude_client.generate(claude_model_id, "Say hello.", timeout=30)
+        api_client.generate(api_model_id, "Say hello.", timeout=30)
     except Exception as e:
         print(f"  {display_name}: warmup failed: {e}")
         return
@@ -336,7 +345,7 @@ def run_claude_model(claude_client, model_id: str, rows: list,
 
         try:
             start = time.perf_counter()
-            response = claude_client.generate(claude_model_id, prompt, timeout=120)
+            response = api_client.generate(api_model_id, prompt, timeout=120)
             latency_ms = (time.perf_counter() - start) * 1000
 
             raw_output = response.get("response", "")
@@ -596,9 +605,10 @@ def run_comparison(args):
         "timestamp": datetime.now().isoformat(),
     })
 
-    # Split models into Ollama vs Claude
-    ollama_models = [m for m in model_ids if not is_claude_model(m)]
+    # Split models by provider
+    ollama_models = [m for m in model_ids if not is_claude_model(m) and not is_gemini_model(m)]
     claude_models = [m for m in model_ids if is_claude_model(m)]
+    gemini_models = [m for m in model_ids if is_gemini_model(m)]
 
     # Initialize Ollama client
     client = OllamaClient()
@@ -620,11 +630,29 @@ def run_comparison(args):
             print("  anthropic SDK not installed. pip install anthropic")
             claude_models = []
 
-    total_models = len(ollama_models) + len(claude_models)
+    # Initialize Gemini client
+    gemini_client = None
+    if gemini_models:
+        if HAS_GEMINI:
+            try:
+                gemini_client = GeminiClient()
+                print("  Gemini API: connected")
+            except Exception as e:
+                print(f"  Gemini API: failed to initialize ({e}). Skipping Gemini models.")
+                gemini_models = []
+        else:
+            print("  google-generativeai SDK not installed. pip install google-generativeai")
+            gemini_models = []
+
+    total_models = len(ollama_models) + len(claude_models) + len(gemini_models)
     print(f"\nBenchmark Configuration:")
     print(f"  Datasets: {', '.join(selected.keys())}")
     print(f"  Samples per dataset: {args.samples}")
-    print(f"  Models: Hush Engine + {total_models} LLMs ({len(ollama_models)} Ollama, {len(claude_models)} Claude)")
+    providers = []
+    if ollama_models: providers.append(f"{len(ollama_models)} Ollama")
+    if claude_models: providers.append(f"{len(claude_models)} Claude")
+    if gemini_models: providers.append(f"{len(gemini_models)} Gemini")
+    print(f"  Models: Hush Engine + {total_models} LLMs ({', '.join(providers)})")
     print(f"  Prompt: {'few-shot' if args.few_shot else 'zero-shot'}")
     print(f"  Results: {results_path}")
 
@@ -653,7 +681,11 @@ def run_comparison(args):
 
         # Run Claude models
         for model_id in claude_models:
-            run_claude_model(claude_client, model_id, rows, ds_name, store, few_shot=args.few_shot)
+            run_api_model(claude_client, model_id, rows, ds_name, store, few_shot=args.few_shot)
+
+        # Run Gemini models
+        for model_id in gemini_models:
+            run_api_model(gemini_client, model_id, rows, ds_name, store, few_shot=args.few_shot)
 
     # Print comparison
     print_comparison_table(store)

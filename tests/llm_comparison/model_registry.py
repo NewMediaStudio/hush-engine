@@ -146,6 +146,29 @@ MODELS = {
         "api_pricing_input": 3.00,
         "api_pricing_output": 15.00,
     },
+    # Gemini models (API-based, free tier available)
+    "gemini-2.0-flash": {
+        "display_name": "Gemini 2.0 Flash",
+        "family": "Gemini",
+        "params_b": None,
+        "disk_size_mb": None,
+        "ram_estimate_mb": None,
+        "ollama_tag": None,
+        "gemini_model_id": "gemini-2.0-flash",
+        "api_pricing_input": 0.10,
+        "api_pricing_output": 0.40,
+    },
+    "gemini-2.5-flash": {
+        "display_name": "Gemini 2.5 Flash",
+        "family": "Gemini",
+        "params_b": None,
+        "disk_size_mb": None,
+        "ram_estimate_mb": None,
+        "ollama_tag": None,
+        "gemini_model_id": "gemini-2.5-flash-preview-05-20",
+        "api_pricing_input": 0.15,
+        "api_pricing_output": 0.60,
+    },
 }
 
 
@@ -174,6 +197,15 @@ def get_claude_model_ids() -> list:
 
 def is_claude_model(model_id: str) -> bool:
     return bool(MODELS.get(model_id, {}).get("claude_model_id"))
+
+
+def get_gemini_model_ids() -> list:
+    """Return only Gemini API model IDs."""
+    return [m for m in get_llm_model_ids() if MODELS[m].get("gemini_model_id")]
+
+
+def is_gemini_model(model_id: str) -> bool:
+    return bool(MODELS.get(model_id, {}).get("gemini_model_id"))
 
 
 def estimate_cost_per_1k_docs(model_id: str, avg_input_tokens: float, avg_output_tokens: float) -> float:
