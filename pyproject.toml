@@ -51,22 +51,19 @@ dependencies = [
     # Lightweight ML (MIT license) - fast, low-memory NER
     "lightgbm>=4.0.0",  # MIT license - Gradient boosting for token classification
     "names-dataset>=3.1.0",  # GPL-3.0 - First/last name validation
-    # Medical NER (MIT license) - zero dependencies, lightweight
-    "medical-named-entity-recognition>=0.1.0",  # MIT - Disease/condition detection
-    "drug-named-entity-recognition>=0.1.0",  # MIT - Drug/medication detection
     # PDF text extraction (MIT license) - supplements OCR for small text in digital PDFs
     "pdfplumber>=0.10.0",  # MIT - Direct text extraction with positions
 ]
 
 [project.optional-dependencies]
-# spaCy NLP engine (v1.8.0: now optional, replaced by NLTagger for Minimal tier)
-spacy = [
-    "spacy>=3.7.0",  # Industrial-grade NER (~100-200MB with model)
+# Medical NER (MIT license) - zero dependencies, lightweight
+medical = [
+    "medical-named-entity-recognition>=0.1.0",  # MIT - Disease/condition detection
+    "drug-named-entity-recognition>=0.1.0",  # MIT - Drug/medication detection
 ]
-# OpenCV + pyzbar (v1.8.0: now optional, replaced by Vision framework)
-opencv = [
-    "opencv-python>=4.8.0",  # Haar cascade face detection fallback
-    "pyzbar>=0.1.9",  # Linear barcode detection fallback
+# Address parsing (MIT license) - requires system libpostal: brew install libpostal
+address = [
+    "postal>=1.1.9",  # MIT - libpostal Python bindings (99.45% accuracy)
 ]
 # Heavy NER models for maximum accuracy (adds ~2GB)
 accurate = [
@@ -76,7 +73,7 @@ accurate = [
 ]
 # Everything
 full = [
-    "hush-engine[spacy,opencv,accurate]",
+    "hush-engine[medical,address,accurate]",
 ]
 dev = [
     "presidio-evaluator>=0.1.0",  # Token-level evaluation and debugging

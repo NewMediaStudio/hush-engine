@@ -33,7 +33,10 @@ source venv/bin/activate
 # Install in development mode
 pip install -e .
 
-# Download spaCy model
+# Optional: Install extras for development
+pip install -e ".[medical,address,accurate]"
+
+# Optional: Download spaCy model (if using spaCy NER)
 python -m spacy download en_core_web_lg
 
 # Run tests

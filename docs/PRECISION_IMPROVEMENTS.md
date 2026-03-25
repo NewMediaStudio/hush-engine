@@ -44,31 +44,11 @@ MODEL_WEIGHTS = {
 
 ---
 
-### 2. LLM Verification Layer ✅ IMPLEMENTED (This Session)
+### 2. LLM Verification Layer ❌ REMOVED (v1.4.0)
 
 **Consultant suggestion**: Use local LLM for second-pass verification on mid-confidence detections
 
-**Implementation**:
-
-1. **Module**: [llm_verifier.py](../hush_engine/detectors/llm_verifier.py) (281 lines)
-   - MLX-based local inference (Apple Silicon)
-   - Model: `Llama-3.2-1B-Instruct-4bit` (~500MB)
-   - Entity-specific YES/NO prompts for 10 entity types
-   - Zero network calls, all local processing
-
-2. **Integration**: [pii_detector.py](../hush_engine/detectors/pii_detector.py)
-   - Added as Pass 8 in `analyze_text()` pipeline
-   - New method `_verify_with_llm()` with 5-word context extraction
-   - Confidence-based routing:
-     - ≥0.85: Skip verification (fast path)
-     - 0.40-0.85: Verify with LLM
-     - <0.40: Keep as-is
-
-3. **Configuration**: [detection_config.py](../hush_engine/detection_config.py)
-   - Toggle: `mlx_verifier` (default: False)
-   - Optional dependency: `pip install hush-engine[mlx]`
-
-**Platform requirement**: Apple Silicon (M1/M2/M3/M4) only
+**Status**: Was implemented using MLX + Llama-3.2-1B but removed in v1.4.0. Replaced by LightGBM classifiers which are faster and more reliable without the ~500MB model download.
 
 ---
 
@@ -165,9 +145,7 @@ Adding `en_core_web_trf` would be:
 
 | File | Changes |
 |------|---------|
-| [pii_detector.py](../hush_engine/detectors/pii_detector.py) | Added LLM verifier integration (Pass 8), enhanced `_is_ocr_artifact()` with 4 new LARVPC rules |
-| [detection_config.py](../hush_engine/detection_config.py) | Added `mlx_verifier` toggle with install instructions |
-| [pyproject.toml](../pyproject.toml) | Added `[mlx]` optional dependency group |
+| [pii_detector.py](../hush_engine/detectors/pii_detector.py) | Enhanced `_is_ocr_artifact()` with 4 new LARVPC rules |
 
 ---
 
@@ -175,27 +153,7 @@ Adding `en_core_web_trf` would be:
 
 | Improvement | Estimated Precision Gain | Notes |
 |-------------|-------------------------|-------|
-| LLM Verification | +15-25% on mid-confidence | Apple Silicon only |
 | Enhanced OCR Filtering | +5-10% on PDFs | LARVPC rules |
-| Combined | +20-30% overall | When both active |
-
----
-
-## Usage
-
-### Enable LLM Verification (Apple Silicon)
-
-```bash
-# Install MLX support
-pip install hush-engine[mlx]
-```
-
-```python
-from hush_engine import DetectionConfig
-
-config = DetectionConfig()
-config.set_enabled_integration("mlx_verifier", True)
-```
 
 ### Verify Configuration
 

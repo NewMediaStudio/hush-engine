@@ -154,7 +154,7 @@ Per [HIPAA Privacy Rule](https://cphs.berkeley.edu/hipaa/hipaa18.html), these id
 | Trade union membership | — | ❌ Planned | Organization name matching |
 | Genetic data | — | ❌ Planned | DNA sequence formats |
 | Biometric data | `BIOMETRIC` | ✅ Full | BIO- IDs, fingerprint/facial recognition labels |
-| Health data | `MEDICAL` | ✅ Full | ICD-10, conditions, medications, blood types |
+| Health data | `MEDICAL` | ✅ Full | Pattern-based (ICD-10, conditions, blood types). Optional: Fast Data Science NER via `[medical]` |
 | Sex life or sexual orientation | `GENDER` | ⚠️ Partial | Gender identity terms only |
 
 ### Additional GDPR-Relevant Entities (v1.5.0)
@@ -224,7 +224,7 @@ These patterns may cause false positives and should be validated:
 | 10-digit numbers | NHS vs Phone | Context analysis, area code validation |
 | 5-digit numbers | ZIP vs random | Context required |
 | Dates | DOB vs document dates | Context required |
-| Common drug names | Medication vs casual mention | Medical context required |
+| Common drug names | Medication vs casual mention | Medical context required (improved with `[medical]` extra) |
 | State abbreviations | Location vs text | Context required |
 | 9-digit numbers | SSN vs Passport vs random | Context required |
 | 7-8 digit alphanumeric | Driver's license vs random ID | Context required |

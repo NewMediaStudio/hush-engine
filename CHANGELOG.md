@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Currency detection improvements** - Enhanced financial patterns
   - Currency with spaces after symbol ($100, €50)
   - International currency formats (INR, GBP, EUR, USD)
-- **Body part medical terms** - Expanded medical NER
+- **Body part medical terms** - Expanded pattern-based medical detection
   - Anatomical terms for medical document processing
 - **Title + name detection** - Better person recognition
   - Professional titles (Dr., Prof., Rev., etc.)
@@ -159,10 +159,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Header-based confidence boosting (e.g., "SSN" column boosts SSN detection)
   - Spreadsheet column analysis
 
-- **Medical NER**
-  - Biomedical entity recognition using Fast Data Science libraries
-  - ICD-10 code detection
-  - Medication, diagnosis, and lab result detection
+- **Medical NER** (now optional: `pip install hush-engine[medical]`)
+  - Pattern-based detection ships by default (blood types, ICD-10, conditions, medications)
+  - Optional: Fast Data Science NER for broader disease/drug coverage
 
 - **Face Detection**
   - OpenCV Haar cascade face detection in images

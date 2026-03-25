@@ -82,6 +82,19 @@ Add patterns to appropriate `_add_*_recognizers()` methods:
 - DD/MM/YYYY date format (DATE_TIME)
 - Names with middle initials (PERSON)
 
+## Optional Dependencies
+
+The following are **not** shipped in the Hush macOS app bundle and must be installed separately:
+
+| Extra | Install | What it adds |
+|-------|---------|-------------|
+| `medical` | `pip install hush-engine[medical]` | Fast Data Science disease/drug NER (supplements built-in pattern-based MEDICAL detection) |
+| `address` | `pip install hush-engine[address]` | libpostal address parsing (99.45% accuracy). Also requires `brew install libpostal` |
+| `accurate` | `pip install hush-engine[accurate]` | Flair, Transformers (BERT), GLiNER heavyweight NER models (~2GB) |
+| `full` | `pip install hush-engine[full]` | All of the above |
+
+The app ships with pattern-based MEDICAL detection (blood types, ICD codes, conditions, medications via regex) and heuristic + LightGBM address verification — the optional extras improve recall.
+
 ## Benchmarking
 
 Run accuracy benchmark after changes:

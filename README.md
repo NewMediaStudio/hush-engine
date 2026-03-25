@@ -15,9 +15,9 @@ Hush Engine is an open-source Python library for detecting personally identifiab
 ### Advanced NER
 - **LightGBM NER classifiers**: Fast, lightweight token classification (5-10x faster, ~10MB models)
 - **Multi-NER cascade for names**: Combines spaCy, Flair, Transformers (BERT), GLiNER, and curated names database for high-recall person detection (89% recall on ai4privacy)
-- **Medical NER**: Disease and drug detection using Fast Data Science libraries (MIT, zero dependencies)
 - **Company NER**: Dictionary-based company name detection (100% F1 on golden set)
-- **Address parsing**: libpostal integration for 99.45% accuracy, 94% recall on golden set
+- **Medical NER** (optional): Disease and drug detection using Fast Data Science libraries — `pip install hush-engine[medical]`
+- **Address parsing** (optional): libpostal integration for 99.45% accuracy — `pip install hush-engine[address]`
 
 ### International Support
 - **International validation**: 116 IBAN countries, 150+ phone number patterns, 35+ national ID formats
@@ -143,12 +143,12 @@ for detection in detections:
 | | `AWS_ACCESS_KEY` | AWS access keys | Pattern-matched |
 | | `STRIPE_KEY` | Stripe API keys | Pattern-matched |
 | **Government** | `NATIONAL_ID` | SSN, passport, driver's license | 35+ countries via python-stdnum |
-| **Medical** | `MEDICAL` | Diagnoses, medications, ICD-10, lab results | Fast Data Science NER |
+| **Medical** | `MEDICAL` | Diagnoses, medications, ICD-10, lab results | Pattern-based (optional: Fast Data Science NER via `[medical]`) |
 | **Technical** | `CREDENTIAL` | Passwords, PINs, API keys, tokens | Shannon entropy analysis |
 | | `IP_ADDRESS` | IPv4/IPv6 addresses | Version string disambiguation |
 | | `URL` | URLs and web addresses | urlextract integration |
 | **Network** | `NETWORK` | MAC, IMEI, UUID, cookies, device IDs | Device identifiers |
-| **Location** | `LOCATION` | Addresses, cities, countries, places | 800+ cities, libpostal (99.45% accuracy) |
+| **Location** | `LOCATION` | Addresses, cities, countries, places | 800+ cities (optional: libpostal 99.45% accuracy via `[address]`) |
 | | `COORDINATES` | GPS/geographic coordinates | Lat/long detection |
 | **Visual** | `FACE` | Faces in images | macOS Vision framework (v1.8.0) |
 | | `QR_CODE` | QR codes in images | macOS Vision framework (v1.8.0) |
@@ -310,11 +310,11 @@ config = DetectionConfig()
 config.set_enabled_integration("flair", False)
 config.set_enabled_integration("transformers", False)
 
-# Enable LLM verification (Apple Silicon only)
-config.set_enabled_integration("mlx_verifier", True)
 ```
 
 Available integrations: `lgbm_ner`, `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`
+
+**Optional extras**: `pip install hush-engine[medical]` (Fast Data Science NER), `pip install hush-engine[address]` (libpostal), `pip install hush-engine[accurate]` (Flair/Transformers/GLiNER)
 
 ## Platform Requirements
 
@@ -456,7 +456,7 @@ For security issues, please email studio@newmediastudio.com instead of using the
 
 ### Completed (v1.3.0)
 - [x] International PII validation (116 IBAN countries, 150+ phone patterns)
-- [x] Medical/biomedical NER (Fast Data Science libraries)
+- [x] Medical/biomedical NER (optional: Fast Data Science libraries)
 - [x] Face detection in images (OpenCV Haar cascade)
 - [x] Table/structured data detection
 - [x] Age detection ("25 years old", "Age: 45")
@@ -464,7 +464,7 @@ For security issues, please email studio@newmediastudio.com instead of using the
 - [x] Locale configuration (30+ locales supported)
 - [x] Multi-NER cascade for PERSON
 - [x] Cities database and countries database (complete country/demonym recognition)
-- [x] libpostal address parsing (99.45% accuracy)
+- [x] libpostal address parsing (optional, 99.45% accuracy)
 
 ### Planned
 - [ ] Windows/Linux support (alternative OCR engines)
@@ -479,6 +479,6 @@ Built on top of:
 - [spaCy](https://spacy.io/) - Industrial-strength NLP
 - [Flair](https://github.com/flairNLP/flair) - State-of-the-art NER
 - [GLiNER](https://github.com/urchade/GLiNER) - Zero-shot NER
-- [Fast Data Science](https://fastdatascience.com/) - Medical NER
-- [libpostal](https://github.com/openvenues/libpostal) - Address parsing
+- [Fast Data Science](https://fastdatascience.com/) - Medical NER (optional)
+- [libpostal](https://github.com/openvenues/libpostal) - Address parsing (optional)
 - [python-stdnum](https://github.com/arthurdejong/python-stdnum) - ID validation
