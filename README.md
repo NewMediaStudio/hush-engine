@@ -372,6 +372,31 @@ python3.10 tests/benchmark_server.py
 - Context-aware: SSN/ID keywords boost NATIONAL_ID confidence
 - Name detection: Multi-NER cascade with 7,200+ name database achieving 89% recall on diverse international names
 
+### Hush Engine vs LLM Models
+
+Independent benchmark comparing Hush Engine against LLM-based PII detection (1,000 samples each):
+
+**ai4privacy dataset** (12 entity types, real-world text):
+
+| Model | F1 | Precision | Recall | Latency/doc | Parse Failures |
+|-------|-----|-----------|--------|-------------|---------------|
+| **Hush Engine v1.8.0** | **89.9%** | **89.5%** | 90.4% | **166ms** | 0% |
+| Llama 3.2 (1B) | 49.9% | 36.3% | 80.1% | 21,239ms | 49.6% |
+
+**Synthetic golden set** (9 entity types, Faker-generated):
+
+| Model | F1 | Precision | Recall | Latency/doc | Parse Failures |
+|-------|-----|-----------|--------|-------------|---------------|
+| **Hush Engine v1.8.0** | **91.4%** | 84.4% | **99.7%** | **93ms** | 0% |
+| Llama 3.2 (1B) | 86.2% | 76.0% | 99.6% | 2,058ms | 3.5% |
+
+Hush Engine is **128x faster** on real-world text with **40 points higher F1**, while using only **~15MB** vs 1.3GB for the smallest LLM. Run your own comparison:
+
+```bash
+python3 tests/benchmark_llm_comparison.py --samples 1000 --models llama3.2:1b
+python3 tests/benchmark_llm_report.py --format png  # Generate paper figures
+```
+
 ### Training LightGBM Models
 
 Train or retrain the NER classifiers using synthetic data or the ai4privacy dataset:

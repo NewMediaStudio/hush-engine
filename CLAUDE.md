@@ -2,10 +2,10 @@
 
 ## Important: Repository Exclusions
 
-The `tests/` and `training/` folders should NOT be committed to the repository:
-- They contain large datasets and generated files
-- Add them to `.gitignore` if not already excluded
-- These folders are for local development and benchmarking only
+The `training/` folder should NOT be committed to the repository:
+- It contains large datasets and generated files
+- The `tests/` folder IS committed (benchmark code, dashboard, results)
+- Test datasets (`.json`, `.parquet`) in `tests/data/` may need to be downloaded separately
 
 ## Training Feedback Integration
 
@@ -53,6 +53,9 @@ for f in Path("training/feedback").glob("*.json"):
 | `hush_engine/detection_config.py` | Detection thresholds and entity config |
 | `tools/feedback_analyzer.py` | Feedback analysis tool |
 | `tests/benchmark_accuracy.py` | Accuracy benchmarking |
+| `tests/benchmark_llm_comparison.py` | LLM comparison benchmark (Hush vs Ollama/Claude models) |
+| `tests/benchmark_llm_report.py` | Research paper artifact generator (LaTeX tables + figures) |
+| `tests/llm_comparison/` | LLM benchmark modules (clients, parsers, model registry) |
 
 ## Feedback Analysis Tool
 
@@ -103,5 +106,49 @@ Run accuracy benchmark after changes:
 python3 tests/benchmark_accuracy.py --samples 100  # Quick test
 python3 tests/benchmark_accuracy.py --samples 1000  # Full test
 ```
+
+### LLM Comparison Benchmark
+
+Benchmark Hush Engine against LLM models for research paper:
+
+```bash
+# List available models
+python3 tests/benchmark_llm_comparison.py --list-models
+
+# Run comparison (Hush + selected LLMs via Ollama)
+python3 tests/benchmark_llm_comparison.py --samples 1000 --models llama3.2:1b,mistral:7b
+
+# Run with Claude API models
+ANTHROPIC_API_KEY=sk-... python3 tests/benchmark_llm_comparison.py --models claude-haiku-4-5,claude-sonnet-4-6
+
+# Resume interrupted run
+python3 tests/benchmark_llm_comparison.py --resume
+
+# Generate research paper figures (LaTeX + matplotlib)
+python3 tests/benchmark_llm_report.py --format png
+```
+
+**Latest results (1,000 samples, ai4privacy):**
+
+| Model | F1 | Precision | Recall | Latency | Parse Failures |
+|-------|-----|-----------|--------|---------|---------------|
+| Hush Engine v1.8.0 | 89.9% | 89.5% | 90.4% | 166ms | 0% |
+| Llama 3.2 (1B) | 49.9% | 36.3% | 80.1% | 21,239ms | 49.6% |
+
+**Latest results (1,000 samples, synthetic golden set):**
+
+| Model | F1 | Precision | Recall | Latency | Parse Failures |
+|-------|-----|-----------|--------|---------|---------------|
+| Hush Engine v1.8.0 | 91.4% | 84.4% | 99.7% | 93ms | 0% |
+| Llama 3.2 (1B) | 86.2% | 76.0% | 99.6% | 2,058ms | 3.5% |
+
+### Benchmark Dashboard
+
+```bash
+python3 tests/benchmark_server.py --port 8000
+# Open http://localhost:8000
+```
+
+The dashboard shows historical benchmark runs with LLM comparison runs marked as red triangles. Use the "Run Test" button to configure and launch benchmarks (supports Hush Engine, LLM Comparison, or both).
 
 Ground truth data is cached in `tests/data/training/Training_Set_cache.csv`.
