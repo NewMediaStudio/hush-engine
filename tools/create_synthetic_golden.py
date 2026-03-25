@@ -93,6 +93,27 @@ TEMPLATES = [
         "template": "Cardholder: {name}, Card: {credit_card}",
         "entities": ["PERSON", "CREDIT_CARD"]
     },
+    # Username templates
+    {
+        "template": "User {username} logged in from {address} on {date}.",
+        "entities": ["USERNAME", "ADDRESS", "DATE_TIME"]
+    },
+    {
+        "template": "Account: {username}\nEmail: {email}\nMember since: {date}",
+        "entities": ["USERNAME", "EMAIL", "DATE_TIME"]
+    },
+    {
+        "template": "Comment by {username}: Please contact {name} at {email}.",
+        "entities": ["USERNAME", "PERSON", "EMAIL"]
+    },
+    {
+        "template": "Profile: {username}\nName: {name}\nPhone: {phone}",
+        "entities": ["USERNAME", "PERSON", "PHONE"]
+    },
+    {
+        "template": "Assigned to {username} ({name}) on {date}.",
+        "entities": ["USERNAME", "PERSON", "DATE_TIME"]
+    },
 ]
 
 
@@ -122,6 +143,7 @@ class SyntheticGoldenGenerator:
             "COMPANY": lambda: self.fake.company(),
             "AGE": lambda: str(random.randint(18, 85)),
             "URL": lambda: self.fake.url(),
+            "USERNAME": lambda: self.fake.user_name(),
         }
 
         generator = generators.get(entity_type)
@@ -153,6 +175,7 @@ class SyntheticGoldenGenerator:
                 "COMPANY": "company",
                 "AGE": "age",
                 "URL": "url",
+                "USERNAME": "username",
             }
 
             key = key_map.get(entity_type, entity_type.lower())

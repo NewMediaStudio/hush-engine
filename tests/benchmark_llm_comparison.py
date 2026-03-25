@@ -42,6 +42,7 @@ except ImportError:
         return iterable
 
 # Import reusable components from existing benchmark
+import benchmark_accuracy
 from benchmark_accuracy import (
     DatasetLoader,
     extract_ground_truth,
@@ -671,6 +672,9 @@ def run_comparison(args):
         gt = extract_ground_truth(rows)
         gt_count = sum(len(v) for v in gt.values())
         print(f"  Ground truth: {gt_count} entities across {len(gt)} types")
+
+        # Set GT type filter so Hush Engine doesn't produce FPs for types not in GT
+        benchmark_accuracy._benchmark_gt_types = set(gt.keys())
 
         # Run Hush Engine
         run_hush_engine(rows, ds_name, store)
