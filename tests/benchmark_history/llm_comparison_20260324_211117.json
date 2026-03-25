@@ -1,0 +1,5508 @@
+{
+  "run_id": "20260324_210839",
+  "started": "2026-03-24T21:08:39.907657",
+  "config": {
+    "samples": 100,
+    "datasets": [
+      "sample_3000.json"
+    ],
+    "models": [
+      "hush_engine",
+      "qwen3-coder:30b"
+    ],
+    "few_shot": false,
+    "timestamp": "2026-03-24T21:08:39.907763"
+  },
+  "models": {
+    "hush_engine": {
+      "sample_3000.json": {
+        "completed_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99
+        ],
+        "per_sample_detections": {
+          "0": {
+            "NATIONAL_ID": [
+              {
+                "text": "870.416.0406",
+                "alt_text": "870.416.0406",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "483.608.3595",
+                "alt_text": "483.608.3595",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "870.416.0406",
+                "alt_text": "870.416.0406",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "483.608.3595",
+                "alt_text": "483.608.3595",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "KN74777BL",
+                "alt_text": "KN74777BL",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "TA40365XP",
+                "alt_text": "TA40365XP",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "1": {
+            "USERNAME": [
+              {
+                "text": "axqllhpvzw076",
+                "alt_text": "axqllhpvzw076",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "top-notch",
+                "alt_text": "top-notch",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Evgeniya",
+                "alt_text": "Evgeniya",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Benvenuta",
+                "alt_text": "Benvenuta",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ]
+          },
+          "2": {
+            "NATIONAL_ID": [
+              {
+                "text": "430.139.6032",
+                "alt_text": "430.139.6032",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "355.991.6837",
+                "alt_text": "355.991.6837",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "430.139.6032",
+                "alt_text": "430.139.6032",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "355.991.6837",
+                "alt_text": "355.991.6837",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "XV81764OU",
+                "alt_text": "XV81764OU",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ZJ46781NJ",
+                "alt_text": "ZJ46781NJ",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "3": {
+            "NATIONAL_ID": [
+              {
+                "text": "from 471477552",
+                "alt_text": "from 471477552",
+                "confidence": 0.5,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "A141981",
+                "alt_text": "A141981",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "A141981",
+                "alt_text": "A141981",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "well-equipped",
+                "alt_text": "well-equipped",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "4": {
+            "NATIONAL_ID": [
+              {
+                "text": "3341955554",
+                "alt_text": "3341955554",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "299.463.5913",
+                "alt_text": "299.463.5913",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "TY41985ST",
+                "alt_text": "TY41985ST",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "EA38031TP",
+                "alt_text": "EA38031TP",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "299.463.5913",
+                "alt_text": "299.463.5913",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "5": {
+            "USERNAME": [
+              {
+                "text": "qxafnhrnawspkykb83",
+                "alt_text": "qxafnhrnawspkykb83",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "lauralie.canossi",
+                "alt_text": "lauralie.canossi",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "07jungmichel",
+                "alt_text": "07jungmichel",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "MI1990",
+                "alt_text": "MI1990",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "lppeobjfn3359",
+                "alt_text": "lppeobjfn3359",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "boves2003",
+                "alt_text": "boves2003",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Haftner",
+                "alt_text": "Haftner",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Canossi",
+                "alt_text": "Canossi",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Jungmichel",
+                "alt_text": "Jungmichel",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Muscas",
+                "alt_text": "Muscas",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Maistrello Palankon",
+                "alt_text": "Maistrello Palankon",
+                "confidence": 0.7760724660969556,
+                "source_model": "lgbm+names_db"
+              },
+              {
+                "text": "D\u00e1vila",
+                "alt_text": "D\u00e1vila",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2019-09-29T00:00:00",
+                "alt_text": "2019-09-29T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "6": {
+            "DATE_TIME": [
+              {
+                "text": "2:05 PM",
+                "alt_text": "2:05 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "1:28 PM",
+                "alt_text": "1:28 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "11:51am",
+                "alt_text": "11:51am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Nasnet",
+                "alt_text": "Nasnet",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Fania",
+                "alt_text": "Fania",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "F",
+                "alt_text": "F",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Female",
+                "alt_text": "Female",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Chirton Grove",
+                "alt_text": "Chirton Grove",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "51am",
+                "alt_text": "51am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "7": {
+            "DATE_TIME": [
+              {
+                "text": "1987-02-24T00:00:00",
+                "alt_text": "1987-02-24T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "June 21st, 2002",
+                "alt_text": "June 21st, 2002",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "December 11th, 1996",
+                "alt_text": "December 11th, 1996",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "1987KSE",
+                "alt_text": "1987KSE",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "busuxscsix1023",
+                "alt_text": "busuxscsix1023",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "outlook.com",
+                "alt_text": "outlook.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "21st",
+                "alt_text": "21st",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "I27731140",
+                "alt_text": "I27731140",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "11th",
+                "alt_text": "11th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ktieaambs530790",
+                "alt_text": "ktieaambs530790",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "outlook.com",
+                "alt_text": "outlook.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "busuxscsix1023@outlook.com",
+                "alt_text": "busuxscsix1023@outlook.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "77bas\u00edlio@gmail.com",
+                "alt_text": "77bas\u00edlio@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "gittytakaki@outlook.com",
+                "alt_text": "gittytakaki@outlook.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "0006 23.444 8001",
+                "alt_text": "0006 23.444 8001",
+                "confidence": 0.642,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "07774 52742",
+                "alt_text": "07774 52742",
+                "confidence": 0.63,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "019.4558-9179",
+                "alt_text": "019.4558-9179",
+                "confidence": 0.615,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Karaman",
+                "alt_text": "Karaman",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Sylka",
+                "alt_text": "Sylka",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Ezavi",
+                "alt_text": "Ezavi",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Raica",
+                "alt_text": "Raica",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Korompilis",
+                "alt_text": "Korompilis",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Takaki",
+                "alt_text": "Takaki",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              }
+            ],
+            "BIOMETRIC": [
+              {
+                "text": "I27731140",
+                "alt_text": "I27731140",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "I27731140",
+                "alt_text": "I27731140",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GITTY-962116-9-226",
+                "alt_text": "GITTY-962116-9-226",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "8": {
+            "DATE_TIME": [
+              {
+                "text": "2033-10-22T00:00:00",
+                "alt_text": "2033-10-22T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "09:30",
+                "alt_text": "09:30",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "A141981",
+                "alt_text": "A141981",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "471477552",
+                "alt_text": "471477552",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "A141981",
+                "alt_text": "A141981",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "dive in and explore",
+                "alt_text": "dive in and explore",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "9": {
+            "PERSON": [
+              {
+                "text": "Aouatef",
+                "alt_text": "Aouatef",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "9a59:76a:7d74:2be:7c17:ea44:22d2:93c",
+                "alt_text": "9a59:76a:7d74:2be:7c17:ea44:22d2:93c",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "ea44",
+                "alt_text": "ea44",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "25th",
+                "alt_text": "25th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "25th September 2028",
+                "alt_text": "25th September 2028",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "10": {
+            "PERSON": [
+              {
+                "text": "Mayza",
+                "alt_text": "Mayza",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Wongduean",
+                "alt_text": "Wongduean",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Rasia",
+                "alt_text": "Rasia",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "Feminine",
+                "alt_text": "Feminine",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "wonrasi@aol.com",
+                "alt_text": "wonrasi@aol.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "aol.com",
+                "alt_text": "aol.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "CREDENTIAL": [
+              {
+                "text": "social_number",
+                "alt_text": "social_number",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "background_info",
+                "alt_text": "background_info",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "3454101823",
+                "alt_text": "3454101823",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "13:21",
+                "alt_text": "13:21",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "2076-12-08T00:00:00",
+                "alt_text": "2076-12-08T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Stockbridge Road",
+                "alt_text": "Stockbridge Road",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ]
+          },
+          "11": {
+            "ID": [
+              {
+                "text": "Q8256107",
+                "alt_text": "Q8256107",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "Q8256107",
+                "alt_text": "Q8256107",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "Q8256107",
+                "alt_text": "Q8256107",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "12": {
+            "DATE_TIME": [
+              {
+                "text": "September/32",
+                "alt_text": "September/32",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "9:48 AM",
+                "alt_text": "9:48 AM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "April/58",
+                "alt_text": "April/58",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Bilston",
+                "alt_text": "Bilston",
+                "confidence": 0.8082827958475586,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Below",
+                "alt_text": "Below",
+                "confidence": 0.9514825813896556,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Nicol\u00f3",
+                "alt_text": "Nicol\u00f3",
+                "confidence": 0.75,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "WV14",
+                "alt_text": "WV14",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "April",
+                "alt_text": "April",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "668.482.7266",
+                "alt_text": "668.482.7266",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "UK68849MT",
+                "alt_text": "UK68849MT",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "United Kingdom",
+                "alt_text": "United Kingdom",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              },
+              {
+                "text": "Building Number",
+                "alt_text": "Building Number",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "13": {
+            "NATIONAL_ID": [
+              {
+                "text": "27.01.06.52.N67.7",
+                "alt_text": "27.01.06.52.N67.7",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "K95240816",
+                "alt_text": "K95240816",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "393.439.2617",
+                "alt_text": "393.439.2617",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "27.01.06",
+                "alt_text": "27.01.06",
+                "confidence": 0.6,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "6:51 PM",
+                "alt_text": "6:51 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "N67.7",
+                "alt_text": "N67.7",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "N67",
+                "alt_text": "N67",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "K95240816",
+                "alt_text": "K95240816",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "K95240816",
+                "alt_text": "K95240816",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "PG17814MF",
+                "alt_text": "PG17814MF",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "BIOMETRIC": [
+              {
+                "text": "K95240816",
+                "alt_text": "K95240816",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "393.439.2617",
+                "alt_text": "393.439.2617",
+                "confidence": 0.705,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "France",
+                "alt_text": "France",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              }
+            ]
+          },
+          "14": {
+            "PERSON": [
+              {
+                "text": "Biesenkamp",
+                "alt_text": "Biesenkamp",
+                "confidence": 0.7119162255746321,
+                "source_model": "lgbm+nltagger"
+              },
+              {
+                "text": "Verdiani",
+                "alt_text": "Verdiani",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              }
+            ]
+          },
+          "15": {},
+          "16": {
+            "PERSON": [
+              {
+                "text": "Call Transcripts",
+                "alt_text": "Call Transcripts",
+                "confidence": 0.9231819109316755,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "M\u00f6nchengladbach",
+                "alt_text": "M\u00f6nchengladbach",
+                "confidence": 0.9129648884680716,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Redditch",
+                "alt_text": "Redditch",
+                "confidence": 0.9860010433838012,
+                "source_model": "lgbm+nltagger"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "21st December 1989",
+                "alt_text": "21st December 1989",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "10:39:34",
+                "alt_text": "10:39:34",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "21st",
+                "alt_text": "21st",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU30",
+                "alt_text": "GU30",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU35",
+                "alt_text": "GU35",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU35",
+                "alt_text": "GU35",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Penthouse 684",
+                "alt_text": "Penthouse 684",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Hollywater Road",
+                "alt_text": "Hollywater Road",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU30 7RS",
+                "alt_text": "GU30 7RS",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU35 0AG",
+                "alt_text": "GU35 0AG",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GU35 0AH",
+                "alt_text": "GU35 0AH",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Green Lane",
+                "alt_text": "Green Lane",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Redditch",
+                "alt_text": "Redditch",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              }
+            ]
+          },
+          "17": {
+            "USERNAME": [
+              {
+                "text": "Non-compliance",
+                "alt_text": "Non-compliance",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "18": {
+            "NATIONAL_ID": [
+              {
+                "text": "JANIE6061249300",
+                "alt_text": "JANIE6061249300",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "855082405",
+                "alt_text": "855082405",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "592506231",
+                "alt_text": "592506231",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "JANIE6061249300",
+                "alt_text": "JANIE6061249300",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Blion",
+                "alt_text": "Blion",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Bardhosh",
+                "alt_text": "Bardhosh",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Suriyan",
+                "alt_text": "Suriyan",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Janie",
+                "alt_text": "Janie",
+                "confidence": 0.6686206896551724,
+                "source_model": "names_db+nltagger"
+              },
+              {
+                "text": "Serkay",
+                "alt_text": "Serkay",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Vinit",
+                "alt_text": "Vinit",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2022-10-01",
+                "alt_text": "2022-10-01",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "2022-10-10",
+                "alt_text": "2022-10-10",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "2022-11-05",
+                "alt_text": "2022-11-05",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "2022-11-15",
+                "alt_text": "2022-11-15",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Great Britain",
+                "alt_text": "Great Britain",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Great Britain",
+                "alt_text": "Great Britain",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ]
+          },
+          "19": {
+            "PHONE": [
+              {
+                "text": "+60.62 412 0065",
+                "alt_text": "+60.62 412 0065",
+                "confidence": 0.73,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "based on feedback",
+                "alt_text": "based on feedback",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "20": {
+            "COMPANY": [
+              {
+                "text": "Physical Plant Management",
+                "alt_text": "Physical Plant Management",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "21": {
+            "ID": [
+              {
+                "text": "OC71799QZ",
+                "alt_text": "OC71799QZ",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "OG43616YO",
+                "alt_text": "OG43616YO",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "318595184",
+                "alt_text": "318595184",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "380711872",
+                "alt_text": "380711872",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+579-526-173 2985",
+                "alt_text": "+579-526-173 2985",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "173 2985\n\n14",
+                "alt_text": "173 2985\n\n14",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "058.1577 7779",
+                "alt_text": "058.1577 7779",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "COORDINATES": [
+              {
+                "text": "53.2, -1.3474",
+                "alt_text": "53.2, -1.3474",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "13/11/2024",
+                "alt_text": "13/11/2024",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              }
+            ]
+          },
+          "22": {
+            "USERNAME": [
+              {
+                "text": "colsenet17",
+                "alt_text": "colsenet17",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "offers in education",
+                "alt_text": "offers in education",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "23": {
+            "DATE_TIME": [
+              {
+                "text": "Date: 27/04/1990",
+                "alt_text": "Date: 27/04/1990",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "24": {
+            "USERNAME": [
+              {
+                "text": "wynqvrh053",
+                "alt_text": "wynqvrh053",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "20am",
+                "alt_text": "20am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "luka.burg",
+                "alt_text": "luka.burg",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "qahil.wittauer",
+                "alt_text": "qahil.wittauer",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gholamhossein.ruschke",
+                "alt_text": "gholamhossein.ruschke",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "pdmjrsyoz1460",
+                "alt_text": "pdmjrsyoz1460",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "10:20am",
+                "alt_text": "10:20am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "9:47 PM",
+                "alt_text": "9:47 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "25": {
+            "DATE_TIME": [
+              {
+                "text": "3rd October 1965",
+                "alt_text": "3rd October 1965",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "March 26th, 1966",
+                "alt_text": "March 26th, 1966",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "March 26th, 1966",
+                "alt_text": "March 26th, 1966",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "26th",
+                "alt_text": "26th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "26th",
+                "alt_text": "26th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "421760656",
+                "alt_text": "421760656",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "26": {
+            "DATE_TIME": [
+              {
+                "text": "2:33 PM",
+                "alt_text": "2:33 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "11:29pm",
+                "alt_text": "11:29pm",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "4:45 PM",
+                "alt_text": "4:45 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "N23",
+                "alt_text": "N23",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "29pm",
+                "alt_text": "29pm",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "wennmann27",
+                "alt_text": "wennmann27",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "27": {
+            "NATIONAL_ID": [
+              {
+                "text": "777 064 4987",
+                "alt_text": "777 064 4987",
+                "confidence": 0.83,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "200-193-8263",
+                "alt_text": "200-193-8263",
+                "confidence": 0.83,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "710.076.3818",
+                "alt_text": "710.076.3818",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "007.200-193-8263",
+                "alt_text": "007.200-193-8263",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "710.076.3818",
+                "alt_text": "710.076.3818",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "099 3802-9499",
+                "alt_text": "099 3802-9499",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "28": {
+            "NATIONAL_ID": [
+              {
+                "text": "554.575.9355",
+                "alt_text": "554.575.9355",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "933932951",
+                "alt_text": "933932951",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "LOUMA.657200.9.504",
+                "alt_text": "LOUMA.657200.9.504",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "0610780437",
+                "alt_text": "0610780437",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "vtpkbqcutaxb799@yahoo.com",
+                "alt_text": "vtpkbqcutaxb799@yahoo.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "xwjhgbgg009@outlook.com",
+                "alt_text": "xwjhgbgg009@outlook.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "vtpkbqcutaxb799",
+                "alt_text": "vtpkbqcutaxb799",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "yahoo.com",
+                "alt_text": "yahoo.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "xwjhgbgg009",
+                "alt_text": "xwjhgbgg009",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "outlook.com",
+                "alt_text": "outlook.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+1322380 4181\n\n",
+                "alt_text": "+1322380 4181\n\n",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+543 51-082.8035",
+                "alt_text": "+543 51-082.8035",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "29": {
+            "ADDRESS": [
+              {
+                "text": "WA14 5RW",
+                "alt_text": "WA14 5RW",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "so on for all",
+                "alt_text": "so on for all",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "starting on August",
+                "alt_text": "starting on August",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "WA14",
+                "alt_text": "WA14",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "CREDENTIAL": [
+              {
+                "text": "Password: r]iD1#8",
+                "alt_text": "Password: r]iD1#8",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Great Britain University",
+                "alt_text": "Great Britain University",
+                "confidence": 0.888449612254751,
+                "source_model": "lgbm"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "August 5th, 2057",
+                "alt_text": "August 5th, 2057",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "30": {
+            "DATE_TIME": [
+              {
+                "text": "Jan 28, 1995",
+                "alt_text": "Jan 28, 1995",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Jan",
+                "alt_text": "Jan",
+                "confidence": 0.865473745999125,
+                "source_model": "lgbm"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "lqsdrojhmrlcw54",
+                "alt_text": "lqsdrojhmrlcw54",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "forward-thinking",
+                "alt_text": "forward-thinking",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "student-centered",
+                "alt_text": "student-centered",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+07 69-909 8310",
+                "alt_text": "+07 69-909 8310",
+                "confidence": 0.642,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "31": {
+            "DATE_TIME": [
+              {
+                "text": "February/35",
+                "alt_text": "February/35",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "February/35",
+                "alt_text": "February/35",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "3rd October 1965",
+                "alt_text": "3rd October 1965",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "641315469",
+                "alt_text": "641315469",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "32": {},
+          "33": {
+            "PERSON": [
+              {
+                "text": "Fisler",
+                "alt_text": "Fisler",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ]
+          },
+          "34": {
+            "USERNAME": [
+              {
+                "text": "evxnizmsc1999",
+                "alt_text": "evxnizmsc1999",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "J23",
+                "alt_text": "J23",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "aol.com",
+                "alt_text": "aol.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Jen.Bet",
+                "alt_text": "Jen.Bet",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GM0075079",
+                "alt_text": "GM0075079",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "J23@aol.com",
+                "alt_text": "J23@aol.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "GM0075079",
+                "alt_text": "GM0075079",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "GM0075079",
+                "alt_text": "GM0075079",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "GM0075079",
+                "alt_text": "GM0075079",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "3984-077-6822",
+                "alt_text": "3984-077-6822",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+3984-077-6822",
+                "alt_text": "+3984-077-6822",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "33.156.222.79",
+                "alt_text": "33.156.222.79",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "35": {},
+          "36": {},
+          "37": {
+            "DATE_TIME": [
+              {
+                "text": "13:23:10",
+                "alt_text": "13:23:10",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "2055-10-16T00:00:00",
+                "alt_text": "2055-10-16T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Glasgow",
+                "alt_text": "Glasgow",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              }
+            ]
+          },
+          "38": {
+            "NATIONAL_ID": [
+              {
+                "text": "068 474 0939",
+                "alt_text": "068 474 0939",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "2642308028",
+                "alt_text": "2642308028",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "ID": [
+              {
+                "text": "MX83635SU",
+                "alt_text": "MX83635SU",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "YD99673DV",
+                "alt_text": "YD99673DV",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "39": {
+            "USERNAME": [
+              {
+                "text": "cdfbzyotzacmn3448",
+                "alt_text": "cdfbzyotzacmn3448",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "14verdiani",
+                "alt_text": "14verdiani",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "40": {
+            "PERSON": [
+              {
+                "text": "Committed",
+                "alt_text": "Committed",
+                "confidence": 0.6142784773876416,
+                "source_model": "lgbm"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "Sep 26, 1940",
+                "alt_text": "Sep 26, 1940",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Dec 18, 1969",
+                "alt_text": "Dec 18, 1969",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "sangyal.alabdulmohsin",
+                "alt_text": "sangyal.alabdulmohsin",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ucci12",
+                "alt_text": "ucci12",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+3380820 0420\n ",
+                "alt_text": "+3380820 0420\n ",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "01881.881.151-3030",
+                "alt_text": "01881.881.151-3030",
+                "confidence": 0.5700000000000001,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "41": {
+            "GENDER": [
+              {
+                "text": "Non-binary",
+                "alt_text": "Non-binary",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Masculine",
+                "alt_text": "Masculine",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Female",
+                "alt_text": "Female",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Masculine",
+                "alt_text": "Masculine",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "F",
+                "alt_text": "F",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Female",
+                "alt_text": "Female",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "Non-binary",
+                "alt_text": "Non-binary",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ELISI9110889426",
+                "alt_text": "ELISI9110889426",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "S792987805409",
+                "alt_text": "S792987805409",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "ELISI9110889426",
+                "alt_text": "ELISI9110889426",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "HERNA-607199-HK-599",
+                "alt_text": "HERNA-607199-HK-599",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "S792987805409",
+                "alt_text": "S792987805409",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "S792987805409",
+                "alt_text": "S792987805409",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "BIOMETRIC": [
+              {
+                "text": "S792987805409",
+                "alt_text": "S792987805409",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "42": {},
+          "43": {
+            "USERNAME": [
+              {
+                "text": "SEN99",
+                "alt_text": "SEN99",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "DEVRA608111DA025",
+                "alt_text": "DEVRA608111DA025",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "44": {
+            "PERSON": [
+              {
+                "text": "M\u00f6nkhoff",
+                "alt_text": "M\u00f6nkhoff",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Represa",
+                "alt_text": "Represa",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "M\u00f6nkhoff",
+                "alt_text": "M\u00f6nkhoff",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "e-learning",
+                "alt_text": "e-learning",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "evidence-based",
+                "alt_text": "evidence-based",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "learner-centered",
+                "alt_text": "learner-centered",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "research-oriented",
+                "alt_text": "research-oriented",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Nice",
+                "alt_text": "Nice",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              }
+            ]
+          },
+          "45": {
+            "DATE_TIME": [
+              {
+                "text": "Date: 29/06/2013",
+                "alt_text": "Date: 29/06/2013",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "7:59 PM",
+                "alt_text": "7:59 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "October/97",
+                "alt_text": "October/97",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "7th August 1963",
+                "alt_text": "7th August 1963",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "CM21",
+                "alt_text": "CM21",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "tutanota.com",
+                "alt_text": "tutanota.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "da24",
+                "alt_text": "da24",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "hotmail.com",
+                "alt_text": "hotmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "M",
+                "alt_text": "M",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "F",
+                "alt_text": "F",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "MVC@tutanota.com",
+                "alt_text": "MVC@tutanota.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "mindkassir@hotmail.com",
+                "alt_text": "mindkassir@hotmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "RF69601MW",
+                "alt_text": "RF69601MW",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "DE83548AE",
+                "alt_text": "DE83548AE",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "MASCU910077MV815",
+                "alt_text": "MASCU910077MV815",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "7836:3dcf:9edf:692:fd5f:4de5:a9d6:da24",
+                "alt_text": "7836:3dcf:9edf:692:fd5f:4de5:a9d6:da24",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "CREDENTIAL": [
+              {
+                "text": "Password: Be~o}.zq8^1\"",
+                "alt_text": "Password: Be~o}.zq8^1\"",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "46": {
+            "NATIONAL_ID": [
+              {
+                "text": "301025226",
+                "alt_text": "301025226",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "47": {
+            "DATE_TIME": [
+              {
+                "text": "2023-09-01",
+                "alt_text": "2023-09-01",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "2023-12-15",
+                "alt_text": "2023-12-15",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "10:00 AM",
+                "alt_text": "10:00 AM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "12:00 PM",
+                "alt_text": "12:00 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "2:00 PM",
+                "alt_text": "2:00 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "48": {
+            "USERNAME": [
+              {
+                "text": "1980refad",
+                "alt_text": "1980refad",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "japeschk92",
+                "alt_text": "japeschk92",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Preston Road",
+                "alt_text": "Preston Road",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Congratulations",
+                "alt_text": "Congratulations",
+                "confidence": 0.9755851616703111,
+                "source_model": "lgbm"
+              }
+            ]
+          },
+          "49": {
+            "PERSON": [
+              {
+                "text": "Guirard",
+                "alt_text": "Guirard",
+                "confidence": 0.659760670529526,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Potkonjak",
+                "alt_text": "Potkonjak",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Ucha",
+                "alt_text": "Ucha",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Mastrogiacomo, Raizner",
+                "alt_text": "Mastrogiacomo, Raizner",
+                "confidence": 0.7752853715675012,
+                "source_model": "lgbm+names_db"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "Masculine",
+                "alt_text": "Masculine",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "gyorgy02",
+                "alt_text": "gyorgy02",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "aol.com",
+                "alt_text": "aol.com",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "58am",
+                "alt_text": "58am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "FINANCIAL": [
+              {
+                "text": "gyorgy02",
+                "alt_text": "gyorgy02",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "keesguirard@aol.com",
+                "alt_text": "keesguirard@aol.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "CREDENTIAL": [
+              {
+                "text": "keesguirard@aol",
+                "alt_text": "keesguirard@aol",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "464501286",
+                "alt_text": "464501286",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "00758-30091",
+                "alt_text": "00758-30091",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Nederland",
+                "alt_text": "Nederland",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "11.47.34.34",
+                "alt_text": "11.47.34.34",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2:58am",
+                "alt_text": "2:58am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "50": {
+            "PERSON": [
+              {
+                "text": "Cannelle",
+                "alt_text": "Cannelle",
+                "confidence": 0.9,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "COMPANY": [
+              {
+                "text": "Sustainable Solutions",
+                "alt_text": "Sustainable Solutions",
+                "confidence": 0.6000000000000001,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2061-12-26T00:00:00",
+                "alt_text": "2061-12-26T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "8:11am",
+                "alt_text": "8:11am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "11am",
+                "alt_text": "11am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "51": {
+            "PERSON": [
+              {
+                "text": "Kenan",
+                "alt_text": "Kenan",
+                "confidence": 0.9310487774512928,
+                "source_model": "lgbm"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "1979kenan@tutanota.com",
+                "alt_text": "1979kenan@tutanota.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "1979kenan",
+                "alt_text": "1979kenan",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "tutanota.com",
+                "alt_text": "tutanota.com",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "KENAN.709089.9.109",
+                "alt_text": "KENAN.709089.9.109",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "546699867",
+                "alt_text": "546699867",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "United Kingdom",
+                "alt_text": "United Kingdom",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              }
+            ]
+          },
+          "52": {
+            "PERSON": [
+              {
+                "text": "Liwam",
+                "alt_text": "Liwam",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ]
+          },
+          "53": {
+            "NATIONAL_ID": [
+              {
+                "text": "LAURE762231LN974",
+                "alt_text": "LAURE762231LN974",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "Masculine",
+                "alt_text": "Masculine",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "M",
+                "alt_text": "M",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "GL54",
+                "alt_text": "GL54",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "April/32",
+                "alt_text": "April/32",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "April",
+                "alt_text": "April",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "54": {
+            "NATIONAL_ID": [
+              {
+                "text": "705718740",
+                "alt_text": "705718740",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "987972228",
+                "alt_text": "987972228",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "545549971",
+                "alt_text": "545549971",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "third-person",
+                "alt_text": "third-person",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "55": {
+            "PERSON": [
+              {
+                "text": "Zehra",
+                "alt_text": "Zehra",
+                "confidence": 0.9596219044872508,
+                "source_model": "lgbm"
+              }
+            ],
+            "ID": [
+              {
+                "text": "ZG29440KN",
+                "alt_text": "ZG29440KN",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "RX92048PN",
+                "alt_text": "RX92048PN",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "CS52694RD",
+                "alt_text": "CS52694RD",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "AJ91307EU",
+                "alt_text": "AJ91307EU",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ZR57870ON",
+                "alt_text": "ZR57870ON",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "553837399",
+                "alt_text": "553837399",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "462955358",
+                "alt_text": "462955358",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "82IY82866",
+                "alt_text": "82IY82866",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "479283730",
+                "alt_text": "479283730",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "881565361",
+                "alt_text": "881565361",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+20.01.235 4102",
+                "alt_text": "+20.01.235 4102",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "235 4102\n\n3",
+                "alt_text": "235 4102\n\n3",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+5.466.202.1298",
+                "alt_text": "+5.466.202.1298",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+3349983-1517",
+                "alt_text": "+3349983-1517",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+72-80413 6637",
+                "alt_text": "+72-80413 6637",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "80413 6637\n\n6",
+                "alt_text": "80413 6637\n\n6",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "0161.773766341",
+                "alt_text": "0161.773766341",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "773766341\n\n7",
+                "alt_text": "773766341\n\n7",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "G0703583330853",
+                "alt_text": "G0703583330853",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "56": {
+            "DATE_TIME": [
+              {
+                "text": "Apr 29, 1973",
+                "alt_text": "Apr 29, 1973",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "May 26, 1993",
+                "alt_text": "May 26, 1993",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "29summikota",
+                "alt_text": "29summikota",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "npvhxlrgvjdhzjaf439498",
+                "alt_text": "npvhxlrgvjdhzjaf439498",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+51-063-367.7939",
+                "alt_text": "+51-063-367.7939",
+                "confidence": 0.73,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+20-914.834.1296",
+                "alt_text": "+20-914.834.1296",
+                "confidence": 0.73,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "57": {
+            "USERNAME": [
+              {
+                "text": "hands-on",
+                "alt_text": "hands-on",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "ZHASM-852267-9-332",
+                "alt_text": "ZHASM-852267-9-332",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "58": {
+            "PERSON": [
+              {
+                "text": "Bryworth",
+                "alt_text": "Bryworth",
+                "confidence": 0.7115227355661052,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "City Lechlade",
+                "alt_text": "City Lechlade",
+                "confidence": 0.9280830454265221,
+                "source_model": "lgbm"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Bryworth Lane",
+                "alt_text": "Bryworth Lane",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Lechlade",
+                "alt_text": "Lechlade",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "GL7 3DY",
+                "alt_text": "GL7 3DY",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "03:16:09",
+                "alt_text": "03:16:09",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "March/89",
+                "alt_text": "March/89",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "WS14",
+                "alt_text": "WS14",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "59": {
+            "NATIONAL_ID": [
+              {
+                "text": "MALSO 607317 9 229",
+                "alt_text": "MALSO 607317 9 229",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "DANIJ3543079685",
+                "alt_text": "DANIJ3543079685",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "607317 9 229",
+                "alt_text": "607317 9 229",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "DANIJ3543079685",
+                "alt_text": "DANIJ3543079685",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "60": {
+            "DATE_TIME": [
+              {
+                "text": "September/54",
+                "alt_text": "September/54",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "61": {
+            "NATIONAL_ID": [
+              {
+                "text": "like 416443951",
+                "alt_text": "like 416443951",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "844185029",
+                "alt_text": "844185029",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "215722572",
+                "alt_text": "215722572",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "URL": [
+              {
+                "text": "H2.hk",
+                "alt_text": "H2.hk",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "VR on education",
+                "alt_text": "VR on education",
+                "confidence": 0.82,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "62": {},
+          "63": {
+            "GENDER": [
+              {
+                "text": "Feminine",
+                "alt_text": "Feminine",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "0069 607981830",
+                "alt_text": "0069 607981830",
+                "confidence": 0.588,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+89.12-987.1114",
+                "alt_text": "+89.12-987.1114",
+                "confidence": 0.642,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "607981830",
+                "alt_text": "607981830",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "DP12863LD",
+                "alt_text": "DP12863LD",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "RY77979OR",
+                "alt_text": "RY77979OR",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "64": {
+            "COMPANY": [
+              {
+                "text": "Physical Plant Management",
+                "alt_text": "Physical Plant Management",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "02kscheschinski",
+                "alt_text": "02kscheschinski",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "dnuqzwxxannkq05517",
+                "alt_text": "dnuqzwxxannkq05517",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Stoke-on",
+                "alt_text": "Stoke-on",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ST10",
+                "alt_text": "ST10",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "dnuqzwxxannkq05517@gmail.com",
+                "alt_text": "dnuqzwxxannkq05517@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "ZO31612IA",
+                "alt_text": "ZO31612IA",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "582096831",
+                "alt_text": "582096831",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+32-75 212-8504",
+                "alt_text": "+32-75 212-8504",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Lockwood Road",
+                "alt_text": "Lockwood Road",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "7.205.223.46",
+                "alt_text": "7.205.223.46",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Kscheschinski",
+                "alt_text": "Kscheschinski",
+                "confidence": 0.9348819646172353,
+                "source_model": "lgbm"
+              }
+            ]
+          },
+          "65": {
+            "ADDRESS": [
+              {
+                "text": "Barry",
+                "alt_text": "Barry",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "CF62 3AA",
+                "alt_text": "CF62 3AA",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Flat 653",
+                "alt_text": "Flat 653",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "United Kingdom",
+                "alt_text": "United Kingdom",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              },
+              {
+                "text": "Building Number",
+                "alt_text": "Building Number",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Ormskirk",
+                "alt_text": "Ormskirk",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Basement 517",
+                "alt_text": "Basement 517",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Building Number",
+                "alt_text": "Building Number",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Leicester",
+                "alt_text": "Leicester",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "LE9 9LN",
+                "alt_text": "LE9 9LN",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "CF62",
+                "alt_text": "CF62",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "xneagscyc672025",
+                "alt_text": "xneagscyc672025",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "tutanota.com",
+                "alt_text": "tutanota.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "L39",
+                "alt_text": "L39",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "FDP1979",
+                "alt_text": "FDP1979",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "protonmail.com",
+                "alt_text": "protonmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "LK32619VX",
+                "alt_text": "LK32619VX",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ZA08646VR",
+                "alt_text": "ZA08646VR",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "xneagscyc672025@tutanota.com",
+                "alt_text": "xneagscyc672025@tutanota.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "FDP1979@protonmail.com",
+                "alt_text": "FDP1979@protonmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ]
+          },
+          "66": {
+            "ID": [
+              {
+                "text": "KB90324ER",
+                "alt_text": "KB90324ER",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "SC78428CU",
+                "alt_text": "SC78428CU",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Bristol",
+                "alt_text": "Bristol",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "BS34 7HU",
+                "alt_text": "BS34 7HU",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "BS34 7HZ",
+                "alt_text": "BS34 7HZ",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "United Kingdom",
+                "alt_text": "United Kingdom",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "BS34",
+                "alt_text": "BS34",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "BS34",
+                "alt_text": "BS34",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "WA14",
+                "alt_text": "WA14",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Baasgaran Palmoso",
+                "alt_text": "Baasgaran Palmoso",
+                "confidence": 0.8645249305942948,
+                "source_model": "pattern+lgbm+names_db"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "blerenbaasgara@gmail.com",
+                "alt_text": "blerenbaasgara@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "107-393-9036",
+                "alt_text": "107-393-9036",
+                "confidence": 0.83,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "107-393-9036",
+                "alt_text": "107-393-9036",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "67": {},
+          "68": {},
+          "69": {
+            "PERSON": [
+              {
+                "text": "Britain University",
+                "alt_text": "Britain University",
+                "confidence": 0.9696341027056178,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Great Britain University. Please",
+                "alt_text": "Great Britain University. Please",
+                "confidence": 0.8589024978465184,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Balloi Eckrich",
+                "alt_text": "Balloi Eckrich",
+                "confidence": 0.8546751368426784,
+                "source_model": "pattern+lgbm+names_db"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "5:24am",
+                "alt_text": "5:24am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "August 5th, 2057",
+                "alt_text": "August 5th, 2057",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "24am",
+                "alt_text": "24am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "yahoo.com",
+                "alt_text": "yahoo.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "bballoi@yahoo.com",
+                "alt_text": "bballoi@yahoo.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "996 076 6460",
+                "alt_text": "996 076 6460",
+                "confidence": 0.83,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "70": {
+            "PHONE": [
+              {
+                "text": "479-196-8430",
+                "alt_text": "479-196-8430",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "08810 67094",
+                "alt_text": "08810 67094",
+                "confidence": 0.63,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "+97-50.294 1379",
+                "alt_text": "+97-50.294 1379",
+                "confidence": 0.73,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "247-985-3689",
+                "alt_text": "247-985-3689",
+                "confidence": 0.7999999999999999,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "082-1814520",
+                "alt_text": "082-1814520",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "COMPANY": [
+              {
+                "text": "Utilize learning management systems",
+                "alt_text": "Utilize learning management systems",
+                "confidence": 0.6000000000000001,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "71": {
+            "PERSON": [
+              {
+                "text": "Andreoni",
+                "alt_text": "Andreoni",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Modrusan",
+                "alt_text": "Modrusan",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Andreoni",
+                "alt_text": "Andreoni",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ]
+          },
+          "72": {
+            "PERSON": [
+              {
+                "text": "Blion",
+                "alt_text": "Blion",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              },
+              {
+                "text": "Janie",
+                "alt_text": "Janie",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ],
+            "COMPANY": [
+              {
+                "text": "Physical Plant Management",
+                "alt_text": "Physical Plant Management",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Advanced Sustainable Infrastructure Management",
+                "alt_text": "Advanced Sustainable Infrastructure Management",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2022-08-15",
+                "alt_text": "2022-08-15",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              },
+              {
+                "text": "2022-09-20",
+                "alt_text": "2022-09-20",
+                "confidence": 0.95,
+                "source_model": "DateRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Great Britain",
+                "alt_text": "Great Britain",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "BLION7090219600",
+                "alt_text": "BLION7090219600",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "BLION7090219600",
+                "alt_text": "BLION7090219600",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "73": {
+            "PERSON": [
+              {
+                "text": "Speil-Ehrenreich",
+                "alt_text": "Speil-Ehrenreich",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Ginat",
+                "alt_text": "Ginat",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Kafa",
+                "alt_text": "Kafa",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Piccio",
+                "alt_text": "Piccio",
+                "confidence": 0.9669045118530467,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Francioni, Rolny",
+                "alt_text": "Francioni, Rolny",
+                "confidence": 0.7788100532740575,
+                "source_model": "lgbm+names_db"
+              },
+              {
+                "text": "El-Gharbawy",
+                "alt_text": "El-Gharbawy",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Ipek",
+                "alt_text": "Ipek",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Lelouch-Ferdinand, Jupin",
+                "alt_text": "Lelouch-Ferdinand, Jupin",
+                "confidence": 0.7854132144920931,
+                "source_model": "lgbm+nltagger+names_db"
+              },
+              {
+                "text": "El Bouchti",
+                "alt_text": "El Bouchti",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Verzaro",
+                "alt_text": "Verzaro",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "Speil-Ehrenreich",
+                "alt_text": "Speil-Ehrenreich",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "El-Gharbawy",
+                "alt_text": "El-Gharbawy",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Lelouch-Ferdinand",
+                "alt_text": "Lelouch-Ferdinand",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "23rd",
+                "alt_text": "23rd",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "22:29:58",
+                "alt_text": "22:29:58",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "23rd June 1958",
+                "alt_text": "23rd June 1958",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Brighton",
+                "alt_text": "Brighton",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ]
+          },
+          "74": {
+            "PERSON": [
+              {
+                "text": "Supplies",
+                "alt_text": "Supplies",
+                "confidence": 0.7620264407463886,
+                "source_model": "lgbm"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "05:48",
+                "alt_text": "05:48",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "CB22356OB",
+                "alt_text": "CB22356OB",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "GM26061IE",
+                "alt_text": "GM26061IE",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "NV22510SC",
+                "alt_text": "NV22510SC",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "SSJEB@yahoo.com",
+                "alt_text": "SSJEB@yahoo.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "ZB@yahoo.com",
+                "alt_text": "ZB@yahoo.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "30viria.alatas@gmail.com",
+                "alt_text": "30viria.alatas@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "yahoo.com",
+                "alt_text": "yahoo.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "YO19",
+                "alt_text": "YO19",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "yahoo.com",
+                "alt_text": "yahoo.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "OX20",
+                "alt_text": "OX20",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "30viria",
+                "alt_text": "30viria",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Building Number",
+                "alt_text": "Building Number",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "York",
+                "alt_text": "York",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Building Number",
+                "alt_text": "Building Number",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Woodstock",
+                "alt_text": "Woodstock",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "United Kingdom",
+                "alt_text": "United Kingdom",
+                "confidence": 0.9,
+                "source_model": "CountryRecognizer"
+              },
+              {
+                "text": "Building Nu",
+                "alt_text": "Building Nu",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "75": {
+            "ADDRESS": [
+              {
+                "text": "Callow Hill",
+                "alt_text": "Callow Hill",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Musker Street",
+                "alt_text": "Musker Street",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Liverpool",
+                "alt_text": "Liverpool",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              },
+              {
+                "text": "Floor 743",
+                "alt_text": "Floor 743",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Cottage Walk",
+                "alt_text": "Cottage Walk",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Rue de Ludres",
+                "alt_text": "Rue de Ludres",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Flat 517",
+                "alt_text": "Flat 517",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "B97",
+                "alt_text": "B97",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "L23",
+                "alt_text": "L23",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "E10",
+                "alt_text": "E10",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "76": {},
+          "77": {
+            "PERSON": [
+              {
+                "text": "Massive",
+                "alt_text": "Massive",
+                "confidence": 0.7425853201173128,
+                "source_model": "lgbm"
+              }
+            ],
+            "COMPANY": [
+              {
+                "text": "diverse group",
+                "alt_text": "diverse group",
+                "confidence": 0.6000000000000001,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "Male",
+                "alt_text": "Male",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "78": {
+            "NATIONAL_ID": [
+              {
+                "text": "519535460",
+                "alt_text": "519535460",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "IEGOR 301195 9 849",
+                "alt_text": "IEGOR 301195 9 849",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Drury Lane",
+                "alt_text": "Drury Lane",
+                "confidence": 0.9235353350630708,
+                "source_model": "nltagger+lgbm"
+              },
+              {
+                "text": "Iegor",
+                "alt_text": "Iegor",
+                "confidence": 0.8169291218135378,
+                "source_model": "lgbm+nltagger"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Drury Lane",
+                "alt_text": "Drury Lane",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "dbd2:f1f5:7983:bf3b:7253:be8e:c6e4:235e",
+                "alt_text": "dbd2:f1f5:7983:bf3b:7253:be8e:c6e4:235e",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "301195 9 849",
+                "alt_text": "301195 9 849",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "6th September 1964",
+                "alt_text": "6th September 1964",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "11:24",
+                "alt_text": "11:24",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "TEXT.INFO",
+                "alt_text": "TEXT.INFO",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "79": {
+            "DATE_TIME": [
+              {
+                "text": "Feb 8, 1986",
+                "alt_text": "Feb 8, 1986",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "26/10/2004",
+                "alt_text": "26/10/2004",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "4929-667-4889",
+                "alt_text": "4929-667-4889",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "4929-667-4889",
+                "alt_text": "4929-667-4889",
+                "confidence": 0.588,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "80": {
+            "PERSON": [
+              {
+                "text": "Bringing",
+                "alt_text": "Bringing",
+                "confidence": 0.6782837680378123,
+                "source_model": "lgbm"
+              },
+              {
+                "text": "Bissinger",
+                "alt_text": "Bissinger",
+                "confidence": 0.6,
+                "source_model": "names_db"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "1:21pm",
+                "alt_text": "1:21pm",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "21pm",
+                "alt_text": "21pm",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "81": {
+            "NATIONAL_ID": [
+              {
+                "text": "MINDA.658073.MR.352",
+                "alt_text": "MINDA.658073.MR.352",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "1dca:680f:2938:6035:4ed8:81d:c6d6:3b1a",
+                "alt_text": "1dca:680f:2938:6035:4ed8:81d:c6d6:3b1a",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "CREDENTIAL": [
+              {
+                "text": "Password: \"{0w7/U",
+                "alt_text": "Password: \"{0w7/U",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "asukas55@aol.com",
+                "alt_text": "asukas55@aol.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "3chunmei@protonmail.com",
+                "alt_text": "3chunmei@protonmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "ydtjqhxrfiv1162@hotmail.com",
+                "alt_text": "ydtjqhxrfiv1162@hotmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "A@protonmail.com",
+                "alt_text": "A@protonmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "FINANCIAL": [
+              {
+                "text": "asukas55",
+                "alt_text": "asukas55",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "asukas55",
+                "alt_text": "asukas55",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "aol.com",
+                "alt_text": "aol.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "protonmail.com",
+                "alt_text": "protonmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "ydtjqhxrfiv1162",
+                "alt_text": "ydtjqhxrfiv1162",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "hotmail.com",
+                "alt_text": "hotmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "protonmail.com",
+                "alt_text": "protonmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "tdjispgtfiqx547",
+                "alt_text": "tdjispgtfiqx547",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "UK57900JK",
+                "alt_text": "UK57900JK",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "OU79828NR",
+                "alt_text": "OU79828NR",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "FE15976DV",
+                "alt_text": "FE15976DV",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "82": {
+            "PERSON": [
+              {
+                "text": "Ansgar",
+                "alt_text": "Ansgar",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "D\u00e9lina",
+                "alt_text": "D\u00e9lina",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Szimonetta",
+                "alt_text": "Szimonetta",
+                "confidence": 0.85,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "M",
+                "alt_text": "M",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Prefer not to disclose",
+                "alt_text": "Prefer not to disclose",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "F",
+                "alt_text": "F",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "7 o'clock",
+                "alt_text": "7 o'clock",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "3:49am",
+                "alt_text": "3:49am",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "49am",
+                "alt_text": "49am",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "83": {
+            "USERNAME": [
+              {
+                "text": "top-notch",
+                "alt_text": "top-notch",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "84": {
+            "USERNAME": [
+              {
+                "text": "colsenet17",
+                "alt_text": "colsenet17",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "85": {
+            "PERSON": [
+              {
+                "text": "Contracts",
+                "alt_text": "Contracts",
+                "confidence": 0.6782837680378123,
+                "source_model": "lgbm"
+              }
+            ]
+          },
+          "86": {
+            "NATIONAL_ID": [
+              {
+                "text": "542177342",
+                "alt_text": "542177342",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "04828636",
+                "alt_text": "04828636",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "842844719",
+                "alt_text": "842844719",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "563278822",
+                "alt_text": "563278822",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "949322413",
+                "alt_text": "949322413",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "780179462",
+                "alt_text": "780179462",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "X3386845",
+                "alt_text": "X3386845",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "C7435753",
+                "alt_text": "C7435753",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "0709-04828636",
+                "alt_text": "0709-04828636",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "072.7772-9182",
+                "alt_text": "072.7772-9182",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "012-041.689-3957",
+                "alt_text": "012-041.689-3957",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "3945.181-0029",
+                "alt_text": "3945.181-0029",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "00090.77-879 4203",
+                "alt_text": "00090.77-879 4203",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "879 4203\n\n12",
+                "alt_text": "879 4203\n\n12",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "00 20-73 76-71",
+                "alt_text": "00 20-73 76-71",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "QU46289HW",
+                "alt_text": "QU46289HW",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "SW90578CS",
+                "alt_text": "SW90578CS",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "NU00307MI",
+                "alt_text": "NU00307MI",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "CU81880SY",
+                "alt_text": "CU81880SY",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "X3386845",
+                "alt_text": "X3386845",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "C7435753",
+                "alt_text": "C7435753",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "87": {
+            "DATE_TIME": [
+              {
+                "text": "June 15th, 1973",
+                "alt_text": "June 15th, 1973",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "June 15th, 1973",
+                "alt_text": "June 15th, 1973",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "1952-10-23T00:00:00",
+                "alt_text": "1952-10-23T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "1952-10-23T00:00:00",
+                "alt_text": "1952-10-23T00:00:00",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "15th",
+                "alt_text": "15th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "15th",
+                "alt_text": "15th",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "031487919",
+                "alt_text": "031487919",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "757077296",
+                "alt_text": "757077296",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "88": {
+            "ADDRESS": [
+              {
+                "text": "Common Lane",
+                "alt_text": "Common Lane",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "22nd August 2007",
+                "alt_text": "22nd August 2007",
+                "confidence": 0.92,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "22nd",
+                "alt_text": "22nd",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "89": {
+            "PERSON": [
+              {
+                "text": "Helbert",
+                "alt_text": "Helbert",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              },
+              {
+                "text": "Gyo",
+                "alt_text": "Gyo",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "GENDER": [
+              {
+                "text": "F",
+                "alt_text": "F",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "helbert@gmail.com",
+                "alt_text": "helbert@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.95,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Zuid-Holland",
+                "alt_text": "Zuid-Holland",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "e210",
+                "alt_text": "e210",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "38pm",
+                "alt_text": "38pm",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "080065505",
+                "alt_text": "080065505",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "0070-07 986.4979",
+                "alt_text": "0070-07 986.4979",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ADDRESS": [
+              {
+                "text": "Nederland",
+                "alt_text": "Nederland",
+                "confidence": 0.7999999999999999,
+                "source_model": "CityRecognizer"
+              },
+              {
+                "text": "Zuid-Holland",
+                "alt_text": "Zuid-Holland",
+                "confidence": 0.8,
+                "source_model": "LabeledPIIDetector"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "7c0c:35a3:e210:d7f1:6366:4206:353a:9ca9",
+                "alt_text": "7c0c:35a3:e210:d7f1:6366:4206:353a:9ca9",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "2:38pm",
+                "alt_text": "2:38pm",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "90": {
+            "NATIONAL_ID": [
+              {
+                "text": "from 471477552",
+                "alt_text": "from 471477552",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Crafting",
+                "alt_text": "Crafting",
+                "confidence": 0.6782837680378123,
+                "source_model": "lgbm"
+              }
+            ]
+          },
+          "91": {
+            "USERNAME": [
+              {
+                "text": "a.com",
+                "alt_text": "a.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "1938qun",
+                "alt_text": "1938qun",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "hotmail.com",
+                "alt_text": "hotmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "iliksoy1969",
+                "alt_text": "iliksoy1969",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "hotmail.com",
+                "alt_text": "hotmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "ID": [
+              {
+                "text": "RS96293BB",
+                "alt_text": "RS96293BB",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "BK03584DF",
+                "alt_text": "BK03584DF",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "XW39670SY",
+                "alt_text": "XW39670SY",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "LE33574SP",
+                "alt_text": "LE33574SP",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "N@gmail.com",
+                "alt_text": "N@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "1938qun@hotmail.com",
+                "alt_text": "1938qun@hotmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "babitha.iliksoy1969@hotmail.com",
+                "alt_text": "babitha.iliksoy1969@hotmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "FINANCIAL": [
+              {
+                "text": "iliksoy1969",
+                "alt_text": "iliksoy1969",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "92": {
+            "PHONE": [
+              {
+                "text": "+37 824.803-0319",
+                "alt_text": "+37 824.803-0319",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "cannelle1951@tutanota.com",
+                "alt_text": "cannelle1951@tutanota.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "cannelle1951",
+                "alt_text": "cannelle1951",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "tutanota.com",
+                "alt_text": "tutanota.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "eco-friendly",
+                "alt_text": "eco-friendly",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "Eco-Friendly",
+                "alt_text": "Eco-Friendly",
+                "confidence": 0.58,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PERSON": [
+              {
+                "text": "Key Topics",
+                "alt_text": "Key Topics",
+                "confidence": 0.7,
+                "source_model": "LabeledPIIDetector"
+              }
+            ]
+          },
+          "93": {
+            "USERNAME": [
+              {
+                "text": "WV14",
+                "alt_text": "WV14",
+                "confidence": 0.65,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "COMPANY": [
+              {
+                "text": "Physical Plant Management",
+                "alt_text": "Physical Plant Management",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "94": {
+            "DATE_TIME": [
+              {
+                "text": "9th December 1996",
+                "alt_text": "9th December 1996",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "8:29 PM",
+                "alt_text": "8:29 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "95": {
+            "EMAIL": [
+              {
+                "text": "KGW@hotmail.com",
+                "alt_text": "KGW@hotmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              },
+              {
+                "text": "ropaetsch@gmail.com",
+                "alt_text": "ropaetsch@gmail.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "hotmail.com",
+                "alt_text": "hotmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "b914",
+                "alt_text": "b914",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "d89",
+                "alt_text": "d89",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "eibbhldbserknotg855",
+                "alt_text": "eibbhldbserknotg855",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "gmail.com",
+                "alt_text": "gmail.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "P00",
+                "alt_text": "P00",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "NATIONAL_ID": [
+              {
+                "text": "0297255898",
+                "alt_text": "0297255898",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "013735406",
+                "alt_text": "013735406",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "57.01.12.01.P00.9",
+                "alt_text": "57.01.12.01.P00.9",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+1120274.4441",
+                "alt_text": "+1120274.4441",
+                "confidence": 0.85,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "05651.477224",
+                "alt_text": "05651.477224",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "IP_ADDRESS": [
+              {
+                "text": "8c75:fe4b:fa9e:b914:fca8:fbad:d89:4e6f",
+                "alt_text": "8c75:fe4b:fa9e:b914:fca8:fbad:d89:4e6f",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "MEDICAL": [
+              {
+                "text": "d89",
+                "alt_text": "d89",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "P00.9",
+                "alt_text": "P00.9",
+                "confidence": 0.7,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "DATE_TIME": [
+              {
+                "text": "01.12.01",
+                "alt_text": "01.12.01",
+                "confidence": 0.6,
+                "source_model": "DateRecognizer"
+              }
+            ]
+          },
+          "96": {},
+          "97": {
+            "DATE_TIME": [
+              {
+                "text": "4:00 PM",
+                "alt_text": "4:00 PM",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              },
+              {
+                "text": "2023-08-15",
+                "alt_text": "2023-08-15",
+                "confidence": 0.9,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "FINANCIAL": [
+              {
+                "text": "$499",
+                "alt_text": "$499",
+                "confidence": 0.75,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "EMAIL": [
+              {
+                "text": "tiurid@yahoo.com",
+                "alt_text": "tiurid@yahoo.com",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "yahoo.com",
+                "alt_text": "yahoo.com",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "PHONE": [
+              {
+                "text": "+4402033654632",
+                "alt_text": "+4402033654632",
+                "confidence": 1.0,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "CREDIT_CARD": [
+              {
+                "text": "4402033654632",
+                "alt_text": "4402033654632",
+                "confidence": 0.55,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          },
+          "98": {},
+          "99": {
+            "EMAIL": [
+              {
+                "text": "support@vrschools.co.uk",
+                "alt_text": "support@vrschools.co.uk",
+                "confidence": 1.0,
+                "source_model": "EmailRecognizer"
+              }
+            ],
+            "URL": [
+              {
+                "text": "vrschools.co.uk",
+                "alt_text": "vrschools.co.uk",
+                "confidence": 0.8,
+                "source_model": "PatternRecognizer"
+              }
+            ],
+            "USERNAME": [
+              {
+                "text": "vrschools.co",
+                "alt_text": "vrschools.co",
+                "confidence": 0.6,
+                "source_model": "PatternRecognizer"
+              }
+            ]
+          }
+        },
+        "latencies_ms": [
+          14188.971000025049,
+          183.8057499844581,
+          129.711874993518,
+          100.71099997730926,
+          142.5034580170177,
+          4210.64624999417,
+          1021.7056249966845,
+          358.0809169798158,
+          301.84745899168774,
+          106.28858400741592,
+          335.55933396564797,
+          44.11504097515717,
+          448.77825002186,
+          415.5851250397973,
+          51.15066695725545,
+          29.6318749897182,
+          220.24862497346476,
+          32.58641698630527,
+          171.56033299397677,
+          120.75854098657146,
+          44.860374997369945,
+          163.56095898663625,
+          38.60679198987782,
+          32.239665975794196,
+          523.560333007481,
+          123.28820797847584,
+          750.8422079845332,
+          182.015375001356,
+          255.42441703146324,
+          60.81054103560746,
+          77.32333295280114,
+          127.25737498840317,
+          47.685542027466,
+          35.81691696308553,
+          157.98641700530425,
+          40.174333029426634,
+          34.33575003873557,
+          217.05741697223857,
+          189.4684589933604,
+          54.978166008368134,
+          155.24300001561642,
+          121.0350000183098,
+          35.05583404330537,
+          46.13133298698813,
+          88.9173750183545,
+          350.782125024125,
+          93.21170800831169,
+          810.5582079733722,
+          92.1597090200521,
+          397.0824590069242,
+          411.6935839992948,
+          152.18437497969717,
+          42.97562502324581,
+          118.02420899039134,
+          134.85616602702066,
+          247.16995802009478,
+          91.37174999341369,
+          147.45254098670557,
+          140.55608300259337,
+          111.22358299326152,
+          36.706916987895966,
+          119.02774998452514,
+          23.363750020507723,
+          104.71487499307841,
+          148.4875000314787,
+          76.24149997718632,
+          127.22066702554002,
+          25.72187501937151,
+          43.421291979029775,
+          405.25783400516957,
+          186.1212920048274,
+          60.367458034306765,
+          104.70100003294647,
+          209.0394579572603,
+          182.66387499170378,
+          49.4921249919571,
+          37.42995799984783,
+          50.66295899450779,
+          312.2803330188617,
+          158.95454195560887,
+          283.01620797719806,
+          80.39366704178974,
+          280.1242080167867,
+          25.057083985302597,
+          28.094207984395325,
+          28.107041027396917,
+          223.20966597180814,
+          324.38483397709206,
+          94.07549997558817,
+          373.66429198300466,
+          112.03320801723748,
+          40.18404200905934,
+          168.68062497815117,
+          43.281499994918704,
+          315.85762498434633,
+          158.84337498573586,
+          40.22804100532085,
+          343.5310000204481,
+          38.52666699094698,
+          34.347041975706816
+        ],
+        "input_tokens": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "output_tokens": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "parse_failures": 0,
+        "summary": {
+          "metrics": {
+            "NATIONAL_ID": {
+              "tp": 81,
+              "tp_precision": 76,
+              "tp_cross": 6,
+              "fp": 0,
+              "total": 92,
+              "detected": 83,
+              "precision": 1.0,
+              "recall": 0.8804347826086957,
+              "f1": 0.9364161849710982
+            },
+            "ID": {
+              "tp": 43,
+              "tp_precision": 41,
+              "tp_cross": 2,
+              "fp": 0,
+              "total": 46,
+              "detected": 43,
+              "precision": 1.0,
+              "recall": 0.9347826086956522,
+              "f1": 0.9662921348314606
+            },
+            "PHONE": {
+              "tp": 38,
+              "tp_precision": 43,
+              "tp_cross": 0,
+              "fp": 1,
+              "total": 43,
+              "detected": 56,
+              "precision": 0.9772727272727273,
+              "recall": 0.8837209302325582,
+              "f1": 0.9281454132348764
+            },
+            "USERNAME": {
+              "tp": 38,
+              "tp_precision": 33,
+              "tp_cross": 5,
+              "fp": 26,
+              "total": 41,
+              "detected": 162,
+              "precision": 0.559322033898305,
+              "recall": 0.926829268292683,
+              "f1": 0.6976356050069541
+            },
+            "PERSON": {
+              "tp": 74,
+              "tp_precision": 65,
+              "tp_cross": 1,
+              "fp": 13,
+              "total": 94,
+              "detected": 86,
+              "precision": 0.8333333333333334,
+              "recall": 0.7872340425531915,
+              "f1": 0.8096280087527352
+            },
+            "ADDRESS": {
+              "tp": 102,
+              "tp_precision": 43,
+              "tp_cross": 54,
+              "fp": 17,
+              "total": 135,
+              "detected": 63,
+              "precision": 0.7166666666666667,
+              "recall": 0.7555555555555555,
+              "f1": 0.7355974842767294
+            },
+            "DATE_TIME": {
+              "tp": 71,
+              "tp_precision": 79,
+              "tp_cross": 0,
+              "fp": 1,
+              "total": 73,
+              "detected": 85,
+              "precision": 0.9875,
+              "recall": 0.9726027397260274,
+              "f1": 0.9799947584519961
+            },
+            "GENDER": {
+              "tp": 12,
+              "tp_precision": 12,
+              "tp_cross": 0,
+              "fp": 8,
+              "total": 12,
+              "detected": 20,
+              "precision": 0.6,
+              "recall": 1.0,
+              "f1": 0.7499999999999999
+            },
+            "EMAIL": {
+              "tp": 32,
+              "tp_precision": 32,
+              "tp_cross": 0,
+              "fp": 0,
+              "total": 32,
+              "detected": 32,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "CREDENTIAL": {
+              "tp": 5,
+              "tp_precision": 3,
+              "tp_cross": 2,
+              "fp": 1,
+              "total": 17,
+              "detected": 6,
+              "precision": 0.75,
+              "recall": 0.29411764705882354,
+              "f1": 0.42253521126760557
+            },
+            "IP_ADDRESS": {
+              "tp": 9,
+              "tp_precision": 9,
+              "tp_cross": 0,
+              "fp": 0,
+              "total": 9,
+              "detected": 9,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "COORDINATES": {
+              "tp": 1,
+              "tp_precision": 1,
+              "tp_cross": 0,
+              "fp": 0,
+              "total": 1,
+              "detected": 1,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0
+            },
+            "BIOMETRIC": {
+              "tp": 0,
+              "fp": 3,
+              "total": 0,
+              "detected": 3,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            },
+            "MEDICAL": {
+              "tp": 0,
+              "fp": 9,
+              "total": 0,
+              "detected": 9,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            },
+            "COMPANY": {
+              "tp": 0,
+              "fp": 8,
+              "total": 0,
+              "detected": 8,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            },
+            "FINANCIAL": {
+              "tp": 0,
+              "fp": 4,
+              "total": 0,
+              "detected": 4,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            },
+            "URL": {
+              "tp": 0,
+              "fp": 2,
+              "total": 0,
+              "detected": 2,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            },
+            "CREDIT_CARD": {
+              "tp": 0,
+              "fp": 1,
+              "total": 0,
+              "detected": 1,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0
+            }
+          },
+          "memory_peak_mb": 2296.8,
+          "avg_latency_ms": 350.5674012686359,
+          "median_latency_ms": 123.28820797847584,
+          "p95_latency_ms": 750.8422079845332,
+          "samples_per_sec": 2.852518506801239,
+          "total_samples": 100,
+          "engine_version": "1.8.0",
+          "overall_recall": 0.8504201680672269,
+          "overall_precision": 0.8433333333333334,
+          "overall_f1": 0.8468619246861925
+        }
+      }
+    }
+  }
+}
