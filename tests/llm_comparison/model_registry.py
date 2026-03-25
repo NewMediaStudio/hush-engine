@@ -147,17 +147,6 @@ MODELS = {
         "api_pricing_output": 15.00,
     },
     # Gemini models (API-based, free tier available)
-    "gemini-2.0-flash": {
-        "display_name": "Gemini 2.0 Flash",
-        "family": "Gemini",
-        "params_b": None,
-        "disk_size_mb": None,
-        "ram_estimate_mb": None,
-        "ollama_tag": None,
-        "gemini_model_id": "gemini-2.0-flash",
-        "api_pricing_input": 0.10,
-        "api_pricing_output": 0.40,
-    },
     "gemini-2.5-flash": {
         "display_name": "Gemini 2.5 Flash",
         "family": "Gemini",
@@ -165,9 +154,20 @@ MODELS = {
         "disk_size_mb": None,
         "ram_estimate_mb": None,
         "ollama_tag": None,
-        "gemini_model_id": "gemini-2.5-flash-preview-05-20",
+        "gemini_model_id": "gemini-2.5-flash",
         "api_pricing_input": 0.15,
         "api_pricing_output": 0.60,
+    },
+    "gemini-2.5-pro": {
+        "display_name": "Gemini 2.5 Pro",
+        "family": "Gemini",
+        "params_b": None,
+        "disk_size_mb": None,
+        "ram_estimate_mb": None,
+        "ollama_tag": None,
+        "gemini_model_id": "gemini-2.5-pro",
+        "api_pricing_input": 1.25,
+        "api_pricing_output": 10.00,
     },
 }
 
