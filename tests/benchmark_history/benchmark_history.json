@@ -29329,6 +29329,898 @@
       "model_display_name": "Gemini 2.5 Flash",
       "parse_failure_rate": 0.005,
       "avg_latency_ms": 1766.3100819558551
+    },
+    {
+      "timestamp": "2026-03-25T17:34:55.572067",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "1.8.0",
+      "ground_truth_count": 2647,
+      "csv_total_detections": 3291,
+      "csv_overall_recall": 0.9448432187381942,
+      "csv_overall_precision": 0.9960175228992433,
+      "csv_overall_f1": 0.9697557192710352,
+      "csv_metrics_by_type": {
+        "ADDRESS": {
+          "tp": 302,
+          "tp_precision": 475,
+          "tp_cross": 1,
+          "fp": 10,
+          "total": 302,
+          "detected": 516,
+          "precision": 0.979381443298969,
+          "recall": 1.0,
+          "f1": 0.9895833333333333
+        },
+        "USERNAME": {
+          "tp": 99,
+          "tp_precision": 60,
+          "tp_cross": 39,
+          "fp": 0,
+          "total": 239,
+          "detected": 493,
+          "precision": 1.0,
+          "recall": 0.41422594142259417,
+          "f1": 0.5857988165680473
+        },
+        "PERSON": {
+          "tp": 721,
+          "tp_precision": 691,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 727,
+          "detected": 704,
+          "precision": 1.0,
+          "recall": 0.9917469050894085,
+          "f1": 0.9958563535911602
+        },
+        "DATE_TIME": {
+          "tp": 510,
+          "tp_precision": 643,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 510,
+          "detected": 643,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 326,
+          "tp_precision": 326,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 326,
+          "detected": 326,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PHONE": {
+          "tp": 188,
+          "tp_precision": 200,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 188,
+          "detected": 202,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 78,
+          "tp_precision": 78,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 78,
+          "detected": 91,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDIT_CARD": {
+          "tp": 116,
+          "tp_precision": 116,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 116,
+          "detected": 116,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "NATIONAL_ID": {
+          "tp": 107,
+          "tp_precision": 107,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 107,
+          "detected": 146,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 54,
+          "tp_precision": 54,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 54,
+          "detected": 54,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "duration_seconds": 79.96017865737667,
+      "samples_per_sec": 12.506225183474445,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": false,
+      "model_id": "hush_engine",
+      "model_display_name": "Hush Engine v1.8.0",
+      "parse_failure_rate": 0,
+      "avg_latency_ms": 79.96017865737667,
+      "_tag": "hush_engine|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-25T18:30:36.813418",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:llama3.2:1b",
+      "ground_truth_count": 2647,
+      "csv_total_detections": 2539,
+      "csv_overall_recall": 0.9712882508500189,
+      "csv_overall_precision": 0.9494091580502215,
+      "csv_overall_f1": 0.9602240896358543,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 723,
+          "tp_precision": 484,
+          "tp_cross": 53,
+          "fp": 11,
+          "total": 727,
+          "detected": 587,
+          "precision": 0.9777777777777777,
+          "recall": 0.9944979367262724,
+          "f1": 0.9860669838662183
+        },
+        "NATIONAL_ID": {
+          "tp": 97,
+          "tp_precision": 0,
+          "tp_cross": 97,
+          "fp": 1,
+          "total": 107,
+          "detected": 2,
+          "precision": 0.0,
+          "recall": 0.9065420560747663,
+          "f1": 0.0
+        },
+        "DATE_TIME": {
+          "tp": 499,
+          "tp_precision": 405,
+          "tp_cross": 7,
+          "fp": 34,
+          "total": 510,
+          "detected": 450,
+          "precision": 0.9225512528473804,
+          "recall": 0.9784313725490196,
+          "f1": 0.9496700038297883
+        },
+        "ADDRESS": {
+          "tp": 300,
+          "tp_precision": 430,
+          "tp_cross": 2,
+          "fp": 12,
+          "total": 302,
+          "detected": 489,
+          "precision": 0.9728506787330317,
+          "recall": 0.9933774834437086,
+          "f1": 0.9830069343900023
+        },
+        "COMPANY": {
+          "tp": 78,
+          "tp_precision": 33,
+          "tp_cross": 30,
+          "fp": 0,
+          "total": 78,
+          "detected": 39,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDIT_CARD": {
+          "tp": 116,
+          "tp_precision": 0,
+          "tp_cross": 116,
+          "fp": 19,
+          "total": 116,
+          "detected": 55,
+          "precision": 0.0,
+          "recall": 1.0,
+          "f1": 0.0
+        },
+        "EMAIL": {
+          "tp": 326,
+          "tp_precision": 267,
+          "tp_cross": 0,
+          "fp": 11,
+          "total": 326,
+          "detected": 396,
+          "precision": 0.960431654676259,
+          "recall": 1.0,
+          "f1": 0.9798165137614679
+        },
+        "USERNAME": {
+          "tp": 212,
+          "tp_precision": 0,
+          "tp_cross": 212,
+          "fp": 0,
+          "total": 239,
+          "detected": 0,
+          "precision": 0,
+          "recall": 0.8870292887029289,
+          "f1": 0.0
+        },
+        "PHONE": {
+          "tp": 166,
+          "tp_precision": 171,
+          "tp_cross": 11,
+          "fp": 7,
+          "total": 188,
+          "detected": 475,
+          "precision": 0.9606741573033708,
+          "recall": 0.8829787234042553,
+          "f1": 0.9201893153526972
+        },
+        "AGE": {
+          "tp": 54,
+          "tp_precision": 4,
+          "tp_cross": 49,
+          "fp": 9,
+          "total": 54,
+          "detected": 13,
+          "precision": 0.3076923076923077,
+          "recall": 1.0,
+          "f1": 0.47058823529411764
+        },
+        "URL": {
+          "tp": 0,
+          "fp": 16,
+          "total": 0,
+          "detected": 16,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 8,
+          "total": 0,
+          "detected": 8,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "COORDINATES": {
+          "tp": 0,
+          "fp": 9,
+          "total": 0,
+          "detected": 9,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 680.4823506961111,
+      "samples_per_sec": 1.4695458287449084,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "llama3.2:1b",
+      "model_display_name": "Llama 3.2 (1B)",
+      "parse_failure_rate": 0.145,
+      "avg_latency_ms": 680.4823506961111,
+      "_tag": "llama3.2:1b|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-25T20:07:56.651800",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:gemma2:latest",
+      "ground_truth_count": 2647,
+      "csv_total_detections": 2707,
+      "csv_overall_recall": 0.9792217604835664,
+      "csv_overall_precision": 0.9976905311778291,
+      "csv_overall_f1": 0.98836987607245,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 727,
+          "tp_precision": 723,
+          "tp_cross": 0,
+          "fp": 2,
+          "total": 727,
+          "detected": 923,
+          "precision": 0.9972413793103448,
+          "recall": 1.0,
+          "f1": 0.9986187845303868
+        },
+        "NATIONAL_ID": {
+          "tp": 107,
+          "tp_precision": 107,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 107,
+          "detected": 108,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 510,
+          "tp_precision": 510,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 510,
+          "detected": 510,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 302,
+          "tp_precision": 433,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 302,
+          "detected": 433,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 64,
+          "tp_precision": 16,
+          "tp_cross": 31,
+          "fp": 0,
+          "total": 78,
+          "detected": 45,
+          "precision": 1.0,
+          "recall": 0.8205128205128205,
+          "f1": 0.9014084507042254
+        },
+        "CREDIT_CARD": {
+          "tp": 116,
+          "tp_precision": 116,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 116,
+          "detected": 116,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 326,
+          "tp_precision": 326,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 326,
+          "detected": 326,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "USERNAME": {
+          "tp": 198,
+          "tp_precision": 0,
+          "tp_cross": 198,
+          "fp": 0,
+          "total": 239,
+          "detected": 0,
+          "precision": 0,
+          "recall": 0.8284518828451883,
+          "f1": 0.0
+        },
+        "PHONE": {
+          "tp": 188,
+          "tp_precision": 188,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 188,
+          "detected": 188,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 54,
+          "tp_precision": 54,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 54,
+          "detected": 54,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 4,
+          "total": 0,
+          "detected": 4,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 3419.152341456851,
+      "samples_per_sec": 0.29247015053266523,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "gemma2:latest",
+      "model_display_name": "Gemma 2 (9B)",
+      "parse_failure_rate": 0.0,
+      "avg_latency_ms": 3419.152341456851,
+      "_tag": "gemma2:latest|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-25T20:07:56.651832",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:qwen2.5:latest",
+      "ground_truth_count": 2647,
+      "csv_total_detections": 2644,
+      "csv_overall_recall": 0.9822440498677748,
+      "csv_overall_precision": 0.970873786407767,
+      "csv_overall_f1": 0.976525821596244,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 727,
+          "tp_precision": 720,
+          "tp_cross": 0,
+          "fp": 1,
+          "total": 727,
+          "detected": 857,
+          "precision": 0.9986130374479889,
+          "recall": 1.0,
+          "f1": 0.9993060374739764
+        },
+        "NATIONAL_ID": {
+          "tp": 107,
+          "tp_precision": 107,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 107,
+          "detected": 107,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 510,
+          "tp_precision": 505,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 510,
+          "detected": 505,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 302,
+          "tp_precision": 399,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 302,
+          "detected": 400,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 56,
+          "tp_precision": 13,
+          "tp_cross": 19,
+          "fp": 0,
+          "total": 78,
+          "detected": 13,
+          "precision": 1.0,
+          "recall": 0.717948717948718,
+          "f1": 0.835820895522388
+        },
+        "CREDIT_CARD": {
+          "tp": 116,
+          "tp_precision": 116,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 116,
+          "detected": 117,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 326,
+          "tp_precision": 326,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 326,
+          "detected": 326,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "USERNAME": {
+          "tp": 214,
+          "tp_precision": 0,
+          "tp_cross": 214,
+          "fp": 0,
+          "total": 239,
+          "detected": 0,
+          "precision": 0,
+          "recall": 0.895397489539749,
+          "f1": 0.0
+        },
+        "PHONE": {
+          "tp": 188,
+          "tp_precision": 188,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 188,
+          "detected": 188,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 54,
+          "tp_precision": 54,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 54,
+          "detected": 54,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 77,
+          "total": 0,
+          "detected": 77,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 1576.9147760774358,
+      "samples_per_sec": 0.6341496795961877,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "qwen2.5:latest",
+      "model_display_name": "Qwen 2.5 (7B)",
+      "parse_failure_rate": 0.0,
+      "avg_latency_ms": 1576.9147760774358,
+      "_tag": "qwen2.5:latest|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-25T20:07:56.651844",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:gemini-2.5-flash",
+      "ground_truth_count": 2522,
+      "csv_total_detections": 2564,
+      "csv_overall_recall": 1.0,
+      "csv_overall_precision": 0.9790372670807453,
+      "csv_overall_f1": 0.9894076108277755,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 722,
+          "tp_precision": 720,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 722,
+          "detected": 720,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 316,
+          "tp_precision": 315,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 316,
+          "detected": 315,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 473,
+          "tp_precision": 470,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 473,
+          "detected": 470,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDIT_CARD": {
+          "tp": 131,
+          "tp_precision": 130,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 131,
+          "detected": 130,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "NATIONAL_ID": {
+          "tp": 128,
+          "tp_precision": 128,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 128,
+          "detected": 128,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PHONE": {
+          "tp": 199,
+          "tp_precision": 198,
+          "tp_cross": 1,
+          "fp": 0,
+          "total": 199,
+          "detected": 198,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 366,
+          "tp_precision": 362,
+          "tp_cross": 4,
+          "fp": 0,
+          "total": 366,
+          "detected": 362,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 67,
+          "tp_precision": 67,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 67,
+          "detected": 67,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 120,
+          "tp_precision": 120,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 120,
+          "detected": 120,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ID": {
+          "tp": 0,
+          "fp": 51,
+          "total": 0,
+          "detected": 51,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 3,
+          "total": 0,
+          "detected": 3,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 1766.3100819558551,
+      "samples_per_sec": 0.5661520081981805,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "gemini-2.5-flash",
+      "model_display_name": "Gemini 2.5 Flash",
+      "parse_failure_rate": 0.005,
+      "avg_latency_ms": 1766.3100819558551,
+      "_tag": "gemini-2.5-flash|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-25T20:40:27.217304",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:mistral:7b",
+      "ground_truth_count": 2647,
+      "csv_total_detections": 2512,
+      "csv_overall_recall": 0.9690215338118625,
+      "csv_overall_precision": 0.9984429739198132,
+      "csv_overall_f1": 0.9835122699386503,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 725,
+          "tp_precision": 699,
+          "tp_cross": 0,
+          "fp": 1,
+          "total": 727,
+          "detected": 867,
+          "precision": 0.9985714285714286,
+          "recall": 0.9972489683631361,
+          "f1": 0.9979097603264042
+        },
+        "NATIONAL_ID": {
+          "tp": 107,
+          "tp_precision": 107,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 107,
+          "detected": 107,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DATE_TIME": {
+          "tp": 510,
+          "tp_precision": 481,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 510,
+          "detected": 481,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 302,
+          "tp_precision": 377,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 302,
+          "detected": 377,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "COMPANY": {
+          "tp": 59,
+          "tp_precision": 10,
+          "tp_cross": 33,
+          "fp": 0,
+          "total": 78,
+          "detected": 13,
+          "precision": 1.0,
+          "recall": 0.7564102564102564,
+          "f1": 0.8613138686131386
+        },
+        "CREDIT_CARD": {
+          "tp": 116,
+          "tp_precision": 116,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 116,
+          "detected": 116,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "EMAIL": {
+          "tp": 326,
+          "tp_precision": 326,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 326,
+          "detected": 327,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "USERNAME": {
+          "tp": 178,
+          "tp_precision": 0,
+          "tp_cross": 178,
+          "fp": 0,
+          "total": 239,
+          "detected": 0,
+          "precision": 0,
+          "recall": 0.7447698744769874,
+          "f1": 0.0
+        },
+        "PHONE": {
+          "tp": 188,
+          "tp_precision": 188,
+          "tp_cross": 0,
+          "fp": 0,
+          "total": 188,
+          "detected": 188,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "AGE": {
+          "tp": 54,
+          "tp_precision": 33,
+          "tp_cross": 13,
+          "fp": 0,
+          "total": 54,
+          "detected": 33,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "detected": 1,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        },
+        "ID": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "detected": 2,
+          "precision": 0,
+          "recall": 0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 2229.51939379581,
+      "samples_per_sec": 0.44852715916387526,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "mistral:7b",
+      "model_display_name": "Mistral 7B",
+      "parse_failure_rate": 0.0,
+      "avg_latency_ms": 2229.51939379581,
+      "_tag": "mistral:7b|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-26T09:41:57.249186",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "LLM:phi4:latest",
+      "csv_overall_recall": 0.9837551945598791,
+      "csv_overall_precision": 0.9691105321920357,
+      "csv_overall_f1": 0.9763779527559056,
+      "datasets_tested": [
+        "synthetic_golden.json"
+      ],
+      "llm_benchmark": true,
+      "model_id": "phi4:latest",
+      "model_display_name": "Phi-4 (14B)",
+      "parse_failure_rate": 0.0,
+      "avg_latency_ms": 2889.9266292747343,
+      "_tag": "phi4:latest|synthetic_golden.json|golden_fresh"
     }
   ],
   "total_runs": 340,

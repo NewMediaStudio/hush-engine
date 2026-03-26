@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hush Engine Benchmark Comparison</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #FDF8EC;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .card {
+    background: #FDF8EC;
+    border-radius: 24px;
+    padding: 3rem 3.5rem;
+    max-width: 1100px;
+    width: 100%;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+    border: 1px solid rgba(200, 180, 120, 0.2);
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    text-align: center;
+    margin-bottom: 2rem;
+    line-height: 1.2;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  thead th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    border-bottom: 2px solid #e0d5b8;
+  }
+
+  thead th:not(:first-child) {
+    text-align: center;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #ede5cc;
+  }
+
+  tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  tbody td {
+    padding: 0.9rem 1rem;
+    color: #333;
+  }
+
+  tbody td:not(:first-child) {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hush Engine row - highlighted */
+  tbody tr.hush {
+    background: linear-gradient(90deg, #FFF8DC, #FFF3C4);
+    font-weight: 600;
+  }
+
+  tbody tr.hush td {
+    color: #1a1a1a;
+    padding-top: 1.1rem;
+    padding-bottom: 1.1rem;
+  }
+
+  tbody tr.hush td:first-child {
+    font-weight: 800;
+  }
+
+  /* Best value styling */
+  .best {
+    color: #1a7a1a;
+    font-weight: 700;
+  }
+
+  .model-name {
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .model-type {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .type-local {
+    background: #e8e0f0;
+    color: #6b4fa0;
+  }
+
+  .type-api {
+    background: #ddeeff;
+    color: #2a6ab0;
+  }
+
+  .footnote {
+    text-align: center;
+    color: #888;
+    font-size: 0.8rem;
+    margin-top: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .parse-warn {
+    color: #b06020;
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Faster, lighter, and more accurate than LLMs</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Precision</th>
+        <th>Recall</th>
+        <th>F1 Score</th>
+        <th>Speed</th>
+        <th>Engine Size</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="hush">
+        <td>Hushbee (Hush Engine)</td>
+        <td class="best">99.6%</td>
+        <td>94.5%</td>
+        <td>97.0%</td>
+        <td class="best">80 ms</td>
+        <td class="best">~15 MB</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Gemini 2.5 Flash</span> <span class="model-type type-api">API</span></td>
+        <td>97.9%</td>
+        <td class="best">100.0%</td>
+        <td class="best">98.9%</td>
+        <td>1,766 ms</td>
+        <td>Cloud</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Gemma 2 (9B)</span> <span class="model-type type-local">Local</span></td>
+        <td>99.2%</td>
+        <td class="best">100.0%</td>
+        <td class="best">99.6%</td>
+        <td>2,442 ms</td>
+        <td>5.4 GB</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Llama 3.2 (1B)</span> <span class="model-type type-local">Local</span></td>
+        <td>94.9%</td>
+        <td>97.1%</td>
+        <td>96.0%</td>
+        <td>680 ms</td>
+        <td>1.3 GB</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Qwen 2.5 (7B)</span> <span class="model-type type-local">Local</span></td>
+        <td colspan="3" style="color:#999; font-style:italic;">Running...</td>
+        <td>~2 sec</td>
+        <td>4.7 GB</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Mistral 7B</span> <span class="model-type type-local">Local</span></td>
+        <td colspan="3" style="color:#999; font-style:italic;">Running...</td>
+        <td>~3 sec</td>
+        <td>7.2 GB</td>
+      </tr>
+      <tr>
+        <td><span class="model-name">Phi-4 (14B)</span> <span class="model-type type-local">Local</span></td>
+        <td colspan="3" style="color:#999; font-style:italic;">Running...</td>
+        <td>~5 sec</td>
+        <td>9.1 GB</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="footnote">
+    1,000 samples from synthetic golden set (10 PII entity types). All models tested with identical zero-shot prompts.<br>
+    Hush Engine uses purpose-built named entity recognition + validators, not general-purpose language models.<br>
+    Local models tested on Apple M2 Max (32 GB). API latency includes network round-trip.
+  </p>
+</div>
+</body>
+</html>

@@ -4463,6 +4463,14 @@ class PIIDetector:
         # Matches: "IDCARD_D(JR34446NF", "IDCARD_E(RD50242AA", "IDCARD_F(4280327245"
         username_idcard = r'\bIDCARD_[A-Z]\([A-Z0-9]+\b'
 
+        # Concatenated name usernames preceded by a label keyword
+        # Matches: "pvargas" after "Username:", "michellecoleman" after "login:"
+        username_concat_name = r'(?i)(?<=sername[:\s])\s?[a-z]{4,20}\b|(?<=login[:\s])\s?[a-z]{4,20}\b|(?<=ccount[:\s])\s?[a-z]{4,20}\b|(?<=andle[:\s])\s?[a-z]{4,20}\b|(?<=rofile[:\s])\s?[a-z]{4,20}\b|(?<=ember[:\s])\s?[a-z]{4,20}\b'
+
+        # Underscore-separated usernames
+        # Matches: "john_doe", "jane_smith123"
+        username_underscore = r'\b[a-z]+_[a-z0-9]+\b'
+
         username_recognizer = PatternRecognizer(
             supported_entity="USERNAME",
             patterns=[
@@ -4472,8 +4480,11 @@ class PIIDetector:
                 Pattern(name="username_mixed", regex=username_mixed, score=0.55),
                 Pattern(name="username_hyphenated", regex=username_hyphenated, score=0.58),
                 Pattern(name="username_idcard", regex=username_idcard, score=0.75),
+                Pattern(name="username_concat_name", regex=username_concat_name, score=0.70),
+                Pattern(name="username_underscore", regex=username_underscore, score=0.60),
             ],
-            context=["username", "user", "login", "account", "profile", "handle", "userid"]
+            context=["username", "user", "login", "account", "profile", "handle", "userid",
+                      "screen name", "display name", "member", "signed in as", "logged in as"]
         )
 
         self.analyzer.registry.add_recognizer(username_recognizer)
@@ -6570,6 +6581,31 @@ class PIIDetector:
                 # Filter HTML attributes (http-equiv, X-UA, etc.)
                 if text_lower.startswith(('http-', 'x-', 'utf-', 'content-')):
                     continue
+                # Filter email domain parts caught by dot-separator pattern
+                if text_lower.endswith(('.com', '.org', '.net', '.edu', '.gov', '.io', '.co')):
+                    continue
+                # Filter all-alpha USERNAME detections that are common words
+                # The concat_name pattern uses lookbehind but can still match
+                # common words after labels like "Account: information"
+                if text_lower.isalpha() and len(text_lower) < 12:
+                    _common_words = {
+                        'information', 'details', 'settings', 'options', 'created',
+                        'updated', 'deleted', 'active', 'inactive', 'enabled',
+                        'disabled', 'status', 'admin', 'system', 'default',
+                        'general', 'private', 'public', 'primary', 'secondary',
+                        'personal', 'contact', 'address', 'email', 'phone',
+                        'password', 'security', 'privacy', 'profile', 'account',
+                        'manage', 'change', 'update', 'delete', 'remove',
+                        'company', 'customer', 'service', 'support', 'billing',
+                        'payment', 'order', 'product', 'number', 'holder',
+                        'member', 'group', 'other', 'please', 'enter',
+                        'click', 'select', 'submit', 'cancel', 'close',
+                        'about', 'right', 'their', 'would', 'could',
+                        'should', 'being', 'after', 'before', 'between',
+                        'through', 'during', 'under', 'above', 'below',
+                    }
+                    if text_lower in _common_words:
+                        continue
 
             # LARVPC OCR artifact filtering (early rejection of garbage)
             # Filters: low alphanumeric density, consonant-heavy strings, excess punctuation

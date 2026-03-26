@@ -1,0 +1,9 @@
+Model,Local/Cloud,Precision,Recall,F1 Score,Speed (ms/doc),Parse Failures,Engine Size,App Size
+Gemini 2.5 Flash,Cloud,97.9%,100.0%,98.9%,1766,0.5%,Cloud,N/A
+Gemma 2 (9B),Local,99.8%,97.9%,98.8%,3419,0.0%,5.4 GB,N/A
+Mistral 7B,Local,99.8%,96.9%,98.4%,2230,0.0%,7.2 GB,N/A
+Qwen 2.5 (7B),Local,97.1%,98.2%,97.7%,1577,0.0%,4.7 GB,N/A
+Phi-4 (14B),Local,96.9%,98.4%,97.6%,2890,0.0%,9.1 GB,N/A
+Hushbee (Hush Engine),Local,99.6%,94.5%,97.0%,80,0.0%,~15 MB,~45 MB
+Claude Haiku 4.5,Cloud,93.3%,99.9%,96.5%,1141,0.0%,Cloud,N/A
+Llama 3.2 (1B),Local,94.9%,97.1%,96.0%,680,14.5%,1.3 GB,N/A
