@@ -1,7 +1,7 @@
 {
   "entity_type": "PERSON",
   "classifier_type": "lgbm",
-  "trained_at": "2026-02-07T20:23:09.070183",
+  "trained_at": "2026-03-28T13:39:11.709955",
   "feature_names": [
     "is_capitalized",
     "is_all_caps",
@@ -38,6 +38,6 @@
     "position_start",
     "position_end"
   ],
-  "num_trees": 80,
+  "num_trees": 200,
   "privacy_note": "Trained on synthetic data only. No real PII used."
 }

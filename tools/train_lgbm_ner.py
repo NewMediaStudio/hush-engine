@@ -170,6 +170,59 @@ def load_ai4privacy_data(
     return result
 
 
+def load_custom_dataset(
+    path: str,
+    entity_type: str,
+    max_samples: int = None,
+) -> List[Tuple[str, List[Tuple[int, int, str]]]]:
+    """
+    Load training data from a custom JSON dataset (Kaggle/benchmark format).
+
+    Expected format: {"samples": [{"text": "...", "ground_truth": {"PERSON": ["Name1", ...]}}, ...]}
+
+    Finds character positions of GT entity values in the text and converts
+    to the (text, [(start, end, entity_type), ...]) training format.
+    """
+    with open(path) as f:
+        data = json.load(f)
+
+    samples_raw = data.get("samples", data if isinstance(data, list) else [])
+    if max_samples:
+        samples_raw = samples_raw[:max_samples]
+
+    result = []
+    skipped = 0
+    for sample in samples_raw:
+        text = sample.get("text", "")
+        if not text:
+            continue
+
+        gt = sample.get("ground_truth", {})
+        values = gt.get(entity_type, [])
+        if not values:
+            continue
+
+        # Find character positions of each GT value in the text
+        entities = []
+        for val in values:
+            # Find all occurrences
+            start = 0
+            while True:
+                pos = text.find(val, start)
+                if pos == -1:
+                    break
+                entities.append((pos, pos + len(val), entity_type))
+                start = pos + len(val)
+
+        if entities:
+            result.append((text, entities))
+        else:
+            skipped += 1
+
+    logger.info(f"Loaded {len(result)} samples from custom dataset ({skipped} skipped, no matches)")
+    return result
+
+
 class SyntheticDataGenerator:
     """
     Generates synthetic training data for NER using Faker.
@@ -740,7 +793,8 @@ def create_training_data(
     n_negative: int,
     generator: SyntheticDataGenerator,
     use_ai4privacy: bool = False,
-    apply_augmentation: bool = True
+    apply_augmentation: bool = True,
+    custom_dataset_path: str = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Create training data for a specific entity type.
@@ -755,6 +809,7 @@ def create_training_data(
         generator: SyntheticDataGenerator instance
         use_ai4privacy: Whether to load from ai4privacy dataset
         apply_augmentation: Whether to apply noise augmentation (PMC paper)
+        custom_dataset_path: Path to custom JSON dataset (Kaggle format)
 
     Returns:
         (X, y) tuple of features and labels
@@ -764,29 +819,51 @@ def create_training_data(
     # Generate positive samples for this entity type
     positive_samples = []
 
-    # Try ai4privacy data first if requested
+    # Load custom dataset if provided (mixed with other sources)
+    custom_samples = []
+    if custom_dataset_path:
+        custom_samples = load_custom_dataset(
+            custom_dataset_path, entity_type, max_samples=n_positive
+        )
+        if custom_samples:
+            logger.info(f"Loaded {len(custom_samples)} samples from custom dataset")
+
+    # Try ai4privacy data if requested
+    ai4privacy_samples = []
     if use_ai4privacy:
         ai4privacy_samples = load_ai4privacy_data(
             entity_type, max_samples=n_positive, apply_augmentation=apply_augmentation
         )
         if ai4privacy_samples:
-            positive_samples = ai4privacy_samples
-            logger.info(f"Using {len(positive_samples)} samples from ai4privacy")
+            logger.info(f"Loaded {len(ai4privacy_samples)} samples from ai4privacy")
 
-    # Fall back to synthetic data if needed
-    if not positive_samples:
+    # Generate synthetic data — always generate some to ensure diversity
+    # When mixing with custom/ai4privacy, generate fewer synthetic samples
+    synthetic_count = n_positive
+    if custom_samples or ai4privacy_samples:
+        synthetic_count = max(n_positive // 3, 500)  # At least 500 synthetic
+
+    synthetic_samples = []
+    if True:  # Always generate synthetic
         if entity_type == "PERSON":
-            positive_samples = generator.generate_person_samples(n_positive)
+            synthetic_samples = generator.generate_person_samples(synthetic_count)
         elif entity_type == "LOCATION":
-            positive_samples = generator.generate_location_samples(n_positive)
+            synthetic_samples = generator.generate_location_samples(synthetic_count)
         elif entity_type == "ORGANIZATION":
-            positive_samples = generator.generate_organization_samples(n_positive)
+            synthetic_samples = generator.generate_organization_samples(synthetic_count)
         elif entity_type == "DATE_TIME":
-            positive_samples = generator.generate_datetime_samples(n_positive)
+            synthetic_samples = generator.generate_datetime_samples(synthetic_count)
         elif entity_type == "ADDRESS":
-            positive_samples = generator.generate_address_samples(n_positive)
+            synthetic_samples = generator.generate_address_samples(synthetic_count)
         else:
             raise ValueError(f"Unsupported entity type: {entity_type}")
+
+    # Combine all sources
+    positive_samples = custom_samples + ai4privacy_samples + synthetic_samples
+    random.shuffle(positive_samples)
+    logger.info(f"Total positive samples: {len(positive_samples)} "
+                f"(custom={len(custom_samples)}, ai4privacy={len(ai4privacy_samples)}, "
+                f"synthetic={len(synthetic_samples)})")
 
     # Generate negative samples: mix of plain text AND other entity types
     # This is "hard negative mining" - helps the model distinguish entity types
@@ -1160,12 +1237,18 @@ def main():
     parser.add_argument(
         "--augment",
         action="store_true",
-        help="Apply noise augmentation (PMC paper: 30% punctuation removal, etc.)"
+        help="Apply noise augmentation (PMC paper: 30%% punctuation removal, etc.)"
     )
     parser.add_argument(
         "--smote",
         action="store_true",
         help="Apply SMOTE oversampling to balance classes 1:1 (requires imbalanced-learn)"
+    )
+    parser.add_argument(
+        "--custom-dataset",
+        type=str,
+        default=None,
+        help="Path to custom JSON dataset (Kaggle/benchmark format with ground_truth)"
     )
 
     args = parser.parse_args()
@@ -1206,7 +1289,8 @@ def main():
             n_negative=args.samples,  # Equal negative samples
             generator=generator,
             use_ai4privacy=args.ai4privacy,
-            apply_augmentation=args.augment
+            apply_augmentation=args.augment,
+            custom_dataset_path=args.custom_dataset,
         )
 
         # Apply SMOTE if requested (after feature extraction, before training)

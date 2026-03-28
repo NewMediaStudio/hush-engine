@@ -397,6 +397,33 @@ python3 tests/benchmark_llm_comparison.py --samples 1000 --models llama3.2:1b
 python3 tests/benchmark_llm_report.py --format png  # Generate paper figures
 ```
 
+### Bootstrap Confidence Intervals
+
+Compute 95% CIs for Hush Engine metrics via bootstrap resampling (5,000 iterations):
+
+```bash
+python3 tools/bootstrap_ci.py --dataset tests/data/synthetic_golden.json
+python3 tools/bootstrap_ci.py --dataset tests/data/kaggle_pii.json --latex   # LaTeX table output
+python3 tools/bootstrap_ci.py --dataset tests/data/holdout_test_set.json --save results.json
+```
+
+### Additional Datasets
+
+**Kaggle PII Detection 2024** — Convert the Kaggle competition dataset (BIO-tagged student essays) for benchmarking:
+
+```bash
+python3 tools/kaggle_pii_adapter.py --input tests/data/kaggle_train.json --output tests/data/kaggle_pii.json
+python3 tools/kaggle_pii_adapter.py --input tests/data/kaggle_train.json --only-pii --stats
+```
+
+**Held-out test set** — Generate a deterministic, non-overlapping evaluation set:
+
+```bash
+python3 tools/generate_holdout_set.py --slice 1 --samples 500          # From existing data
+python3 tools/generate_holdout_set.py --download --samples 1000        # From full ai4privacy
+python3 tools/generate_holdout_set.py --verify tests/data/holdout_test_set.json  # Check overlap
+```
+
 ### Training LightGBM Models
 
 Train or retrain the NER classifiers using synthetic data or the ai4privacy dataset:

@@ -175,7 +175,7 @@ def _load_spacy():
 
         sys.stderr.write("[PersonRecognizer] No spaCy model found. Run: python -m spacy download en_core_web_md\n")
     except ImportError:
-        sys.stderr.write("[PersonRecognizer] spaCy not installed.\n")
+        pass  # spaCy is optional — silent when not installed
 
 
 def _load_gliner():
@@ -933,6 +933,51 @@ def detect_with_patterns(text: str) -> List[Tuple[str, int, int, float]]:
         if len(name.split()) >= 2:
             results.append((name, match.start(), match.end(), 0.85))
 
+    # Essay citation/attribution patterns
+    # "According to John Smith, ..." / "As noted by Jane Doe, ..."
+    for match in re.finditer(
+        r'\b(?:According to|As (?:noted|stated|argued|described|proposed|suggested|mentioned|reported|observed|explained|discussed|defined|outlined) by'
+        r'|(?:[Ss]tudy|[Rr]esearch|[Ww]ork|[Pp]aper|[Aa]nalysis|[Bb]ook|[Aa]rticle|[Tt]heory|[Mm]odel|[Ff]ramework|[Mm]ethod|[Aa]pproach|[Cc]oncept) (?:by|of|from))'
+        r'\s+([A-Z][a-z\'-]+(?:\s+[A-Z][a-z\'-]+){1,2})',
+        text
+    ):
+        name = match.group(1)
+        if len(name.split()) >= 2:
+            results.append((name, match.start(1), match.end(1), 0.82))
+        else:
+            results.append((name, match.start(1), match.end(1), 0.75))
+
+    # Academic reference: "Smith (2024)", "John Smith et al."
+    for match in re.finditer(
+        r'\b([A-Z][a-z\'-]+(?:\s+[A-Z][a-z\'-]+)?)\s*\(\d{4}\)',
+        text
+    ):
+        name = match.group(1)
+        if len(name) >= 3:
+            results.append((name, match.start(1), match.end(1), 0.78))
+
+    # Possessive attribution: "Smith's research", "Kelley's approach"
+    for match in re.finditer(
+        r"\b([A-Z][a-z\'-]+(?:\s+[A-Z][a-z\'-]+)?)'s\s+"
+        r"(?:research|analysis|study|work|approach|method|theory|framework|model|"
+        r"idea|concept|argument|paper|book|article|design|principle|definition|"
+        r"view|perspective|insight|observation|finding|contribution|innovation)\b",
+        text
+    ):
+        name = match.group(1)
+        if len(name) >= 3:
+            results.append((name, match.start(1), match.end(1), 0.78))
+
+    # Essay header: name on first line (common in student essays)
+    first_line_match = re.match(
+        r'^([A-Z][a-z\'-]+\s+[A-Z][a-z\'-]+(?:\s+[A-Z][a-z\'-]+)?)\s*\n',
+        text
+    )
+    if first_line_match:
+        name = first_line_match.group(1)
+        if len(name.split()) >= 2:
+            results.append((name, first_line_match.start(1), first_line_match.end(1), 0.85))
+
     # Username patterns (john_smith, jane.doe)
     # Check for context words nearby to boost confidence
     text_lower = text.lower()
@@ -1126,6 +1171,11 @@ class PersonRecognizer(EntityRecognizer):
         # Step 2: LightGBM NER (lightweight, fast - ~5-10x faster than transformers)
         if self.use_lgbm_ner:
             for text_match, start, end, score in detect_with_lgbm(processed_text):
+                # For long-form text (essays, articles >2000 chars), LightGBM produces
+                # high-confidence false positives on capitalized common words ("Challenge",
+                # "Mind Mapping", "Insight"). Require higher confidence to reduce FPs.
+                if len(processed_text) > 2000 and score < 0.72:
+                    continue
                 all_detections.append((text_match, start, end, score, "lgbm"))
 
         # Step 3: Dictionary lookup (good for spreadsheets and moderate texts)
@@ -1715,9 +1765,17 @@ def get_person_recognizer(
             spreadsheet_mode=spreadsheet_mode,
         )
     else:  # balanced
+        # Auto-enable spaCy if installed — adds a second strong NER engine
+        # to the ensemble for better recall on diverse names
+        _spacy_available = False
+        try:
+            import spacy  # noqa: F401
+            _spacy_available = True
+        except ImportError:
+            pass
         return PersonRecognizer(
             use_nltagger=True,
-            use_spacy=False,
+            use_spacy=_spacy_available,
             use_gliner=False,
             use_flair=False,
             use_transformers=False,

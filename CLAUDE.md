@@ -52,6 +52,10 @@ for f in Path("training/feedback").glob("*.json"):
 | `hush_engine/data/names_database.py` | Lightweight names lookup database |
 | `hush_engine/detection_config.py` | Detection thresholds and entity config |
 | `tools/feedback_analyzer.py` | Feedback analysis tool |
+| `tools/bootstrap_ci.py` | Bootstrap 95% confidence intervals for F1/precision/recall |
+| `tools/kaggle_pii_adapter.py` | Kaggle PII Detection 2024 dataset → Hush format converter |
+| `tools/create_kaggle_golden.py` | Golden 1,000-sample Kaggle test set creator |
+| `tools/generate_holdout_set.py` | Held-out test set generator with overlap verification |
 | `tests/benchmark_accuracy.py` | Accuracy benchmarking |
 | `tests/benchmark_llm_comparison.py` | LLM comparison benchmark (Hush vs Ollama/Claude models) |
 | `tests/benchmark_llm_report.py` | Research paper artifact generator (LaTeX tables + figures) |
@@ -152,3 +156,57 @@ python3 tests/benchmark_server.py --port 8000
 The dashboard shows historical benchmark runs with LLM comparison runs marked as red triangles. Use the "Run Test" button to configure and launch benchmarks (supports Hush Engine, LLM Comparison, or both).
 
 Ground truth data is cached in `tests/data/training/Training_Set_cache.csv`.
+
+### Bootstrap Confidence Intervals
+
+Compute 95% CIs for Hush Engine metrics on any dataset:
+
+```bash
+python3 tools/bootstrap_ci.py --dataset tests/data/synthetic_golden.json
+python3 tools/bootstrap_ci.py --dataset tests/data/kaggle_pii.json --latex
+python3 tools/bootstrap_ci.py --dataset tests/data/holdout_test_set.json --save results.json
+```
+
+Runs Hush Engine per-sample, resamples 5,000× (configurable via `--iterations`), and reports micro-averaged 95% CIs for F1, precision, and recall. Uses the same `calculate_metrics()` logic as `benchmark_accuracy.py`.
+
+### Kaggle PII Dataset
+
+Convert the Kaggle "PII Detection 2024" competition dataset for benchmarking:
+
+```bash
+# Download train.json from Kaggle (requires account + competition rules acceptance)
+# Convert to Hush Engine format
+python3 tools/kaggle_pii_adapter.py --input tests/data/kaggle_train.json --output tests/data/kaggle_pii.json
+python3 tools/kaggle_pii_adapter.py --input tests/data/kaggle_train.json --only-pii --stats  # preview
+```
+
+Maps 7 Kaggle BIO-tagged entity types (NAME_STUDENT, EMAIL, PHONE_NUM, URL_PERSONAL, STREET_ADDRESS, ID_NUM, USERNAME) → Hush Engine types.
+
+### Kaggle Golden 1,000
+
+Create a fixed, deterministic 1,000-sample golden set from the Kaggle competition data:
+
+```bash
+python3 tools/create_kaggle_golden.py                    # Create (945 PII + 55 non-PII)
+python3 tools/create_kaggle_golden.py --stats            # Preview without writing
+python3 tools/create_kaggle_golden.py --validate         # Validate existing set
+```
+
+Output: `tests/data/kaggle_golden_1000.json` (4.3 MB, 1,606 entities across 7 types). Compatible with `benchmark_accuracy.py`, `benchmark_llm_comparison.py`, and `bootstrap_ci.py`.
+
+### Held-Out Test Set
+
+Generate a deterministic, non-overlapping held-out set for fair evaluation:
+
+```bash
+# Slice from existing sample_3000.json
+python3 tools/generate_holdout_set.py --slice 1 --samples 500
+
+# Download full ai4privacy (300K samples, completely independent)
+python3 tools/generate_holdout_set.py --download --samples 1000
+
+# Verify zero overlap with development data
+python3 tools/generate_holdout_set.py --verify tests/data/holdout_test_set.json
+```
+
+Requires `pip install datasets` for the HuggingFace download option.

@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 import time
 import random
@@ -87,9 +88,73 @@ DATA_DIR = TESTS_DIR / "data"
 TRAINING_DIR = DATA_DIR / "training"
 RESULTS_DIR = TESTS_DIR / "benchmark_history"
 DEFAULT_RESULTS_PATH = RESULTS_DIR / "llm_comparison_results.json"
+PROGRESS_PATH = RESULTS_DIR / "benchmark_progress.json"
 
 # Dataset search locations (same as benchmark_accuracy.py)
 DATASET_SEARCH_DIRS = [TRAINING_DIR, DATA_DIR]
+
+
+def write_progress(data: dict) -> bool:
+    """Write progress data for dashboard live updates.
+
+    Returns True if stop signal detected.
+    """
+    try:
+        if data.get('status') != 'starting' and PROGRESS_PATH.exists():
+            existing = json.loads(PROGRESS_PATH.read_text())
+            if existing.get('status') == 'stopped':
+                return True
+        PROGRESS_PATH.write_text(json.dumps(data, indent=2))
+    except Exception:
+        pass
+    return False
+
+
+# Global progress state for incremental updates
+_progress_state = {
+    "start_time": None,
+    "total_models": 0,
+    "models_completed": 0,
+    "current_model": "",
+    "current_model_samples": 0,
+    "current_model_total": 0,
+    "total_samples_all": 0,
+    "samples_done_all": 0,
+    "dataset": "",
+}
+
+
+def _update_progress(phase: str = None, model_done: bool = False):
+    """Push progress state to dashboard."""
+    s = _progress_state
+    if s["start_time"] is None:
+        return
+    elapsed = time.time() - s["start_time"]
+
+    if model_done:
+        s["models_completed"] += 1
+
+    # Overall progress: weight by total samples across all models
+    if s["total_samples_all"] > 0:
+        pct = min(99, int(100 * s["samples_done_all"] / s["total_samples_all"]))
+    else:
+        pct = 0
+
+    write_progress({
+        "status": "running",
+        "phase": phase or f"LLM Benchmark: {s['current_model']} ({s['current_model_samples']}/{s['current_model_total']})",
+        "progress": pct,
+        "total_samples": s["total_samples_all"],
+        "samples_processed": s["samples_done_all"],
+        "current_set": s["models_completed"] + 1,
+        "total_sets": s["total_models"],
+        "start_time": datetime.fromtimestamp(s["start_time"]).isoformat(),
+        "elapsed_seconds": elapsed,
+        "timestamp": datetime.now().isoformat(),
+        "benchmark_type": "llm_comparison",
+        "dataset": s["dataset"],
+        "current_model": s["current_model"],
+    })
 
 
 def find_datasets() -> dict:
@@ -98,6 +163,9 @@ def find_datasets() -> dict:
         "sample_3000.json",
         "synthetic_golden.json",
         "golden_test_set.json",
+        "kaggle_golden_1000.json",
+        "kaggle_pii.json",
+        "holdout_test_set.json",
         "pii_dataset_2.parquet",
     ]
     available = {}
@@ -134,12 +202,19 @@ def run_hush_engine(rows: list, dataset_name: str, store: ResultStore):
     # Warmup
     _get_detector()
 
+    _progress_state["current_model"] = "Hush Engine"
+    _progress_state["current_model_samples"] = 0
+    _progress_state["current_model_total"] = len(remaining)
+    _update_progress()
+
     batch_count = 0
     for idx, row in tqdm(remaining, desc="Hush Engine", disable=not TQDM_AVAILABLE):
         text = row.get("text", "")
         if not text:
             store.save_sample_result(model_id, dataset_name, idx, {}, 0.0)
             batch_count += 1
+            _progress_state["current_model_samples"] = batch_count
+            _progress_state["samples_done_all"] += 1
             continue
 
         start = time.perf_counter()
@@ -148,9 +223,12 @@ def run_hush_engine(rows: list, dataset_name: str, store: ResultStore):
 
         store.save_sample_result(model_id, dataset_name, idx, detections, latency_ms)
         batch_count += 1
+        _progress_state["current_model_samples"] = batch_count
+        _progress_state["samples_done_all"] += 1
 
         if batch_count % 50 == 0:
             store.save_batch()
+            _update_progress()
 
     peak_mb = mem_profiler.get_peak_mb()
     mem_profiler.stop()
@@ -212,6 +290,11 @@ def run_llm_model(client: OllamaClient, model_id: str, rows: list,
 
     print(f"\n  Running {display_name} on {len(remaining)} samples...")
 
+    _progress_state["current_model"] = display_name
+    _progress_state["current_model_samples"] = 0
+    _progress_state["current_model_total"] = len(remaining)
+    _update_progress()
+
     # Warmup
     try:
         client.generate(ollama_tag, "Say hello.", timeout=60)
@@ -225,6 +308,8 @@ def run_llm_model(client: OllamaClient, model_id: str, rows: list,
         if not text:
             store.save_sample_result(model_id, dataset_name, idx, {}, 0.0)
             batch_count += 1
+            _progress_state["current_model_samples"] = batch_count
+            _progress_state["samples_done_all"] += 1
             continue
 
         prompt = build_prompt(text, few_shot=few_shot)
@@ -256,9 +341,15 @@ def run_llm_model(client: OllamaClient, model_id: str, rows: list,
             parse_failed=parse_failed,
         )
         batch_count += 1
+        _progress_state["current_model_samples"] = batch_count
+        _progress_state["samples_done_all"] += 1
 
         if batch_count % 50 == 0:
             store.save_batch()
+            if _update_progress():
+                print(f"\n  {display_name}: stopped by user")
+                store.save_batch()
+                return
 
     store.save_batch()
 
@@ -327,6 +418,11 @@ def run_api_model(api_client, model_id: str, rows: list,
 
     print(f"\n  Running {display_name} on {len(remaining)} samples...")
 
+    _progress_state["current_model"] = display_name
+    _progress_state["current_model_samples"] = 0
+    _progress_state["current_model_total"] = len(remaining)
+    _update_progress()
+
     # Warmup
     try:
         api_client.generate(api_model_id, "Say hello.", timeout=30)
@@ -340,6 +436,8 @@ def run_api_model(api_client, model_id: str, rows: list,
         if not text:
             store.save_sample_result(model_id, dataset_name, idx, {}, 0.0)
             batch_count += 1
+            _progress_state["current_model_samples"] = batch_count
+            _progress_state["samples_done_all"] += 1
             continue
 
         prompt = build_prompt(text, few_shot=few_shot)
@@ -371,9 +469,15 @@ def run_api_model(api_client, model_id: str, rows: list,
             parse_failed=parse_failed,
         )
         batch_count += 1
+        _progress_state["current_model_samples"] = batch_count
+        _progress_state["samples_done_all"] += 1
 
         if batch_count % 50 == 0:
             store.save_batch()
+            if _update_progress():
+                print(f"\n  {display_name}: stopped by user")
+                store.save_batch()
+                return
 
     store.save_batch()
 
@@ -557,7 +661,8 @@ def list_available_models(client: OllamaClient):
         if model_id == "hush_engine":
             is_installed = "Built-in"
         params = f"{info['params_b']}B" if info['params_b'] else "-"
-        print(f"{info['display_name']:<25} {params:>8} {info.get('disk_size_mb', 0):>10} {tag:<25} {is_installed:>9}")
+        disk_mb = info.get('disk_size_mb') or 0
+        print(f"{info['display_name']:<25} {params:>8} {disk_mb:>10} {tag:<25} {is_installed:>9}")
 
 
 def run_comparison(args):
@@ -646,6 +751,7 @@ def run_comparison(args):
             gemini_models = []
 
     total_models = len(ollama_models) + len(claude_models) + len(gemini_models)
+    all_model_count = 1 + total_models  # Hush + LLMs
     print(f"\nBenchmark Configuration:")
     print(f"  Datasets: {', '.join(selected.keys())}")
     print(f"  Samples per dataset: {args.samples}")
@@ -657,11 +763,30 @@ def run_comparison(args):
     print(f"  Prompt: {'few-shot' if args.few_shot else 'zero-shot'}")
     print(f"  Results: {results_path}")
 
+    # Initialize progress tracking for dashboard
+    _progress_state["start_time"] = time.time()
+    _progress_state["total_models"] = all_model_count * len(selected)
+    _progress_state["models_completed"] = 0
+    _progress_state["samples_done_all"] = 0
+    _progress_state["total_samples_all"] = args.samples * all_model_count * len(selected)
+    write_progress({
+        "status": "starting",
+        "phase": "LLM Comparison Benchmark starting...",
+        "progress": 0,
+        "total_samples": _progress_state["total_samples_all"],
+        "samples_processed": 0,
+        "start_time": datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat(),
+        "benchmark_type": "llm_comparison",
+    })
+
     # Run benchmarks per dataset
     for ds_name, ds_path in selected.items():
         print(f"\n{'='*60}")
         print(f"Dataset: {ds_name}")
         print(f"{'='*60}")
+
+        _progress_state["dataset"] = ds_name
 
         # Load and sample data
         print(f"  Loading {ds_name}...")
@@ -678,23 +803,41 @@ def run_comparison(args):
 
         # Run Hush Engine
         run_hush_engine(rows, ds_name, store)
+        _update_progress(model_done=True)
 
         # Run Ollama models
         for model_id in ollama_models:
             run_llm_model(client, model_id, rows, ds_name, store, few_shot=args.few_shot)
+            _update_progress(model_done=True)
 
         # Run Claude models
         for model_id in claude_models:
             run_api_model(claude_client, model_id, rows, ds_name, store, few_shot=args.few_shot)
+            _update_progress(model_done=True)
 
         # Run Gemini models
         for model_id in gemini_models:
             run_api_model(gemini_client, model_id, rows, ds_name, store, few_shot=args.few_shot)
+            _update_progress(model_done=True)
 
     # Print comparison
     print_comparison_table(store)
     print(f"\nResults saved to: {results_path}")
     print(f"Generate report: python benchmark_llm_report.py --input {results_path}")
+
+    # Signal completion to dashboard
+    elapsed = time.time() - _progress_state["start_time"] if _progress_state["start_time"] else 0
+    write_progress({
+        "status": "complete",
+        "phase": "LLM Comparison Benchmark complete",
+        "progress": 100,
+        "total_samples": _progress_state["total_samples_all"],
+        "samples_processed": _progress_state["samples_done_all"],
+        "start_time": datetime.fromtimestamp(_progress_state["start_time"]).isoformat() if _progress_state["start_time"] else "",
+        "elapsed_seconds": elapsed,
+        "timestamp": datetime.now().isoformat(),
+        "benchmark_type": "llm_comparison",
+    })
 
 
 def main():

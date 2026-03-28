@@ -4153,9 +4153,9 @@ class PIIDetector:
         # Examples: LAX-12345678, JFK-123456
         id_airport_code = r"\b[A-Z]{3}-\d{6,8}\b"
 
-        # Pattern 5: Pure digits (6-10) with context
-        # Examples: 123456, 1234567890 (customer ID, account number)
-        id_digits_only = r"\b\d{6,10}\b"
+        # Pattern 5: Pure digits (6-12) with context
+        # Examples: 123456, 1234567890, 762035863358 (customer ID, account number, student ID)
+        id_digits_only = r"\b\d{6,12}\b"
 
         # Pattern 6: Short hex IDs (8 chars)
         # Examples: a1b2c3d4, DEADBEEF
@@ -4173,7 +4173,8 @@ class PIIDetector:
             ],
             context=["id", "reference", "number", "account", "customer", "client",
                      "case", "ticket", "order", "tracking", "confirmation", "ref",
-                     "member", "subscriber", "policy", "claim", "identifier", "session"]
+                     "member", "subscriber", "policy", "claim", "identifier", "session",
+                     "pin", "student", "employee", "enrollment", "registration"]
         )
 
         self.analyzer.registry.add_recognizer(generic_id_recognizer)

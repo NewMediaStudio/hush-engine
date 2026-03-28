@@ -81,7 +81,10 @@ class BenchmarkHandler(SimpleHTTPRequestHandler):
             args = config.get('args', '--samples 100')
             # Use python3.10 explicitly - the engine requires it for dependencies
             python_exe = shutil.which('python3.10') or sys.executable
-            cmd = f"{python_exe} benchmark_accuracy.py {args}"
+            if config.get('llm_benchmark'):
+                cmd = f"{python_exe} benchmark_llm_comparison.py {args}"
+            else:
+                cmd = f"{python_exe} benchmark_accuracy.py {args}"
 
             # Set up environment with PYTHONPATH to find hush_engine
             env = os.environ.copy()

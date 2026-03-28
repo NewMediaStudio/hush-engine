@@ -30221,8 +30221,960 @@
       "parse_failure_rate": 0.0,
       "avg_latency_ms": 2889.9266292747343,
       "_tag": "phi4:latest|synthetic_golden.json|golden_fresh"
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Llama 3.2 (1B)",
+      "csv_total_detections": 12824,
+      "csv_overall_recall": 0.9533001245330013,
+      "csv_overall_precision": 0.11938552713661885,
+      "csv_overall_f1": 0.2121968121968122,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1308,
+          "fp": 1220,
+          "total": 1365,
+          "recall": 0.9582417582417583,
+          "precision": 0.5174050632911392,
+          "f1": 0.6719753403544824
+        },
+        "URL": {
+          "tp": 110,
+          "fp": 103,
+          "total": 110,
+          "recall": 1.0,
+          "precision": 0.5164319248826291,
+          "f1": 0.6811145510835914
+        },
+        "ID": {
+          "tp": 64,
+          "fp": 61,
+          "total": 78,
+          "recall": 0.8205128205128205,
+          "precision": 0.512,
+          "f1": 0.6305418719211823
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 419,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.0851528384279476,
+          "f1": 0.15694164989939638
+        },
+        "PHONE": {
+          "tp": 4,
+          "fp": 1196,
+          "total": 6,
+          "recall": 0.6666666666666666,
+          "precision": 0.0033333333333333335,
+          "f1": 0.006633499170812605
+        },
+        "USERNAME": {
+          "tp": 4,
+          "fp": 0,
+          "total": 6,
+          "recall": 0.6666666666666666,
+          "precision": 1.0,
+          "f1": 0.8
+        },
+        "ADDRESS": {
+          "tp": 2,
+          "fp": 687,
+          "total": 2,
+          "recall": 1.0,
+          "precision": 0.002902757619738752,
+          "f1": 0.0057887120115774245
+        },
+        "DATE_TIME": {
+          "tp": 0,
+          "fp": 2149,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 3197,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 242,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 0,
+          "fp": 207,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 452,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 298,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 172,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "GENDER": {
+          "tp": 0,
+          "fp": 102,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 64,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 155,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NETWORK": {
+          "tp": 0,
+          "fp": 106,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "BIOMETRIC": {
+          "tp": 0,
+          "fp": 126,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COORDINATES": {
+          "tp": 0,
+          "fp": 284,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "IP_ADDRESS": {
+          "tp": 0,
+          "fp": 53,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 4207.660207894398,
+      "llm_benchmark": true,
+      "model_display_name": "Llama 3.2 (1B)",
+      "model_id": "llama3.2:1b",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 4207.660207894398,
+      "parse_failure_rate": 0.048,
+      "memory_mb": 4710.4
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Mistral 7B",
+      "csv_total_detections": 2435,
+      "csv_overall_recall": 0.9788293897882939,
+      "csv_overall_precision": 0.6455852156057494,
+      "csv_overall_f1": 0.7780252412769116,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1339,
+          "fp": 108,
+          "total": 1365,
+          "recall": 0.9809523809523809,
+          "precision": 0.9253628196268141,
+          "f1": 0.9523470839260313
+        },
+        "URL": {
+          "tp": 107,
+          "fp": 31,
+          "total": 110,
+          "recall": 0.9727272727272728,
+          "precision": 0.7753623188405797,
+          "f1": 0.8629032258064516
+        },
+        "ID": {
+          "tp": 74,
+          "fp": 9,
+          "total": 78,
+          "recall": 0.9487179487179487,
+          "precision": 0.891566265060241,
+          "f1": 0.9192546583850931
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 27,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.5909090909090909,
+          "f1": 0.7428571428571429
+        },
+        "PHONE": {
+          "tp": 6,
+          "fp": 7,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 0.46153846153846156,
+          "f1": 0.631578947368421
+        },
+        "USERNAME": {
+          "tp": 5,
+          "fp": 0,
+          "total": 6,
+          "recall": 0.8333333333333334,
+          "precision": 1.0,
+          "f1": 0.9090909090909091
+        },
+        "ADDRESS": {
+          "tp": 2,
+          "fp": 99,
+          "total": 2,
+          "recall": 1.0,
+          "precision": 0.019801980198019802,
+          "f1": 0.038834951456310676
+        },
+        "DATE_TIME": {
+          "tp": 0,
+          "fp": 205,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 40,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 266,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COORDINATES": {
+          "tp": 0,
+          "fp": 3,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 18,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "IP_ADDRESS": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 3,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 5,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "GENDER": {
+          "tp": 0,
+          "fp": 4,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 23,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NETWORK": {
+          "tp": 0,
+          "fp": 4,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 0,
+          "fp": 8,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 3486.0915490350453,
+      "llm_benchmark": true,
+      "model_display_name": "Mistral 7B",
+      "model_id": "mistral:7b",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 3486.0915490350453,
+      "parse_failure_rate": 0.011,
+      "memory_mb": 10240.0
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Qwen 2.5 (7B)",
+      "csv_total_detections": 3111,
+      "csv_overall_recall": 0.9645080946450809,
+      "csv_overall_precision": 0.49791063966570237,
+      "csv_overall_f1": 0.6567733729065084,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1320,
+          "fp": 65,
+          "total": 1365,
+          "recall": 0.967032967032967,
+          "precision": 0.9530685920577617,
+          "f1": 0.9600000000000001
+        },
+        "URL": {
+          "tp": 105,
+          "fp": 27,
+          "total": 110,
+          "recall": 0.9545454545454546,
+          "precision": 0.7954545454545454,
+          "f1": 0.8677685950413222
+        },
+        "ID": {
+          "tp": 73,
+          "fp": 0,
+          "total": 78,
+          "recall": 0.9358974358974359,
+          "precision": 1.0,
+          "f1": 0.9668874172185431
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 1,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.975,
+          "f1": 0.9873417721518987
+        },
+        "PHONE": {
+          "tp": 6,
+          "fp": 2,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 0.75,
+          "f1": 0.8571428571428571
+        },
+        "USERNAME": {
+          "tp": 4,
+          "fp": 0,
+          "total": 6,
+          "recall": 0.6666666666666666,
+          "precision": 1.0,
+          "f1": 0.8
+        },
+        "ADDRESS": {
+          "tp": 2,
+          "fp": 192,
+          "total": 2,
+          "recall": 1.0,
+          "precision": 0.010309278350515464,
+          "f1": 0.020408163265306124
+        },
+        "DATE_TIME": {
+          "tp": 0,
+          "fp": 351,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 416,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 126,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 178,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 72,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "GENDER": {
+          "tp": 0,
+          "fp": 33,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 12,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 17,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 0,
+          "fp": 45,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 12,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COORDINATES": {
+          "tp": 0,
+          "fp": 12,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "IP_ADDRESS": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 3105.2811745025683,
+      "llm_benchmark": true,
+      "model_display_name": "Qwen 2.5 (7B)",
+      "model_id": "qwen2.5:latest",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 3105.2811745025683,
+      "parse_failure_rate": 0.108,
+      "memory_mb": 8396.8
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Phi-4 (14B)",
+      "csv_total_detections": 2211,
+      "csv_overall_recall": 0.8953922789539228,
+      "csv_overall_precision": 0.6503844414292176,
+      "csv_overall_f1": 0.7534713125491225,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1204,
+          "fp": 27,
+          "total": 1365,
+          "recall": 0.882051282051282,
+          "precision": 0.9780666125101544,
+          "f1": 0.9275808936825886
+        },
+        "URL": {
+          "tp": 107,
+          "fp": 18,
+          "total": 110,
+          "recall": 0.9727272727272728,
+          "precision": 0.856,
+          "f1": 0.9106382978723404
+        },
+        "ID": {
+          "tp": 74,
+          "fp": 0,
+          "total": 78,
+          "recall": 0.9487179487179487,
+          "precision": 1.0,
+          "f1": 0.9736842105263158
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 1,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.975,
+          "f1": 0.9873417721518987
+        },
+        "PHONE": {
+          "tp": 6,
+          "fp": 3,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 0.6666666666666666,
+          "f1": 0.8
+        },
+        "USERNAME": {
+          "tp": 6,
+          "fp": 0,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 2,
+          "fp": 105,
+          "total": 2,
+          "recall": 1.0,
+          "precision": 0.018691588785046728,
+          "f1": 0.03669724770642201
+        },
+        "DATE_TIME": {
+          "tp": 0,
+          "fp": 284,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 20,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 202,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 41,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 0,
+          "fp": 42,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 20,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COORDINATES": {
+          "tp": 0,
+          "fp": 4,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "GENDER": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NETWORK": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 6046.314997171983,
+      "llm_benchmark": true,
+      "model_display_name": "Phi-4 (14B)",
+      "model_id": "phi4:latest",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 6046.314997171983,
+      "parse_failure_rate": 0.286,
+      "memory_mb": 14336.0
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Gemma 2 (9B)",
+      "csv_total_detections": 3331,
+      "csv_overall_recall": 0.9794520547945206,
+      "csv_overall_precision": 0.4722305613929751,
+      "csv_overall_f1": 0.6372290864897712,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1335,
+          "fp": 352,
+          "total": 1365,
+          "recall": 0.978021978021978,
+          "precision": 0.7913455838767042,
+          "f1": 0.8748361730013106
+        },
+        "URL": {
+          "tp": 108,
+          "fp": 17,
+          "total": 110,
+          "recall": 0.9818181818181818,
+          "precision": 0.864,
+          "f1": 0.9191489361702128
+        },
+        "ID": {
+          "tp": 77,
+          "fp": 5,
+          "total": 78,
+          "recall": 0.9871794871794872,
+          "precision": 0.9390243902439024,
+          "f1": 0.9625
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 2,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.9512195121951219,
+          "f1": 0.975
+        },
+        "PHONE": {
+          "tp": 6,
+          "fp": 1,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 0.8571428571428571,
+          "f1": 0.923076923076923
+        },
+        "USERNAME": {
+          "tp": 6,
+          "fp": 0,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 1.0,
+          "f1": 1.0
+        },
+        "ADDRESS": {
+          "tp": 2,
+          "fp": 170,
+          "total": 2,
+          "recall": 1.0,
+          "precision": 0.011627906976744186,
+          "f1": 0.022988505747126436
+        },
+        "DATE_TIME": {
+          "tp": 0,
+          "fp": 375,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "COMPANY": {
+          "tp": 0,
+          "fp": 622,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "AGE": {
+          "tp": 0,
+          "fp": 82,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDENTIAL": {
+          "tp": 0,
+          "fp": 15,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "GENDER": {
+          "tp": 0,
+          "fp": 5,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "FINANCIAL": {
+          "tp": 0,
+          "fp": 75,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NATIONAL_ID": {
+          "tp": 0,
+          "fp": 19,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "MEDICAL": {
+          "tp": 0,
+          "fp": 14,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "VEHICLE": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "CREDIT_CARD": {
+          "tp": 0,
+          "fp": 2,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        },
+        "NETWORK": {
+          "tp": 0,
+          "fp": 1,
+          "total": 0,
+          "recall": 0,
+          "precision": 0.0,
+          "f1": 0
+        }
+      },
+      "duration_seconds": 4250.068114252877,
+      "llm_benchmark": true,
+      "model_display_name": "Gemma 2 (9B)",
+      "model_id": "gemma2:latest",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 4250.068114252877,
+      "parse_failure_rate": 0.011,
+      "memory_mb": 9011.2
+    },
+    {
+      "timestamp": "2026-03-26T23:46:11.992311",
+      "samples": 1000,
+      "sets": 1,
+      "engine_version": "Hush Engine v1.8.0",
+      "csv_total_detections": 1538,
+      "csv_overall_recall": 0.8051058530510585,
+      "csv_overall_precision": 0.840702210663199,
+      "csv_overall_f1": 0.8225190839694656,
+      "csv_metrics_by_type": {
+        "PERSON": {
+          "tp": 1116,
+          "fp": 208,
+          "total": 1365,
+          "recall": 0.8175824175824176,
+          "precision": 0.8429003021148036,
+          "f1": 0.8300483451097062
+        },
+        "URL": {
+          "tp": 109,
+          "fp": 31,
+          "total": 110,
+          "recall": 0.990909090909091,
+          "precision": 0.7785714285714286,
+          "f1": 0.872
+        },
+        "ID": {
+          "tp": 21,
+          "fp": 3,
+          "total": 78,
+          "recall": 0.2692307692307692,
+          "precision": 0.875,
+          "f1": 0.411764705882353
+        },
+        "ADDRESS": {
+          "tp": 0,
+          "fp": 0,
+          "total": 2,
+          "recall": 0.0,
+          "precision": 0,
+          "f1": 0
+        },
+        "EMAIL": {
+          "tp": 39,
+          "fp": 1,
+          "total": 39,
+          "recall": 1.0,
+          "precision": 0.975,
+          "f1": 0.9873417721518987
+        },
+        "PHONE": {
+          "tp": 6,
+          "fp": 2,
+          "total": 6,
+          "recall": 1.0,
+          "precision": 0.75,
+          "f1": 0.8571428571428571
+        },
+        "USERNAME": {
+          "tp": 2,
+          "fp": 0,
+          "total": 6,
+          "recall": 0.3333333333333333,
+          "precision": 1.0,
+          "f1": 0.5
+        }
+      },
+      "duration_seconds": 587.6827017430915,
+      "llm_benchmark": true,
+      "model_display_name": "Hush Engine v1.8.0",
+      "model_id": "hush_engine",
+      "dataset": "kaggle_golden_1000.json",
+      "avg_latency_ms": 587.6827017430915,
+      "parse_failure_rate": 0,
+      "memory_mb": 2284.8
     }
   ],
-  "total_runs": 340,
-  "total_samples": 358100
+  "total_runs": 119,
+  "total_samples": 103600
 }

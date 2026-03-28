@@ -736,6 +736,173 @@ LAST_NAMES_NL = {
 # Name Titles (prefixes that indicate a name follows)
 # ============================================================================
 
+# ============================================================================
+# Additional names from Kaggle PII Detection 2024 dataset analysis
+# Added to improve recall on international student essay names
+# ============================================================================
+
+# South Asian first names (hi locale supplement)
+FIRST_NAMES_HI_EXTRA = {
+    "aakash", "akhilesh", "akash", "anil", "anjali", "ankit", "anurag",
+    "basavaraju", "bikram", "dharmendra", "dip", "fazal", "feroz", "firoz",
+    "ganesh", "ganpat", "guddu", "hari", "imran", "imtiyaz", "indhumathi",
+    "irfan", "jamshed", "jayanti", "jibon", "jyoti", "kamlesh", "kamrul",
+    "karan", "kashi", "komal", "laxman", "madan", "mithilesh", "mohinder",
+    "murugesan", "nadeem", "naga", "nandan", "nani", "nitish", "nizam",
+    "palani", "pawan", "pintu", "priyanka", "pushpalatha", "ratna",
+    "ravinder", "ravneet", "reshma", "rupesh", "sagar", "sajid", "sajjad",
+    "sakir", "santosh", "saravanan", "satish", "shafi", "shaik", "shailesh",
+    "sharan", "shareef", "shariful", "shivam", "shokat", "shubham", "shujon",
+    "sneha", "suhag", "sujeet", "suliman", "suman", "sumit", "sunny",
+    "surya", "vipan", "yogesh", "yogi",
+    "amritpal", "gurwinder", "bappa", "maqsood",
+}
+
+# Arabic first names (ar locale supplement)
+FIRST_NAMES_AR_EXTRA = {
+    "abdullahi", "abdo", "abul", "akram", "amjad", "anwar", "asmaa",
+    "auni", "bahar", "eslam", "esraa", "fareed", "farjana", "farooq",
+    "hafiz", "haji", "hanan", "haqim", "junaid", "lamiaa", "magdy",
+    "mahtab", "mayar", "menna", "merna", "mohamad", "mohd", "mohmad",
+    "moustapha", "naser", "nazmi", "noora", "qais", "qaisar", "ramy",
+    "rawan", "rehab", "saadiah", "saeed", "salman", "sameh", "suliman",
+    "taher", "talaat", "tarek", "waseem", "waliur", "zakaria", "zakir",
+    "zia", "zohaib", "shamsun",
+}
+
+# African first names (new locale: af)
+FIRST_NAMES_AF = {
+    "abiodun", "adebayo", "adigun", "ajayi", "bankole", "bomkazi",
+    "busisiwe", "chinyere", "habibu", "hlengiwe", "ifeoma", "kojo",
+    "lerato", "mlungisi", "ndumiso", "nweze", "sipho", "thulani",
+    "busi", "pako",
+}
+
+# Hispanic first names (es locale supplement)
+FIRST_NAMES_ES_EXTRA = {
+    "abdiel", "adelino", "alirio", "amparo", "arath", "blanca", "camilo",
+    "cardo", "chabelo", "cicero", "cristiane", "cristino", "deiby",
+    "dulce", "edith", "edjanio", "edson", "eladio", "elisangela",
+    "flor", "francy", "fredy", "frutos", "geovanny", "ignacia",
+    "jakeline", "jhonatan", "jimena", "johana", "julio", "karla",
+    "leidy", "lupe", "luz", "luzia", "maicol", "margarita", "maribel",
+    "marisol", "mireya", "mirian", "mynor", "nataly", "norma", "ofelia",
+    "perla", "sarai", "selene", "sindy", "socorro", "tere", "uriel",
+    "valdecir", "willian", "xinia", "yareli", "yessica", "yuly", "yunier",
+}
+
+# Other European/mixed first names (en supplement)
+FIRST_NAMES_EN_EXTRA = {
+    "agim", "al", "alessandra", "alessio", "alison", "aman", "andreia",
+    "angelik", "arnaldo", "art", "asia", "asif", "asim", "barbie",
+    "becky", "bk", "byron", "cassie", "cherie", "cherry", "cobus",
+    "corinna", "daniele", "dawn", "desiree", "donya", "edith", "eija",
+    "eina", "el", "fa", "felice", "fofa", "frankie", "franz",
+    "gilbert", "hady", "hennie", "herman", "hersh", "ilir", "iva",
+    "ivica", "jessie", "joey", "johan", "kate", "katie", "kenichi",
+    "lalisa", "lavinia", "leslie", "liron", "loredana", "luc",
+    "may", "md", "melvin", "mickael", "mihai", "milton",
+    "natalya", "nickie", "nor", "ori", "perle", "phillip",
+    "piotr", "pong", "raph", "rhiannon", "ronnie", "saly", "saman",
+    "samar", "sanam", "sjoerd", "sk", "sunny", "tania", "tatsuya",
+    "tina", "tino", "ton", "tonino", "tracy", "vero", "vicki",
+    "vito", "wellington", "wilma", "yazmin", "yvonne", "zahida", "zhe",
+    "adri", "bunga", "diadie", "dla", "maga", "medo", "mdjakir",
+    "neia", "raxa", "rosli", "rosnani", "shery", "vetri",
+}
+
+# South Asian last names (hi locale supplement)
+LAST_NAMES_HI_EXTRA = {
+    "ahamad", "ansari", "baloch", "basha", "bisht", "chauhan",
+    "dharmendra", "giri", "gowda", "ijaz", "iqbal", "jaiswal",
+    "javed", "jeet", "jha", "kumari", "limbu", "madni", "mahmod",
+    "mahmood", "mahmud", "miah", "mohanan", "mondal", "mushtaq",
+    "narayn", "nasar", "naser", "nasir", "nazim", "pal", "parmar",
+    "paswan", "preet", "rahaman", "rajput", "raju", "rathod",
+    "rohim", "rohman", "sahu", "saiful", "sajid", "shakya",
+    "shamim", "shaikh", "shafiq", "shahed", "shaker", "shende",
+    "shokat", "shubham", "subash", "sunar", "uddin", "vishwkarma",
+    "wahab",
+}
+
+# Arabic last names (ar locale supplement)
+LAST_NAMES_AR_EXTRA = {
+    "abidin", "achraf", "afiq", "akram", "alaa", "asiri", "ashry",
+    "asim", "belal", "bennani", "donya", "elnazer", "elnemr",
+    "esmaeili", "faezah", "farrag", "fawzy", "ghani", "hamad",
+    "hamid", "hannan", "issa", "kabiri", "magdy", "mahi",
+    "mohamad", "mohmmed", "mostafa", "mossad", "moustafa",
+    "nazri", "nady", "refaat", "riyad", "saeed", "salah", "salem",
+    "sameh", "telfah", "xalid", "yaseen", "yomna", "zagaria",
+    "zarei", "zeeshan",
+}
+
+# African last names (new locale: af)
+LAST_NAMES_AF = {
+    "azubuike", "isah", "isiaka", "kalu", "kamdem", "mabunda",
+    "mofokeng", "mpanza", "msibi", "msimanga", "mthethwa",
+    "nkabinde", "okey", "okoro", "oteng", "stuurman", "sunday",
+}
+
+# Hispanic last names (es locale supplement)
+LAST_NAMES_ES_EXTRA = {
+    "abrego", "alfaro", "amaya", "arroyo", "becerra", "bonilla",
+    "calixto", "camilo", "campo", "caro", "casal", "castellanos",
+    "ceballos", "corona", "duque", "forero", "gamboa", "giraldo",
+    "gordo", "huerta", "jerez", "ledezma", "lemus", "llamas",
+    "lovato", "mancilla", "medrano", "mojica", "molano",
+    "montenegro", "murcia", "nieto", "orjuela", "osorio", "pedraza",
+    "pimienta", "puerta", "rendon", "rayo", "samaca", "sanches",
+    "santamaria", "santander", "santi", "santillan", "silvera",
+    "taborda", "vanegas", "viera", "villagra",
+}
+
+# Italian last names (it locale supplement)
+LAST_NAMES_IT_EXTRA = {
+    "adamo", "alberti", "bellafiore", "bergamo", "bertolini",
+    "blasi", "buonincontro", "busatta", "campanelli", "campani",
+    "carella", "carletti", "catania", "ciccone", "cuda",
+    "dattolo", "finetti", "gabrielli", "galletti", "iorio",
+    "lunardi", "martello", "mazzoleni", "milani", "millet",
+    "molteni", "pardal", "passalacqua", "pedrini", "perillo",
+    "perna", "peroni", "petrosillo", "piccolo", "polidori",
+    "prezioso", "putino", "ragni", "rocca", "roversi",
+    "saponara", "schiavo", "serafini", "tavormina", "vassallo",
+    "zizza",
+}
+
+# Other European/mixed last names (en supplement)
+LAST_NAMES_EN_EXTRA = {
+    "aarts", "barco", "bk", "bock", "boonstra", "born", "brock",
+    "bruns", "bryant", "beyer", "bezuidenhout", "chatel", "claro",
+    "courtois", "czarnecka", "dalisay", "dantas", "deniz", "dourado",
+    "duffy", "dworak", "farrelly", "fiala", "figo", "fitri", "fong",
+    "fowler", "gardner", "giles", "gould", "hallam", "hammond",
+    "hanson", "hartley", "heuvel", "horton", "humphries", "ine",
+    "jaque", "johnstone", "jouanne", "kain", "kaponi", "karolis",
+    "kiah", "kings", "kl", "klaas", "kotov", "krieger", "kt", "kwan",
+    "maprok", "mat", "mcintyre", "melnik", "moka", "momentos",
+    "morton", "moseley", "neubert", "obrien", "panagiotopoulou",
+    "papa", "pink", "pritchard", "quesnel", "richards", "rubin",
+    "sales", "sanquer", "santu", "shaw", "shepherd", "shields",
+    "starks", "stanic", "stephenson", "street", "sutton", "syafinaz",
+    "sylla", "tanbir", "tarek", "tate", "thea", "tomac",
+    "wakefield", "wal", "wati", "wegener", "west", "yap", "yates",
+    "bhai", "birra", "cara", "khairul", "cavaco",
+    "jamaludin", "suryadi",
+}
+
+# Merge extras into locale sets
+FIRST_NAMES_HI.update(FIRST_NAMES_HI_EXTRA)
+FIRST_NAMES_AR.update(FIRST_NAMES_AR_EXTRA)
+FIRST_NAMES_ES.update(FIRST_NAMES_ES_EXTRA)
+FIRST_NAMES_EN.update(FIRST_NAMES_EN_EXTRA)
+LAST_NAMES_HI.update(LAST_NAMES_HI_EXTRA)
+LAST_NAMES_AR.update(LAST_NAMES_AR_EXTRA)
+LAST_NAMES_ES.update(LAST_NAMES_ES_EXTRA)
+LAST_NAMES_IT.update(LAST_NAMES_IT_EXTRA)
+LAST_NAMES_EN.update(LAST_NAMES_EN_EXTRA)
+
 NAME_TITLES = {
     # English
     "mr", "mrs", "ms", "miss", "dr", "prof", "sir", "madam", "lord", "lady",
@@ -763,7 +930,7 @@ CURATED_FIRST_NAMES = {
     "fr": FIRST_NAMES_FR, "zh": FIRST_NAMES_ZH, "ja": FIRST_NAMES_JA,
     "ko": FIRST_NAMES_KO, "hi": FIRST_NAMES_HI, "ar": FIRST_NAMES_AR,
     "ru": FIRST_NAMES_RU, "pt": FIRST_NAMES_PT, "it": FIRST_NAMES_IT,
-    "nl": FIRST_NAMES_NL,
+    "nl": FIRST_NAMES_NL, "af": FIRST_NAMES_AF,
 }
 
 CURATED_LAST_NAMES = {
@@ -771,5 +938,5 @@ CURATED_LAST_NAMES = {
     "ja": LAST_NAMES_JA, "ko": LAST_NAMES_KO, "hi": LAST_NAMES_HI,
     "ar": LAST_NAMES_AR, "ru": LAST_NAMES_RU, "de": LAST_NAMES_DE,
     "fr": LAST_NAMES_FR, "it": LAST_NAMES_IT, "pt": LAST_NAMES_PT,
-    "nl": LAST_NAMES_NL,
+    "nl": LAST_NAMES_NL, "af": LAST_NAMES_AF,
 }
