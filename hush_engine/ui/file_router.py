@@ -176,6 +176,101 @@ def _create_merged_region(detections: list) -> MergedTextRegion:
     )
 
 
+def _reconstruct_credit_cards(detections: list) -> list:
+    """
+    Reconstruct credit card numbers from fragmented OCR blocks.
+
+    OCR often splits card numbers across multiple text blocks:
+      "5412 7534" + "0098" + "3317" → "5412 7534 0098 3317"
+
+    Scans nearby blocks on the same line, extracts 4-digit groups,
+    and assembles candidates. Validates with Luhn check.
+
+    Returns: List of (cc_text, bbox) tuples for valid CC numbers.
+    """
+    import re
+
+    if not detections:
+        return []
+
+    # Extract blocks that contain digit groups (3-4+ digits)
+    digit_blocks = []
+    for d in detections:
+        text = d.text if hasattr(d, 'text') else str(d)
+        # Find all 3-4 digit groups in this block
+        groups = re.findall(r'\d{3,4}', text)
+        if groups:
+            y_center = (d.bbox[1] + d.bbox[3]) / 2
+            digit_blocks.append({
+                'text': text,
+                'groups': groups,
+                'digits': ''.join(groups),
+                'bbox': d.bbox,
+                'y': y_center,
+                'x': d.bbox[0],
+            })
+
+    if not digit_blocks:
+        return []
+
+    # Group blocks on the same horizontal line (within 25px vertical)
+    lines = []
+    used = set()
+    for i, b in enumerate(digit_blocks):
+        if i in used:
+            continue
+        line = [b]
+        used.add(i)
+        for j, b2 in enumerate(digit_blocks):
+            if j in used:
+                continue
+            if abs(b2['y'] - b['y']) < 25:
+                line.append(b2)
+                used.add(j)
+        line.sort(key=lambda x: x['x'])
+        lines.append(line)
+
+    # For each line, try assembling 4-digit groups into 16-digit CC numbers
+    candidates = []
+    for line in lines:
+        all_digits = ''.join(b['digits'] for b in line)
+        # Need at least 13 digits for a CC number
+        if len(all_digits) < 13:
+            continue
+
+        # Try exact 16-digit or 15-digit (Amex) candidates first
+        # Most cards are 16 digits in 4x4 groups
+        for length in [16, 15]:
+            if len(all_digits) >= length:
+                candidate = all_digits[:length]
+                # Build merged bbox
+                x1 = min(b['bbox'][0] for b in line)
+                y1 = min(b['bbox'][1] for b in line)
+                x2 = max(b['bbox'][2] for b in line)
+                y2 = max(b['bbox'][3] for b in line)
+                # Format as spaced groups
+                formatted = ' '.join([candidate[i:i+4] for i in range(0, len(candidate), 4)])
+                candidates.append((formatted, [x1, y1, x2, y2]))
+                break
+
+    return candidates
+
+
+def _luhn_check(number: str) -> bool:
+    """Validate a number string with the Luhn algorithm."""
+    digits = [int(d) for d in number if d.isdigit()]
+    if len(digits) < 13:
+        return False
+    checksum = 0
+    for i, d in enumerate(reversed(digits)):
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        checksum += d
+    return checksum % 10 == 0
+
+
 def extract_pdf_text_blocks(pdf_path: str, page_num: int, image_width: float, image_height: float) -> list:
     """
     Extract text blocks from a PDF page using pdfplumber (direct text extraction).
@@ -623,6 +718,11 @@ class FileRouter:
         # This helps detect patterns that span multiple OCR regions (e.g., "808921738 RT0001")
         merged_regions = merge_adjacent_detections(ocr_detections)
 
+        # Reconstruct credit card numbers from fragmented OCR blocks.
+        # OCR often splits card numbers (e.g., "5412 7534" + "0098" + "3317").
+        # Look for 4-digit groups on same line and assemble into CC candidates.
+        _cc_candidates = _reconstruct_credit_cards(ocr_detections)
+
         # Detect PII in merged text regions using user's locale preferences
         pii_detections = []
         user_locales = self.get_user_locales()
@@ -646,6 +746,18 @@ class FileRouter:
                     'confidence': entity.confidence,
                     'bbox': entity_bbox
                 })
+
+        # Add any reconstructed credit card detections
+        for cc_text, cc_bbox in _cc_candidates:
+            entities = self.detector.analyze_text(cc_text)
+            for entity in entities:
+                if entity.entity_type == 'CREDIT_CARD':
+                    pii_detections.append({
+                        'entity_type': 'CREDIT_CARD',
+                        'text': entity.text,
+                        'confidence': entity.confidence,
+                        'bbox': cc_bbox
+                    })
 
         # Detect faces if enabled
         if detect_faces:
