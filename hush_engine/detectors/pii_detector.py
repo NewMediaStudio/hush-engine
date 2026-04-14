@@ -1990,6 +1990,67 @@ class PIIDetector:
             context=["swift", "bic", "bank", "transfer", "wire", "iban", "routing", "branch", "inr", "rupee", "crore", "lakh", "amount", "balance", "total", "credit", "debit"]
         )
 
+        # Salary / compensation patterns
+        # Matches: $128k/yr, $75,000/year, £45k p.a., $150K/month, $50/hr, €3,500/week
+        salary_regex = (
+            r"(?:[$£€¥₹])\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\s*[kK]?"
+            r"\s*(?:/|per\s+)"
+            r"(?:yr|year|annum|month|mo|week|wk|day|hour|hr|p\.?a\.?)"
+        )
+        # Labeled salary: "Salary: $128,000", "Compensation: €75,000", "Pay: $50/hr"
+        labeled_salary_regex = (
+            r"(?i)(?:salary|compensation|pay|income|earnings|wage|wages|stipend|remuneration)"
+            r"[:\s]+[$£€¥₹]\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\s*[kK]?"
+            r"(?:\s*(?:/|per\s+)(?:yr|year|annum|month|mo|week|wk|day|hour|hr|p\.?a\.?))?"
+        )
+
+        salary_recognizer = PatternRecognizer(
+            supported_entity="FINANCIAL",
+            patterns=[
+                Pattern(name="salary_amount", regex=salary_regex, score=0.80),
+                Pattern(name="labeled_salary", regex=labeled_salary_regex, score=0.90),
+            ],
+            context=["salary", "compensation", "pay", "income", "annual", "yearly",
+                     "monthly", "hourly", "wage", "earnings", "offer", "package"]
+        )
+        self.analyzer.registry.add_recognizer(salary_recognizer)
+
+        # Dollar balance / labeled amounts
+        # Matches: "Balance: $14,208.43", "Amount: $500.00", "Total: $1,234"
+        labeled_amount_regex = (
+            r"(?i)(?:balance|amount|total|due|owed|paid|received|deposit|withdrawal|"
+            r"payment|charge|fee|cost|price|value|worth|net|gross)"
+            r"[:\s]+[$£€¥₹]\s*\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?"
+        )
+
+        labeled_amount_recognizer = PatternRecognizer(
+            supported_entity="FINANCIAL",
+            patterns=[
+                Pattern(name="labeled_balance", regex=labeled_amount_regex, score=0.85),
+            ],
+            context=["account", "bank", "balance", "statement", "check", "credit", "debit"]
+        )
+        self.analyzer.registry.add_recognizer(labeled_amount_recognizer)
+
+        # Masked / redacted account numbers
+        # Matches: ****7823, xxxx1234, ****-7823, Acct: ****7823
+        masked_acct_regex = r"(?:\*{3,}|x{3,}|X{3,})[-\s]?\d{3,6}"
+        labeled_masked_acct_regex = (
+            r"(?i)(?:acct|account|card)"
+            r"[:\s#.·]+(?:\*{3,}|x{3,}|X{3,})[-\s]?\d{3,6}"
+        )
+
+        masked_acct_recognizer = PatternRecognizer(
+            supported_entity="FINANCIAL",
+            patterns=[
+                Pattern(name="masked_account", regex=masked_acct_regex, score=0.70),
+                Pattern(name="labeled_masked_account", regex=labeled_masked_acct_regex, score=0.90),
+            ],
+            context=["account", "acct", "card", "bank", "chase", "wells", "citi",
+                     "boa", "checking", "savings", "credit", "debit", "ending"]
+        )
+        self.analyzer.registry.add_recognizer(masked_acct_recognizer)
+
         # IBAN (International Bank Account Number)
         # Format: 2-letter country code + 2 check digits + up to 30 alphanumeric BBAN
         # Country-specific lengths vary from 15 (Norway) to 34 (Malta) characters
@@ -4085,6 +4146,13 @@ class PIIDetector:
         # General Australian: letter + 5-6 digits (some states)
         au_letter_dl = r"\b[A-Z]\d{5,6}\b"
 
+        # Generic dash-separated DL: letter + digits with dashes
+        # Matches: K420-8891-5537, M123-4567-8901 (various US state formats)
+        generic_dash_dl = r"\b[A-Z]\d{3}[-]\d{4}[-]\d{4}\b"
+
+        # Labeled DL: "DL#: K420-8891-5537", "DL: A1234567"
+        labeled_dl = r"(?:DL\s*#?\s*:?\s*|License\s*#?\s*:?\s*)([A-Z0-9][\w-]{5,15})"
+
         drivers_license_recognizer = PatternRecognizer(
             supported_entity="DRIVERS_LICENSE",
             patterns=[
@@ -4095,6 +4163,7 @@ class PIIDetector:
                 Pattern(name="uk_dl", regex=uk_dl, score=0.95),
                 Pattern(name="uk_dl_spaced", regex=uk_dl_spaced, score=0.90),
                 Pattern(name="de_dl", regex=de_dl, score=0.85),
+                Pattern(name="generic_dash_dl", regex=generic_dash_dl, score=0.85),
                 # Medium confidence - need context
                 Pattern(name="ca_dl", regex=ca_dl, score=0.70),
                 Pattern(name="au_qld_dl", regex=au_qld_dl, score=0.70),
@@ -7929,18 +7998,25 @@ class PIIDetector:
 
             # Filter FINANCIAL false positives
             if entity.entity_type == "FINANCIAL":
-                # Skip if it looks like an email address
-                if '@' in entity_text:
-                    continue
-                # Skip if it looks like a URL
-                if re.match(r'^(?:https?://|www\.)', entity_text.lower()):
-                    continue
-                # Skip if it looks like a person name (two capitalized words)
-                if re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', entity_text):
-                    continue
-                # Skip if it's a company suffix appearing alone
-                if entity_text.lower() in ('inc', 'inc.', 'llc', 'ltd', 'ltd.', 'corp', 'corp.', 's.a.', 'plc', 'pjsc'):
-                    continue
+                # Exempt masked accounts, labeled amounts, and salary rates
+                _is_exempt_financial = (
+                    bool(re.search(r'[\*xX]{3,}\d', entity_text))  # masked acct
+                    or bool(re.search(r'(?i)balance|amount|total|salary', entity_text))
+                    or bool(re.search(r'/yr|/year|/month|/week|/day|/hr|per\s', entity_text))
+                )
+                if not _is_exempt_financial:
+                    # Skip if it looks like an email address
+                    if '@' in entity_text:
+                        continue
+                    # Skip if it looks like a URL
+                    if re.match(r'^(?:https?://|www\.)', entity_text.lower()):
+                        continue
+                    # Skip if it looks like a person name (two capitalized words)
+                    if re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', entity_text):
+                        continue
+                    # Skip if it's a company suffix appearing alone
+                    if entity_text.lower() in ('inc', 'inc.', 'llc', 'ltd', 'ltd.', 'corp', 'corp.', 's.a.', 'plc', 'pjsc'):
+                        continue
                 # Skip common English words that accidentally match SWIFT pattern (CUST+OM+ER = CUSTOMER)
                 # SWIFT pattern is [A-Z]{4}[COUNTRY_CODE]{2}[A-Z0-9]{2,5} which matches many English words
                 swift_false_positives = {
@@ -8884,8 +8960,12 @@ class PIIDetector:
                 # Skip OCR artifacts with pipe characters (table fragments)
                 if '|' in entity_text:
                     continue
-                # Skip OCR artifacts (random case, underscores, incomplete words)
-                if self._is_ocr_artifact(entity_text):
+                # Skip OCR artifacts, but exempt masked account patterns (****1234)
+                # which legitimately contain repeated characters
+                has_mask = bool(re.search(r'[\*xX]{3,}\d', entity_text))
+                has_balance = bool(re.search(r'(?i)balance|amount|total', entity_text))
+                has_salary = bool(re.search(r'(?i)salary|/yr|/year|/month|/week|/day|/hr|per\s', entity_text))
+                if not (has_mask or has_balance or has_salary) and self._is_ocr_artifact(entity_text):
                     continue
                 # Skip standalone negative numbers without currency symbol (e.g., "-50", "-6286")
                 # These are typically IDs, offsets, or numeric data, not financial amounts
