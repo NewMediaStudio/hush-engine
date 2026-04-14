@@ -256,6 +256,57 @@ def _reconstruct_credit_cards(detections: list) -> list:
     return candidates
 
 
+def _reconstruct_card_expiry(detections: list) -> list:
+    """
+    Reconstruct credit card expiry dates from fragmented OCR blocks.
+
+    OCR often splits "EXPIRES" and "09/28" into separate blocks on
+    different lines (label above, value below). Scans for expiry label
+    blocks near MM/YY date blocks and assembles them.
+
+    Returns: List of (expiry_text, bbox) tuples.
+    """
+    import re
+    if not detections:
+        return []
+
+    # Find expiry label blocks and MM/YY date blocks
+    label_blocks = []
+    date_blocks = []
+    for d in detections:
+        text = d.text if hasattr(d, 'text') else str(d)
+        upper = text.upper().strip()
+        x_center = (d.bbox[0] + d.bbox[2]) / 2
+        y_center = (d.bbox[1] + d.bbox[3]) / 2
+
+        if re.match(r'(?i)^(?:expires?|expiry|exp\.?|valid\s*(?:thru|through|until)?|good\s*thru)$', upper):
+            label_blocks.append({'text': text, 'x': x_center, 'y': y_center, 'bbox': d.bbox})
+        elif re.match(r'^(0[1-9]|1[0-2])\s*/\s*(\d{2}|\d{4})$', text.strip()):
+            date_blocks.append({'text': text.strip(), 'x': x_center, 'y': y_center, 'bbox': d.bbox})
+
+    # Match labels to dates — same x (within 100px), label above date (within 150px)
+    results = []
+    used_dates = set()
+    for label in label_blocks:
+        for i, date in enumerate(date_blocks):
+            if i in used_dates:
+                continue
+            x_diff = abs(label['x'] - date['x'])
+            y_diff = date['y'] - label['y']  # date should be below label
+            if x_diff < 100 and 0 < y_diff < 150:
+                # Merge bboxes
+                x1 = min(label['bbox'][0], date['bbox'][0])
+                y1 = min(label['bbox'][1], date['bbox'][1])
+                x2 = max(label['bbox'][2], date['bbox'][2])
+                y2 = max(label['bbox'][3], date['bbox'][3])
+                expiry_text = f"EXPIRES {date['text']}"
+                results.append((expiry_text, [x1, y1, x2, y2]))
+                used_dates.add(i)
+                break
+
+    return results
+
+
 def _luhn_check(number: str) -> bool:
     """Validate a number string with the Luhn algorithm."""
     digits = [int(d) for d in number if d.isdigit()]
@@ -722,6 +773,7 @@ class FileRouter:
         # OCR often splits card numbers (e.g., "5412 7534" + "0098" + "3317").
         # Look for 4-digit groups on same line and assemble into CC candidates.
         _cc_candidates = _reconstruct_credit_cards(ocr_detections)
+        _expiry_candidates = _reconstruct_card_expiry(ocr_detections)
 
         # Detect PII in merged text regions using user's locale preferences
         pii_detections = []
@@ -757,6 +809,18 @@ class FileRouter:
                         'text': entity.text,
                         'confidence': entity.confidence,
                         'bbox': cc_bbox
+                    })
+
+        # Add reconstructed card expiry dates
+        for expiry_text, expiry_bbox in _expiry_candidates:
+            entities = self.detector.analyze_text(expiry_text)
+            for entity in entities:
+                if entity.entity_type == 'DATE_TIME':
+                    pii_detections.append({
+                        'entity_type': 'DATE_TIME',
+                        'text': entity.text,
+                        'confidence': entity.confidence,
+                        'bbox': expiry_bbox
                     })
 
         # Detect faces if enabled
@@ -897,8 +961,9 @@ class FileRouter:
         # Merge adjacent text regions for better PII detection
         merged_regions = merge_adjacent_detections(ocr_detections)
 
-        # Reconstruct credit card numbers from fragmented OCR blocks
+        # Reconstruct credit card numbers and expiry dates from fragmented OCR blocks
         cc_candidates = _reconstruct_credit_cards(ocr_detections)
+        expiry_candidates = _reconstruct_card_expiry(ocr_detections)
 
         # Detect PII in this page (initial pass)
         for merged_region in merged_regions:
@@ -933,6 +998,19 @@ class FileRouter:
                         'text': entity.text,
                         'confidence': entity.confidence,
                         'bbox': cc_bbox,
+                        'page': page_num
+                    })
+
+        # Add reconstructed card expiry dates
+        for expiry_text, expiry_bbox in expiry_candidates:
+            entities = self.detector.analyze_text(expiry_text)
+            for entity in entities:
+                if entity.entity_type == 'DATE_TIME':
+                    page_detections.append({
+                        'entity_type': 'DATE_TIME',
+                        'text': entity.text,
+                        'confidence': entity.confidence,
+                        'bbox': expiry_bbox,
                         'page': page_num
                     })
 
