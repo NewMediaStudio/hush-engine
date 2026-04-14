@@ -897,6 +897,9 @@ class FileRouter:
         # Merge adjacent text regions for better PII detection
         merged_regions = merge_adjacent_detections(ocr_detections)
 
+        # Reconstruct credit card numbers from fragmented OCR blocks
+        cc_candidates = _reconstruct_credit_cards(ocr_detections)
+
         # Detect PII in this page (initial pass)
         for merged_region in merged_regions:
             entities = self.detector.analyze_text(
@@ -919,6 +922,19 @@ class FileRouter:
                     'bbox': entity_bbox,
                     'page': page_num
                 })
+
+        # Add reconstructed credit card detections
+        for cc_text, cc_bbox in cc_candidates:
+            entities = self.detector.analyze_text(cc_text)
+            for entity in entities:
+                if entity.entity_type == 'CREDIT_CARD':
+                    page_detections.append({
+                        'entity_type': 'CREDIT_CARD',
+                        'text': entity.text,
+                        'confidence': entity.confidence,
+                        'bbox': cc_bbox,
+                        'page': page_num
+                    })
 
         # Apply context-aware detection (table structure + header context)
         try:
