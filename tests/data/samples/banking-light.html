@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0">
+<title>Banking - Light Theme</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F5F5F7;
+    color: #1A1A2E;
+    width: 375px;
+    min-height: 812px;
+    margin: 0 auto;
+  }
+  .screen { padding: 20px; min-height: 812px; }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667EEA, #764BA2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .top-greeting { font-size: 13px; color: #8E8E9A; }
+  .top-name { font-size: 16px; font-weight: 600; }
+  .bell {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .balance-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    text-align: center;
+  }
+  .balance-label {
+    font-size: 13px;
+    color: #8E8E9A;
+    margin-bottom: 8px;
+  }
+  .balance-amount {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .balance-cents { font-size: 24px; font-weight: 500; color: #8E8E9A; }
+  .balance-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #2ECC71;
+    background: #E8FAF0;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 8px;
+  }
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .action-btn {
+    flex: 1;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  .action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .action-label { font-size: 12px; font-weight: 500; color: #8E8E9A; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 17px; font-weight: 700; }
+  .section-link { font-size: 13px; color: #667EEA; font-weight: 500; }
+  .card-mini {
+    background: linear-gradient(135deg, #1B1464, #3D2C8D);
+    border-radius: 16px;
+    padding: 24px 20px 28px;
+    color: #fff;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-mini::before {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+  .card-mini-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .card-mini-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.6);
+  }
+  .card-mini-brand { font-size: 14px; font-weight: 700; opacity: 0.4; }
+  .card-mini-number {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    margin-bottom: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-mini-bottom {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .card-mini-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3px;
+  }
+  .tx-list {
+    background: #fff;
+    border-radius: 20px;
+    padding: 4px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  .tx {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #F0F0F2;
+  }
+  .tx:last-child { border-bottom: none; }
+  .tx-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .tx-info { flex: 1; }
+  .tx-name { font-size: 14px; font-weight: 600; }
+  .tx-date { font-size: 11px; color: #8E8E9A; margin-top: 2px; }
+  .tx-amt { font-size: 14px; font-weight: 700; }
+  .tx-neg { color: #1A1A2E; }
+  .tx-pos { color: #2ECC71; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="avatar" data-pii="avatar" data-pii-type="photo">JC</div>
+      <div>
+        <div class="top-greeting">Welcome back,</div>
+        <div class="top-name" data-pii="name" data-pii-type="full-name">James Chen</div>
+      </div>
+    </div>
+    <div class="bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+  </div>
+
+  <div class="balance-card">
+    <div class="balance-label">Available Balance</div>
+    <div class="balance-amount" data-pii="balance" data-pii-type="financial">$18,342<span class="balance-cents">.67</span></div>
+    <div class="balance-change">↑ +2.4% this month</div>
+  </div>
+
+  <div class="actions">
+    <div class="action-btn">
+      <div class="action-icon" style="background:#EBF0FF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667EEA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></div>
+      <div class="action-label">Send</div>
+    </div>
+    <div class="action-btn">
+      <div class="action-icon" style="background:#E8FAF0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2ECC71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg></div>
+      <div class="action-label">Receive</div>
+    </div>
+    <div class="action-btn">
+      <div class="action-icon" style="background:#FFF3E6;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="action-label">Pay</div>
+    </div>
+    <div class="action-btn">
+      <div class="action-icon" style="background:#F3E8FF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#764BA2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+      <div class="action-label">Invest</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">My Card</div>
+    <div class="section-link">Manage →</div>
+  </div>
+
+  <div class="card-mini">
+    <div class="card-mini-top">
+      <div class="card-mini-type">Platinum Debit</div>
+      <div class="card-mini-brand">MASTERCARD</div>
+    </div>
+    <div class="card-mini-number" data-pii="card-number" data-pii-type="card-number">5412 &nbsp; 7534 &nbsp; 0098 &nbsp; 3317</div>
+    <div class="card-mini-bottom">
+      <div>
+        <div class="card-mini-label">Holder</div>
+        <div data-pii="name" data-pii-type="full-name">JAMES CHEN</div>
+      </div>
+      <div>
+        <div class="card-mini-label">Expires</div>
+        <div data-pii="expiry" data-pii-type="card-expiry">11/27</div>
+      </div>
+      <div>
+        <div class="card-mini-label">CVV</div>
+        <div data-pii="cvv" data-pii-type="card-cvv">•••</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Transactions</div>
+    <div class="section-link">See All →</div>
+  </div>
+
+  <div class="tx-list">
+    <div class="tx">
+      <div class="tx-dot" style="background:#FFF3E6;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
+      <div class="tx-info">
+        <div class="tx-name" data-pii="merchant" data-pii-type="merchant">Blue Bottle Coffee</div>
+        <div class="tx-date" data-pii="date" data-pii-type="date">Today, 8:22 AM</div>
+      </div>
+      <div class="tx-amt tx-neg" data-pii="transaction" data-pii-type="financial">-$6.50</div>
+    </div>
+    <div class="tx">
+      <div class="tx-dot" style="background:#E8FAF0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#276749" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><line x1="8" y1="6" x2="8" y2="6.01"/><line x1="12" y1="6" x2="12" y2="6.01"/><line x1="16" y1="6" x2="16" y2="6.01"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="14.01"/></svg></div>
+      <div class="tx-info">
+        <div class="tx-name" data-pii="employer" data-pii-type="employer">Apex Dynamics Inc</div>
+        <div class="tx-date" data-pii="date" data-pii-type="date">Mar 15, 2026</div>
+      </div>
+      <div class="tx-amt tx-pos" data-pii="transaction" data-pii-type="financial">+$5,680.00</div>
+    </div>
+    <div class="tx">
+      <div class="tx-dot" style="background:#F3E8FF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B21A8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2 2 0 0 1 3 0"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4" y1="9" x2="4" y2="15"/><line x1="7" y1="7" x2="7" y2="17"/><line x1="17" y1="7" x2="17" y2="17"/><line x1="20" y1="9" x2="20" y2="15"/></svg></div>
+      <div class="tx-info">
+        <div class="tx-name" data-pii="merchant" data-pii-type="merchant">Equinox Membership</div>
+        <div class="tx-date" data-pii="date" data-pii-type="date">Mar 10, 2026</div>
+      </div>
+      <div class="tx-amt tx-neg" data-pii="transaction" data-pii-type="financial">-$220.00</div>
+    </div>
+    <div class="tx">
+      <div class="tx-dot" style="background:#EBF0FF;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B55A0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="tx-info">
+        <div class="tx-name" data-pii="merchant" data-pii-type="merchant">Amazon.com</div>
+        <div class="tx-date" data-pii="date" data-pii-type="date">Mar 8, 2026</div>
+      </div>
+      <div class="tx-amt tx-neg" data-pii="transaction" data-pii-type="financial">-$149.99</div>
+    </div>
+  </div>
+</div>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

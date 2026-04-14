@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0">
+<title>SaaS CRM - Customer Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #F8F9FC;
+    color: #1E1E2D;
+    width: 375px;
+    min-height: 812px;
+    margin: 0 auto;
+  }
+  .screen { min-height: 812px; }
+  .header {
+    background: #fff;
+    padding: 16px 20px;
+    border-bottom: 1px solid #EEEEF2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-title { font-size: 17px; font-weight: 700; }
+  .back { font-size: 20px; color: #6C5CE7; cursor: pointer; }
+  .dots { font-size: 20px; color: #B0B0C0; }
+  .profile-section {
+    background: #fff;
+    padding: 24px 20px;
+    text-align: center;
+    border-bottom: 1px solid #EEEEF2;
+  }
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6C5CE7, #A855F7);
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    overflow: hidden;
+  }
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .profile-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .profile-role { font-size: 13px; color: #8E8E9A; margin-bottom: 12px; }
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 0 3px;
+  }
+  .tag-active { background: #E8FAF0; color: #22C55E; }
+  .tag-premium { background: #FFF3E6; color: #F59E0B; }
+  .stats-row {
+    display: flex;
+    padding: 16px 20px;
+    gap: 10px;
+    background: #fff;
+    border-bottom: 1px solid #EEEEF2;
+  }
+  .stat-box {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    background: #F8F9FC;
+    border-radius: 12px;
+  }
+  .stat-value { font-size: 18px; font-weight: 700; color: #6C5CE7; }
+  .stat-label { font-size: 10px; color: #8E8E9A; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section {
+    background: #fff;
+    margin-top: 8px;
+    padding: 18px 20px;
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8E8E9A;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #F5F5F8;
+  }
+  .field:last-child { border-bottom: none; }
+  .field-label { font-size: 13px; color: #8E8E9A; }
+  .field-value { font-size: 13px; font-weight: 600; text-align: right; max-width: 60%; }
+  .note-box {
+    background: #FFFBEB;
+    border-left: 3px solid #F59E0B;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .note-text { font-size: 12px; color: #92400E; line-height: 1.5; }
+  .activity-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #F5F5F8;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .activity-text { font-size: 13px; line-height: 1.4; }
+  .activity-time { font-size: 11px; color: #8E8E9A; margin-top: 3px; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="header">
+    <span class="back">←</span>
+    <span class="header-title">Customer Profile</span>
+    <span class="dots">⋯</span>
+  </div>
+
+  <div class="profile-section">
+    <div class="profile-avatar" data-pii="avatar" data-pii-type="photo"><img src="https://randomuser.me/api/portraits/women/79.jpg" alt="Maria Rodriguez"></div>
+    <div class="profile-name" data-pii="name" data-pii-type="full-name">Maria Rodriguez</div>
+    <div class="profile-role" data-pii="company" data-pii-type="employer">VP of Operations · Vertex Labs</div>
+    <div style="margin-top:4px;">
+      <span class="tag tag-active">● Active</span>
+      <span class="tag tag-premium">★ Premium</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-value" data-pii="financial" data-pii-type="financial">$42.8k</div>
+      <div class="stat-label">Lifetime Value</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">14</div>
+      <div class="stat-label">Tickets</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">98%</div>
+      <div class="stat-label">CSAT</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Contact Information</div>
+    <div class="field">
+      <span class="field-label">Email</span>
+      <span class="field-value" data-pii="email" data-pii-type="email">m.rodriguez@vertexlabs.io</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Phone</span>
+      <span class="field-value" data-pii="phone" data-pii-type="phone">+1 (415) 892-3047</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Address</span>
+      <span class="field-value" data-pii="address" data-pii-type="address">742 Innovation Dr<br>San Francisco, CA 94107</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Customer ID</span>
+      <span class="field-value" data-pii="customer-id" data-pii-type="id-number">CUS-2024-00847</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Billing Details</div>
+    <div class="field">
+      <span class="field-label">Plan</span>
+      <span class="field-value">Enterprise · Annual</span>
+    </div>
+    <div class="field">
+      <span class="field-label">MRR</span>
+      <span class="field-value" data-pii="financial" data-pii-type="financial">$3,490/mo</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Payment</span>
+      <span class="field-value" data-pii="card-number" data-pii-type="card-number">Visa ····4281</span>
+    </div>
+    <div class="field">
+      <span class="field-label">Next Invoice</span>
+      <span class="field-value">Apr 1, 2026</span>
+    </div>
+    <div class="note-box">
+      <div class="note-text" data-pii="note" data-pii-type="internal-note"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Customer negotiated 15% discount at renewal. Approved by David K. Do not modify without manager sign-off.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Recent Activity</div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#6C5CE7;"></div>
+      <div>
+        <div class="activity-text">Upgraded to Enterprise plan</div>
+        <div class="activity-time">2 days ago</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#22C55E;"></div>
+      <div>
+        <div class="activity-text">Support ticket #1847 resolved</div>
+        <div class="activity-time">5 days ago</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#F59E0B;"></div>
+      <div>
+        <div class="activity-text" data-pii="note" data-pii-type="internal-note">SSO configured for <span data-pii="email" data-pii-type="email">team@vertexlabs.io</span></div>
+        <div class="activity-time">1 week ago</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=460, initial-scale=1.0">
+<title>Fake National ID Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Libre+Baskerville:wght@400;700&family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: transparent;
+    width: 460px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 40px;
+    gap: 16px;
+    overflow: visible;
+  }
+  .id-card {
+    width: 400px;
+    background: linear-gradient(150deg, #FAFBFF 0%, #EEF2FF 40%, #F5F7FF 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  }
+  .id-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('pass-bg.svg') center/80% no-repeat;
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .id-header {
+    background: linear-gradient(135deg, #1E3A5F 0%, #1E40AF 50%, #1E3A5F 100%);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+  }
+  .id-country {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+  .id-country-sub {
+    font-size: 8px;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+  .id-type-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.8;
+  }
+  .id-crest {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .id-body {
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    position: relative;
+  }
+  .id-photo {
+    width: 85px;
+    height: 105px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #E0D0BC 0%, #C4A882 35%, #D4B896 70%, #E0D0C0 100%);
+    border: 2px solid #B0C0D4;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .id-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .id-fields { flex: 1; }
+  .id-field { margin-bottom: 5px; }
+  .id-label {
+    font-size: 7px;
+    color: #1E40AF;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+  }
+  .id-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .id-val.name-big { font-size: 15px; }
+  .id-number-strip {
+    background: rgba(30,64,175,0.04);
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(30,64,175,0.08);
+    border-bottom: 1px solid rgba(30,64,175,0.08);
+  }
+  .id-number {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #DC2626;
+    letter-spacing: 2px;
+  }
+  .id-qr {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+  .id-qr canvas { border-radius: 4px; }
+  .id-details {
+    padding: 8px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+  }
+  .id-mrz {
+    background: #F0F2F5;
+    padding: 8px 12px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #374151;
+    line-height: 1.6;
+    border-top: 1px solid #D1D5DB;
+  }
+  .label-front {
+    text-align: center;
+    font-size: 10px;
+    color: #9CA3AF;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .label-back {
+    text-align: center;
+    font-size: 10px;
+    color: #9CA3AF;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  /* Back of card */
+  .id-back {
+    width: 400px;
+    background: linear-gradient(150deg, #FAFBFF 0%, #F0F4FF 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #C7D2E0;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .id-back::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('pass-bg.svg') center/80% no-repeat;
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .id-back-header {
+    background: linear-gradient(135deg, #1E3A5F 0%, #1E40AF 100%);
+    padding: 6px 16px;
+    color: rgba(255,255,255,0.7);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+  .id-back-body {
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .id-back-qr {
+    flex-shrink: 0;
+  }
+  .id-back-qr canvas { border-radius: 6px; }
+  .id-back-info { flex: 1; }
+  .id-back-field { margin-bottom: 6px; }
+  .id-back-barcode {
+    padding: 10px 16px;
+    text-align: center;
+  }
+  .barcode-container {
+    display: inline-flex;
+    gap: 1px;
+    align-items: center;
+    height: 36px;
+    padding: 4px 8px;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #E5E7EB;
+  }
+  .b-line { width: 2px; height: 30px; background: #111827; }
+  .b-thin { width: 1px; }
+  .b-thick { width: 3px; }
+  .b-gap { width: 2px; background: transparent; }
+  .sig-area {
+    padding: 6px 16px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .sig-box {
+    border-bottom: 1px solid #D1D5DB;
+    padding-bottom: 4px;
+    min-width: 130px;
+  }
+  .sig-text {
+    font-family: 'Caveat', cursive;
+    font-size: 16px;
+    color: #1E293B;
+  }
+  .sig-label-text {
+    font-size: 7px;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="id-card">
+  <div class="id-header">
+    <div>
+      <div class="id-country">REPÚBLICA FEDERAL</div>
+      <div class="id-country-sub">Documento Nacional de Identidad</div>
+    </div>
+    <div class="id-crest"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+  </div>
+
+  <div class="id-body">
+    <div class="id-photo" data-pii="photo" data-pii-type="photo"><img src="https://randomuser.me/api/portraits/women/52.jpg" alt="ID Photo"></div>
+    <div class="id-fields">
+      <div class="id-field">
+        <div class="id-label">Apellido / Surname</div>
+        <div class="id-val name-big" data-pii="name" data-pii-type="last-name">FERNÁNDEZ LÓPEZ</div>
+      </div>
+      <div class="id-field">
+        <div class="id-label">Nombres / Given Names</div>
+        <div class="id-val name-big" data-pii="name" data-pii-type="first-name">LUCÍA ISABEL</div>
+      </div>
+      <div class="id-field">
+        <div class="id-label">Fecha de Nacimiento / DOB</div>
+        <div class="id-val" data-pii="dob" data-pii-type="date-of-birth">14/06/1994</div>
+      </div>
+      <div class="id-field">
+        <div class="id-label">Nacionalidad</div>
+        <div class="id-val" data-pii="nationality" data-pii-type="nationality">ARGENTINA</div>
+      </div>
+      <div class="id-field">
+        <div class="id-label">Sexo / Sex</div>
+        <div class="id-val" data-pii="sex" data-pii-type="personal-info">F</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="id-number-strip">
+    <div>
+      <div class="id-label">Número DNI</div>
+      <div class="id-number" data-pii="id-number" data-pii-type="id-number">38.492.071</div>
+    </div>
+    <div class="id-qr" id="qr-front" data-pii="qr" data-pii-type="qr-code"></div>
+  </div>
+
+  <div class="id-details">
+    <div class="id-field">
+      <div class="id-label">Emisión / Issued</div>
+      <div class="id-val" style="font-size:10px;" data-pii="date" data-pii-type="date">15/01/2023</div>
+    </div>
+    <div class="id-field">
+      <div class="id-label">Vencimiento / Exp</div>
+      <div class="id-val" style="font-size:10px;color:#DC2626;" data-pii="date" data-pii-type="date">14/06/2038</div>
+    </div>
+    <div class="id-field">
+      <div class="id-label">Ejemplar / Copy</div>
+      <div class="id-val" style="font-size:10px;">B</div>
+    </div>
+  </div>
+
+  <div class="id-mrz" data-pii="mrz" data-pii-type="mrz-code">
+    IDARGLFERNANDELOPEZ&lt;&lt;LUCIA&lt;ISABEL&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>
+    3849207108ARG9406145F3806158&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;04
+  </div>
+</div>
+
+<div class="id-back">
+  <div class="id-back-header">Información Adicional / Additional Information</div>
+  <div class="id-back-body">
+    <div class="id-back-qr" id="qr-back" data-pii="qr" data-pii-type="qr-code"></div>
+    <div class="id-back-info">
+      <div class="id-back-field">
+        <div class="id-label">Domicilio / Address</div>
+        <div class="id-val" style="font-size:11px;" data-pii="address" data-pii-type="address">Av. Corrientes 4820, Piso 6° A<br>C1414AJN · Buenos Aires</div>
+      </div>
+      <div class="id-back-field">
+        <div class="id-label">CUIL</div>
+        <div class="id-val" data-pii="tax-id" data-pii-type="tax-id">27-38492071-4</div>
+      </div>
+      <div class="id-back-field">
+        <div class="id-label">Donante de Órganos</div>
+        <div class="id-val" style="font-size:11px;color:#16A34A;">SÍ / YES</div>
+      </div>
+      <div class="id-back-field">
+        <div class="id-label">Grupo Sanguíneo / Blood Type</div>
+        <div class="id-val" data-pii="medical" data-pii-type="medical-info">A+</div>
+      </div>
+    </div>
+  </div>
+  <div class="id-back-barcode" data-pii="barcode" data-pii-type="barcode">
+    <div class="barcode-container">
+      <div class="b-line"></div><div class="b-line b-thin"></div><div class="b-gap"></div>
+      <div class="b-line b-thick"></div><div class="b-line b-thin"></div><div class="b-gap"></div>
+      <div class="b-line"></div><div class="b-line b-thick"></div><div class="b-line b-thin"></div><div class="b-gap"></div>
+      <div class="b-line"></div><div class="b-line b-thin"></div><div class="b-line b-thick"></div><div class="b-gap"></div>
+      <div class="b-line b-thin"></div><div class="b-line"></div><div class="b-gap"></div>
+      <div class="b-line b-thick"></div><div class="b-line b-thin"></div><div class="b-line"></div><div class="b-gap"></div>
+      <div class="b-line"></div><div class="b-line b-thin"></div><div class="b-gap"></div>
+      <div class="b-line b-thick"></div><div class="b-line"></div><div class="b-line b-thin"></div><div class="b-gap"></div>
+      <div class="b-line b-thin"></div><div class="b-line b-thick"></div><div class="b-line"></div><div class="b-gap"></div>
+      <div class="b-line"></div><div class="b-line b-thin"></div><div class="b-line b-thick"></div><div class="b-gap"></div>
+      <div class="b-line b-thin"></div><div class="b-line"></div>
+    </div>
+  </div>
+  <div class="sig-area">
+    <div class="sig-box">
+      <div class="sig-text" data-pii="signature" data-pii-type="signature">Lucía Fernández</div>
+      <div class="sig-label-text">Firma del Titular / Holder's Signature</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="id-label">Trámite N°</div>
+      <div class="id-val" style="font-size:10px;" data-pii="id-number" data-pii-type="id-number">0048201947200</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Generate realistic QR codes
+  function makeQR(elId, data, size) {
+    var qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    var el = document.getElementById(elId);
+    if (el) {
+      var img = qr.createImgTag(size, 0);
+      el.innerHTML = img;
+      var imgEl = el.querySelector('img');
+      if (imgEl) {
+        imgEl.style.borderRadius = '4px';
+        imgEl.style.width = '100%';
+        imgEl.style.height = '100%';
+      }
+    }
+  }
+  makeQR('qr-front', 'DNI:38492071|FERNANDEZ LOPEZ|LUCIA ISABEL|1994-06-14|F|ARG', 2);
+  makeQR('qr-back', 'CUIL:27-38492071-4|ADDR:Av. Corrientes 4820 6A|CITY:Buenos Aires|BLOOD:A+|ORGAN:Y|EXP:2038-06-14|TRAM:0048201947200', 3);
+</script>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

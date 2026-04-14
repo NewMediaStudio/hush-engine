@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0">
+<title>Medical Form - Patient Intake</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #F0F4F8;
+    color: #2D3748;
+    width: 375px;
+    min-height: 812px;
+    margin: 0 auto;
+  }
+  .screen { min-height: 812px; }
+  .top-banner {
+    background: linear-gradient(135deg, #1A7F64 0%, #2B9F7E 100%);
+    padding: 20px;
+    color: #fff;
+  }
+  .clinic-name { font-size: 16px; font-weight: 700; letter-spacing: 0.3px; }
+  .clinic-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .form-title {
+    font-size: 14px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+  .patient-header {
+    background: #fff;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .photo-box {
+    width: 80px;
+    height: 96px;
+    border-radius: 10px;
+    background: #E2E8F0;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #E2E8F0;
+  }
+  .photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .patient-info { flex: 1; }
+  .patient-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .patient-dob { font-size: 13px; color: #718096; }
+  .patient-id-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .patient-tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tag-mrn { background: #EBF8FF; color: #2B6CB0; }
+  .tag-ins { background: #F0FFF4; color: #276749; }
+  .qr-section {
+    background: #fff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .qr-code {
+    width: 72px;
+    height: 72px;
+    background: #fff;
+    border: 2px solid #E2E8F0;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  /* Fake QR pattern */
+  .qr-code svg { width: 100%; height: 100%; }
+  .qr-info { flex: 1; }
+  .qr-label { font-size: 12px; color: #718096; margin-bottom: 4px; }
+  .qr-value { font-size: 13px; font-weight: 600; }
+  .qr-note { font-size: 11px; color: #A0AEC0; margin-top: 6px; }
+  .section {
+    background: #fff;
+    margin-top: 6px;
+    padding: 16px 20px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A7F64;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #E6F7F2;
+  }
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .field-group.full { grid-template-columns: 1fr; }
+  .field { margin-bottom: 10px; }
+  .field-label {
+    font-size: 11px;
+    color: #A0AEC0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .field-value {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 10px;
+    background: #F7FAFC;
+    border-radius: 6px;
+    border: 1px solid #E2E8F0;
+  }
+  .alert-box {
+    background: #FFF5F5;
+    border: 1px solid #FED7D7;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+  .alert-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #C53030;
+    margin-bottom: 4px;
+  }
+  .alert-text { font-size: 13px; color: #9B2C2C; line-height: 1.4; }
+  .consent-box {
+    background: #FFFBEB;
+    border: 1px solid #FEF3C7;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 6px;
+  }
+  .consent-text { font-size: 11px; color: #92400E; line-height: 1.5; }
+  .sig-line {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .sig-scribble {
+    font-family: 'Brush Script MT', cursive;
+    font-size: 22px;
+    color: #2D3748;
+  }
+  .sig-date { font-size: 11px; color: #A0AEC0; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="top-banner">
+    <div class="clinic-name"><span style="display:inline-flex;vertical-align:middle;margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>Greenfield Medical Center</div>
+    <div class="clinic-sub">Patient Intake Form · Confidential</div>
+    <div class="form-title">NEW PATIENT REGISTRATION</div>
+  </div>
+
+  <div class="patient-header">
+    <div class="photo-box" data-pii="photo" data-pii-type="photo"><img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Patient photo"></div>
+    <div class="patient-info">
+      <div class="patient-name" data-pii="name" data-pii-type="full-name">Angela Chen-Watkins</div>
+      <div class="patient-dob">DOB: <span data-pii="dob" data-pii-type="date-of-birth">04/12/1988</span> · Age 37 · F</div>
+      <div class="patient-id-row">
+        <span class="patient-tag tag-mrn" data-pii="mrn" data-pii-type="medical-id">MRN: 00284619</span>
+        <span class="patient-tag tag-ins" data-pii="insurance" data-pii-type="insurance-id">INS: BCB-7741920</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="qr-section">
+    <div class="qr-code" data-pii="qr" data-pii-type="qr-code" id="qr-patient"></div>
+    <div class="qr-info">
+      <div class="qr-label">Patient QR Code</div>
+      <div class="qr-value" data-pii="mrn" data-pii-type="medical-id">MRN-00284619-GFC</div>
+      <div class="qr-note">Scan for full EHR access · HIPAA Protected</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Personal Information</div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Full Legal Name</div>
+        <div class="field-value" data-pii="name" data-pii-type="full-name">Angela Marie Chen-Watkins</div>
+      </div>
+      <div class="field">
+        <div class="field-label">SSN</div>
+        <div class="field-value" data-pii="ssn" data-pii-type="ssn">483-29-1847</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Date of Birth</div>
+        <div class="field-value" data-pii="dob" data-pii-type="date-of-birth">04/12/1988</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Phone</div>
+        <div class="field-value" data-pii="phone" data-pii-type="phone">(503) 847-2190</div>
+      </div>
+    </div>
+    <div class="field-group full">
+      <div class="field">
+        <div class="field-label">Home Address</div>
+        <div class="field-value" data-pii="address" data-pii-type="address">1847 Birchwood Lane, Apt 3C, Portland, OR 97205</div>
+      </div>
+    </div>
+    <div class="field-group full">
+      <div class="field">
+        <div class="field-label">Email</div>
+        <div class="field-value" data-pii="email" data-pii-type="email">angela.cw88@gmail.com</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Insurance Information</div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Provider</div>
+        <div class="field-value" data-pii="insurance-provider" data-pii-type="insurance">Blue Cross Blue Shield</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Group #</div>
+        <div class="field-value" data-pii="insurance-group" data-pii-type="insurance-id">GRP-445812</div>
+      </div>
+    </div>
+    <div class="field-group full">
+      <div class="field">
+        <div class="field-label">Policy Number</div>
+        <div class="field-value" data-pii="policy" data-pii-type="insurance-id">BCB-7741920-03</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Medical History</div>
+    <div class="alert-box">
+      <div class="alert-title"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C53030" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Allergies</div>
+      <div class="alert-text" data-pii="medical" data-pii-type="medical-info">Penicillin (severe — anaphylaxis risk), Sulfa drugs (rash), Latex (mild)</div>
+    </div>
+    <div class="field-group full" style="margin-top:12px;">
+      <div class="field">
+        <div class="field-label">Current Medications</div>
+        <div class="field-value" data-pii="medical" data-pii-type="medical-info">Metformin 500mg (2x daily), Lisinopril 10mg, Sertraline 50mg</div>
+      </div>
+    </div>
+    <div class="field-group full">
+      <div class="field">
+        <div class="field-label">Conditions</div>
+        <div class="field-value" data-pii="medical" data-pii-type="medical-info">Type 2 Diabetes (dx 2019), Hypertension, Generalized Anxiety Disorder</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Emergency Contact</div>
+    <div class="field-group">
+      <div class="field">
+        <div class="field-label">Name</div>
+        <div class="field-value" data-pii="name" data-pii-type="full-name">Robert Watkins</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Relation</div>
+        <div class="field-value">Spouse</div>
+      </div>
+    </div>
+    <div class="field-group full">
+      <div class="field">
+        <div class="field-label">Phone</div>
+        <div class="field-value" data-pii="phone" data-pii-type="phone">(503) 847-2191</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="consent-box">
+      <div class="consent-text">I hereby authorize Greenfield Medical Center to use and disclose my protected health information for the purposes of treatment, payment, and healthcare operations in accordance with HIPAA regulations.</div>
+    </div>
+    <div class="sig-line">
+      <div>
+        <div class="sig-scribble" data-pii="signature" data-pii-type="signature">Angela C-W</div>
+        <div style="border-top:1px solid #CBD5E0;width:160px;margin-top:4px;padding-top:2px;font-size:10px;color:#A0AEC0;">Patient Signature</div>
+      </div>
+      <div class="sig-date">03/22/2026</div>
+    </div>
+  </div>
+</div>
+<script>
+  function makeQR(elId, data, cellSize) {
+    var qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    var el = document.getElementById(elId);
+    if (el) {
+      var img = qr.createImgTag(cellSize, 0);
+      el.innerHTML = img;
+      var imgEl = el.querySelector('img');
+      if (imgEl) { imgEl.style.borderRadius = '4px'; imgEl.style.width = '100%'; imgEl.style.height = '100%'; }
+    }
+  }
+  makeQR('qr-patient', 'MRN:00284619|NAME:Angela Marie Chen-Watkins|DOB:1988-04-12|INS:BCB-7741920-03|HIPAA:PROTECTED', 2);
+</script>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

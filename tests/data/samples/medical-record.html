@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=780, initial-scale=1.0">
+<title>Medical Record - Desktop EHR</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #F1F5F9;
+    color: #1E293B;
+    width: 780px;
+    margin: 0 auto;
+  }
+  .app { min-height: 600px; }
+  .toolbar {
+    background: #0F172A;
+    padding: 10px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94A3B8;
+    font-size: 13px;
+  }
+  .toolbar-brand { color: #38BDF8; font-weight: 700; font-size: 15px; }
+  .toolbar-nav { display: flex; gap: 20px; }
+  .toolbar-nav span { cursor: pointer; }
+  .toolbar-nav span.active { color: #fff; font-weight: 600; }
+  .toolbar-user { display: flex; align-items: center; gap: 8px; }
+  .toolbar-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #334155; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; color: #94A3B8;
+  }
+  .sub-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .breadcrumb { font-size: 12px; color: #94A3B8; }
+  .breadcrumb strong { color: #1E293B; }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    font-weight: 600; border: none; cursor: pointer;
+  }
+  .btn-primary { background: #0EA5E9; color: #fff; }
+  .btn-outline { background: #fff; color: #64748B; border: 1px solid #E2E8F0; }
+  .content { padding: 20px 24px; display: flex; gap: 20px; }
+  .sidebar { width: 220px; flex-shrink: 0; }
+  .main { flex: 1; }
+  .patient-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #E2E8F0;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .p-photo {
+    width: 80px; height: 96px; border-radius: 10px;
+    background: #E2E8F0;
+    margin: 0 auto 12px;
+    overflow: hidden;
+    border: 2px solid #E2E8F0;
+  }
+  .p-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .p-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .p-id { font-size: 12px; color: #94A3B8; margin-bottom: 8px; }
+  .p-details { text-align: left; margin-top: 12px; }
+  .p-row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid #F1F5F9;
+    font-size: 12px;
+  }
+  .p-row:last-child { border-bottom: none; }
+  .p-label { color: #94A3B8; }
+  .p-value { font-weight: 600; text-align: right; }
+  .qr-mini {
+    width: 64px; height: 64px; margin: 12px auto 0;
+    border: 1px solid #E2E8F0; border-radius: 6px;
+    padding: 4px; background: #fff;
+  }
+  .qr-mini svg { width: 100%; height: 100%; }
+  .alert-banner {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .alert-banner-text { font-size: 12px; color: #DC2626; font-weight: 600; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .card-title { font-size: 13px; font-weight: 700; }
+  .card-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 18px;
+    background: #F8FAFC;
+    color: #64748B;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  td {
+    padding: 10px 18px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  tr:last-child td { border-bottom: none; }
+  .status-dot {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600;
+  }
+  .status-dot::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+  }
+  .status-active::before { background: #22C55E; }
+  .status-active { color: #22C55E; }
+  .status-dc::before { background: #94A3B8; }
+  .status-dc { color: #94A3B8; }
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 14px 18px;
+  }
+  .vital-box {
+    background: #F8FAFC;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .vital-value { font-size: 18px; font-weight: 700; color: #0EA5E9; }
+  .vital-label { font-size: 10px; color: #94A3B8; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .vital-unit { font-size: 10px; color: #94A3B8; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-brand">◆ MediChart EHR</div>
+    <div class="toolbar-nav">
+      <span>Dashboard</span>
+      <span class="active">Patients</span>
+      <span>Schedule</span>
+      <span>Billing</span>
+      <span>Reports</span>
+    </div>
+    <div class="toolbar-user">
+      <span>Dr. R. Patel</span>
+      <div class="toolbar-avatar">RP</div>
+    </div>
+  </div>
+
+  <div class="sub-toolbar">
+    <div class="breadcrumb">Patients / <strong data-pii="name" data-pii-type="full-name">Elena Vasquez-Moreno</strong></div>
+    <div class="actions">
+      <button class="btn btn-outline"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>Notes</button>
+      <button class="btn btn-outline"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span>Print</button>
+      <button class="btn btn-primary">+ New Visit</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sidebar">
+      <div class="patient-card">
+        <div class="p-photo" data-pii="photo" data-pii-type="photo"><img src="https://randomuser.me/api/portraits/women/90.jpg" alt="Patient"></div>
+        <div class="p-name" data-pii="name" data-pii-type="full-name">Elena Vasquez-Moreno</div>
+        <div class="p-id" data-pii="mrn" data-pii-type="medical-id">MRN: 00519283</div>
+        <div class="p-details">
+          <div class="p-row">
+            <span class="p-label">DOB</span>
+            <span class="p-value" data-pii="dob" data-pii-type="date-of-birth">11/03/1975</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">Age</span>
+            <span class="p-value">50 · F</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">SSN</span>
+            <span class="p-value" data-pii="ssn" data-pii-type="ssn">612-48-3095</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">Phone</span>
+            <span class="p-value" data-pii="phone" data-pii-type="phone">(312) 555-0847</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">Email</span>
+            <span class="p-value" data-pii="email" data-pii-type="email" style="font-size:11px;">elena.vm@outlook.com</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">Address</span>
+            <span class="p-value" data-pii="address" data-pii-type="address" style="font-size:11px;">2918 W Armitage Ave<br>Chicago, IL 60647</span>
+          </div>
+          <div class="p-row">
+            <span class="p-label">Insurance</span>
+            <span class="p-value" data-pii="insurance" data-pii-type="insurance-id" style="font-size:11px;">Aetna PPO<br>#AET-9920184</span>
+          </div>
+        </div>
+        <div class="qr-mini" data-pii="qr" data-pii-type="qr-code" id="qr-ehr"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="alert-banner">
+        <span style="display:inline-flex;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <span class="alert-banner-text" data-pii="medical" data-pii-type="medical-info">ALLERGY ALERT: Codeine (respiratory depression), Iodine contrast (hives)</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Latest Vitals — Mar 20, 2026</span>
+          <span class="card-badge" style="background:#DBEAFE;color:#2563EB;">Routine Checkup</span>
+        </div>
+        <div class="vitals-grid">
+          <div class="vital-box">
+            <div class="vital-value" data-pii="medical" data-pii-type="medical-info">138<span class="vital-unit">/86</span></div>
+            <div class="vital-label">Blood Pressure</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-value" data-pii="medical" data-pii-type="medical-info">72</div>
+            <div class="vital-label">Heart Rate</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-value" data-pii="medical" data-pii-type="medical-info">98.4</div>
+            <div class="vital-label">Temp (°F)</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-value" data-pii="medical" data-pii-type="medical-info">6.8</div>
+            <div class="vital-label">A1C %</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Current Medications</span>
+          <span class="card-badge" style="background:#F0FDF4;color:#16A34A;">4 Active</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Medication</th>
+              <th>Dosage</th>
+              <th>Frequency</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-pii="medical" data-pii-type="medical-info">Metformin HCl</td>
+              <td data-pii="medical" data-pii-type="medical-info">1000mg</td>
+              <td>Twice daily</td>
+              <td><span class="status-dot status-active">Active</span></td>
+            </tr>
+            <tr>
+              <td data-pii="medical" data-pii-type="medical-info">Losartan Potassium</td>
+              <td data-pii="medical" data-pii-type="medical-info">50mg</td>
+              <td>Once daily</td>
+              <td><span class="status-dot status-active">Active</span></td>
+            </tr>
+            <tr>
+              <td data-pii="medical" data-pii-type="medical-info">Atorvastatin</td>
+              <td data-pii="medical" data-pii-type="medical-info">20mg</td>
+              <td>Once daily</td>
+              <td><span class="status-dot status-active">Active</span></td>
+            </tr>
+            <tr>
+              <td data-pii="medical" data-pii-type="medical-info">Vitamin D3</td>
+              <td data-pii="medical" data-pii-type="medical-info">2000 IU</td>
+              <td>Once daily</td>
+              <td><span class="status-dot status-active">Active</span></td>
+            </tr>
+            <tr>
+              <td data-pii="medical" data-pii-type="medical-info" style="color:#94A3B8;">Prednisone</td>
+              <td data-pii="medical" data-pii-type="medical-info" style="color:#94A3B8;">10mg taper</td>
+              <td style="color:#94A3B8;">Completed</td>
+              <td><span class="status-dot status-dc">D/C</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Visit History</span>
+          <span class="card-badge" style="background:#F1F5F9;color:#64748B;">Last 6 months</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Provider</th>
+              <th>Type</th>
+              <th>Diagnosis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>03/20/2026</td>
+              <td data-pii="name" data-pii-type="full-name">Dr. R. Patel</td>
+              <td>Office Visit</td>
+              <td data-pii="medical" data-pii-type="medical-info">DM-II mgmt, HTN f/u</td>
+            </tr>
+            <tr>
+              <td>01/15/2026</td>
+              <td data-pii="name" data-pii-type="full-name">Dr. S. Kim</td>
+              <td>Lab Review</td>
+              <td data-pii="medical" data-pii-type="medical-info">A1C elevated (7.1%), lipid panel</td>
+            </tr>
+            <tr>
+              <td>11/08/2025</td>
+              <td data-pii="name" data-pii-type="full-name">Dr. R. Patel</td>
+              <td>Urgent</td>
+              <td data-pii="medical" data-pii-type="medical-info">Acute bronchitis, Rx prednisone</td>
+            </tr>
+            <tr>
+              <td>09/22/2025</td>
+              <td data-pii="name" data-pii-type="full-name">Dr. R. Patel</td>
+              <td>Annual Physical</td>
+              <td data-pii="medical" data-pii-type="medical-info">Routine wellness, mammogram ordered</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  function makeQR(elId, data, cellSize) {
+    var qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    var el = document.getElementById(elId);
+    if (el) {
+      var img = qr.createImgTag(cellSize, 0);
+      el.innerHTML = img;
+      var imgEl = el.querySelector('img');
+      if (imgEl) { imgEl.style.borderRadius = '4px'; imgEl.style.width = '100%'; imgEl.style.height = '100%'; }
+    }
+  }
+  makeQR('qr-ehr', 'MRN:00519283|VASQUEZ-MORENO|DOB:1975-11-03|INS:AET-9920184|EHR:MEDICHART', 2);
+</script>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

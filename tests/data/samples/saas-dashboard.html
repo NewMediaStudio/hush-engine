@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0">
+<title>SaaS Dashboard - User Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: #0F172A;
+    color: #E2E8F0;
+    width: 375px;
+    min-height: 812px;
+    margin: 0 auto;
+  }
+  .screen { min-height: 812px; padding: 20px; }
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 600;
+    color: #38BDF8;
+    letter-spacing: -0.5px;
+  }
+  .nav-icons { display: flex; gap: 12px; }
+  .nav-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #1E293B; display: flex; align-items: center;
+    justify-content: center;
+  }
+  .nav-icon svg { width: 18px; height: 18px; stroke: #94A3B8; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .user-card {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid #334155;
+  }
+  .user-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .user-avatar {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, #38BDF8, #818CF8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 500; color: #fff;
+  }
+  .user-name { font-size: 19px; font-weight: 600; }
+  .user-email { font-size: 13px; color: #94A3B8; margin-top: 2px; }
+  .user-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #4ADE80; margin-top: 4px;
+  }
+  .user-status::before {
+    content: ''; width: 6px; height: 6px;
+    border-radius: 50%; background: #4ADE80;
+  }
+  .user-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .meta-box {
+    background: rgba(15,23,42,0.5);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .meta-label {
+    font-size: 11px; color: #64748B; text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 4px;
+  }
+  .meta-value { font-size: 15px; font-weight: 500; }
+  .section-label {
+    font-size: 12px; font-weight: 500; color: #64748B;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin: 20px 0 12px;
+  }
+  .info-card {
+    background: #1E293B;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 10px;
+    border: 1px solid #2D3A4F;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(148,163,184,0.08);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { font-size: 14px; color: #94A3B8; }
+  .info-value { font-size: 14px; font-weight: 500; }
+  .risk-badge {
+    display: inline-flex; padding: 3px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+  }
+  .risk-low { background: rgba(74,222,128,0.15); color: #4ADE80; }
+  .risk-med { background: rgba(251,191,36,0.15); color: #FBBF24; }
+  .log-item {
+    display: flex; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid rgba(148,163,184,0.06);
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-time { font-size: 12px; color: #64748B; min-width: 50px; padding-top: 2px; }
+  .log-text { font-size: 14px; line-height: 1.4; }
+  .log-ip { color: #38BDF8; font-family: monospace; font-size: 12px; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="nav">
+    <div class="logo">▲ Sentinel</div>
+    <div class="nav-icons">
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+    </div>
+  </div>
+
+  <div class="user-card">
+    <div class="user-top">
+      <div class="user-avatar" data-pii="avatar" data-pii-type="photo">DT</div>
+      <div>
+        <div class="user-name" data-pii="name" data-pii-type="full-name">David Thornton</div>
+        <div class="user-email" data-pii="email" data-pii-type="email">d.thornton@blackridge.co</div>
+        <div class="user-status">Online · Last seen now</div>
+      </div>
+    </div>
+    <div class="user-meta">
+      <div class="meta-box">
+        <div class="meta-label">User ID</div>
+        <div class="meta-value" data-pii="user-id" data-pii-type="id-number">USR-78432</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Role</div>
+        <div class="meta-value">Admin</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Org</div>
+        <div class="meta-value" data-pii="company" data-pii-type="employer">BlackRidge Inc</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">2FA</div>
+        <div class="meta-value" style="color:#4ADE80;">Enabled</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Personal Details</div>
+  <div class="info-card">
+    <div class="info-row">
+      <span class="info-label">Full Name</span>
+      <span class="info-value" data-pii="name" data-pii-type="full-name">David Allen Thornton</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Phone</span>
+      <span class="info-value" data-pii="phone" data-pii-type="phone">+1 (628) 555-0194</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Location</span>
+      <span class="info-value" data-pii="address" data-pii-type="address">Austin, TX 78701</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">SSO Provider</span>
+      <span class="info-value">Google Workspace</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">API Key</span>
+      <span class="info-value" data-pii="api-key" data-pii-type="credential" style="font-family:monospace;font-size:11px;">sk_live_4f8a...x92d</span>
+    </div>
+  </div>
+
+  <div class="section-label">Security & Risk</div>
+  <div class="info-card">
+    <div class="info-row">
+      <span class="info-label">Risk Score</span>
+      <span class="risk-badge risk-low">Low — 12</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Last Password Change</span>
+      <span class="info-value">Feb 14, 2026</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Failed Logins (30d)</span>
+      <span class="info-value">2</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Session Token</span>
+      <span class="info-value" data-pii="token" data-pii-type="credential" style="font-family:monospace;font-size:11px;">eyJhbGci...kpXV</span>
+    </div>
+  </div>
+
+  <div class="section-label">Login Activity</div>
+  <div class="info-card">
+    <div class="log-item">
+      <div class="log-time">2m ago</div>
+      <div>
+        <div class="log-text">Signed in from Chrome · macOS</div>
+        <div class="log-ip" data-pii="ip" data-pii-type="ip-address">192.168.14.203</div>
+      </div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">6h ago</div>
+      <div>
+        <div class="log-text">API request · <span data-pii="endpoint" data-pii-type="credential">POST /v2/users/export</span></div>
+        <div class="log-ip" data-pii="ip" data-pii-type="ip-address">10.0.42.17</div>
+      </div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">1d ago</div>
+      <div>
+        <div class="log-text">Signed in from Safari · iOS 19</div>
+        <div class="log-ip" data-pii="ip" data-pii-type="ip-address">73.241.88.55</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

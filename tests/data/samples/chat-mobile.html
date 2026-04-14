@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0">
+<title>Mobile Chat - Personal Details</title>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Text&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #000;
+    color: #fff;
+    width: 375px;
+    height: 812px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  .screen {
+    height: 812px;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    overflow: hidden;
+  }
+  .chat-header {
+    padding: 10px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1C1C1E;
+    border-bottom: 1px solid #2C2C2E;
+  }
+  .chat-back { color: #0A84FF; font-size: 16px; }
+  .chat-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-contact-name { font-size: 15px; font-weight: 600; }
+  .chat-contact-status { font-size: 11px; color: #8E8E93; }
+  .chat-actions { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+  .chat-actions svg { width: 22px; height: 22px; fill: none; stroke: #0A84FF; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .messages {
+    flex: 1;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .msg-time {
+    text-align: center;
+    font-size: 11px;
+    color: #8E8E93;
+    padding: 8px 0;
+  }
+  .msg {
+    max-width: 78%;
+    padding: 7px 12px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.35;
+    position: relative;
+    word-wrap: break-word;
+  }
+  .msg-in {
+    background: #2C2C2E;
+    color: #fff;
+    align-self: flex-start;
+    border-bottom-left-radius: 6px;
+  }
+  .msg-out {
+    background: #0A84FF;
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 6px;
+  }
+  .msg-gap { height: 3px; }
+  .msg-read {
+    align-self: flex-end;
+    font-size: 10px;
+    color: #8E8E93;
+    margin-top: -2px;
+  }
+  .msg-img {
+    max-width: 200px;
+    border-radius: 14px;
+    overflow: hidden;
+    align-self: flex-start;
+  }
+  .msg-img img { width: 100%; display: block; }
+  .msg-contact-card {
+    background: #2C2C2E;
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 260px;
+    align-self: flex-start;
+  }
+  .cc-header {
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .cc-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .cc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .cc-name { font-size: 14px; font-weight: 600; }
+  .cc-subtitle { font-size: 11px; color: #8E8E93; }
+  .cc-details {
+    padding: 0 14px 12px;
+    font-size: 12px;
+    color: #AEAEB2;
+    line-height: 1.5;
+  }
+  .cc-row { padding: 3px 0; }
+  .cc-label { color: #636366; }
+  .input-bar {
+    padding: 8px 12px 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1C1C1E;
+    border-top: 1px solid #2C2C2E;
+  }
+  .input-field {
+    flex: 1;
+    background: #2C2C2E;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+  }
+  .input-field::placeholder { color: #636366; }
+  .send-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #0A84FF;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; flex-shrink: 0;
+  }
+  .typing-indicator {
+    align-self: flex-start;
+    padding: 10px 16px;
+    background: #2C2C2E;
+    border-radius: 18px;
+    border-bottom-left-radius: 6px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #8E8E93;
+    animation: typingBounce 1.4s infinite ease-in-out;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="chat-header">
+    <span class="chat-back">‹</span>
+    <div class="chat-avatar" data-pii="photo" data-pii-type="photo">
+      <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="">
+    </div>
+    <div>
+      <div class="chat-contact-name" data-pii="name" data-pii-type="full-name">Nina Kowalski</div>
+      <div class="chat-contact-status">Online</div>
+    </div>
+    <div class="chat-actions">
+      <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    </div>
+  </div>
+
+  <div class="messages">
+    <div class="msg-time">Today · 3:42 PM</div>
+
+    <div class="msg msg-in">Hey can you send me your info for the lease application?</div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-out">Sure here you go:</div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-out" style="line-height:1.6;">
+      <span data-pii="name" data-pii-type="full-name">Nina Kowalski</span><br>
+      DOB: <span data-pii="dob" data-pii-type="date-of-birth">March 15, 1993</span><br>
+      SSN: <span data-pii="ssn" data-pii-type="ssn">291-84-5520</span><br>
+      DL#: <span data-pii="license" data-pii-type="id-number">K420-8891-5537</span>
+    </div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-out" style="line-height:1.6;">
+      <span data-pii="address" data-pii-type="address">2847 N Milwaukee Ave, Apt 2R<br>Chicago, IL 60618</span><br>
+      <span data-pii="employer" data-pii-type="employer">Figma, Inc.</span> · <span data-pii="financial" data-pii-type="financial">$128k/yr</span>
+    </div>
+    <div class="msg-read">Read 3:44 PM</div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-in">Perfect, also need bank info for the credit check</div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-out" style="line-height:1.6;">
+      Chase · Acct: <span data-pii="account" data-pii-type="account-number">****7823</span><br>
+      Balance: <span data-pii="financial" data-pii-type="financial">$14,208.43</span><br>
+      Routing: <span data-pii="routing" data-pii-type="routing-number">071000013</span>
+    </div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-in">Got it all, thanks! 🙏</div>
+    <div class="msg-gap"></div>
+
+    <div class="msg msg-out">Np! Just delete this thread after lol</div>
+    <div class="msg-read">Read 3:48 PM</div>
+  </div>
+
+  <div class="input-bar">
+    <span style="font-size:24px;color:#0A84FF;">+</span>
+    <input class="input-field" placeholder="iMessage" readonly>
+    <div class="send-btn">↑</div>
+  </div>
+</div>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PII Mockup Gallery — Hush</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: 'Inter', sans-serif;
+    background: #0A0A0B;
+    color: #E5E5E5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Slider wrapper */
+  .slider-wrapper {
+    position: relative;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 12px 60px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+  }
+  .slider-viewport {
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid #222;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+  .slider-track {
+    display: flex;
+    will-change: transform;
+    height: 100%;
+  }
+  .slide {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .slide-header { display: none; }
+  .slide-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    clip-path: inset(0);
+  }
+  /* Prevent adjacent slides from being visible */
+  .slide {
+    overflow: hidden;
+    position: relative;
+    clip-path: inset(0);
+  }
+
+  /* Juxtapose container */
+  .jx-wrapper {
+    overflow: hidden;
+    clip-path: inset(0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+  .jx-container {
+    position: relative;
+    transform-origin: center center;
+    line-height: 0;
+    user-select: none;
+  }
+  .jx-container iframe {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    display: block;
+    pointer-events: none;
+  }
+  .jx-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  .jx-overlay iframe {
+    border: none;
+    display: block;
+    pointer-events: none;
+  }
+  /* Handle — extends full height of slide-body, not just iframe */
+  .jx-slide-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #fff;
+    cursor: ew-resize;
+    z-index: 20;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transform: translateX(-50%);
+  }
+  .jx-slide-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .jx-slide-handle::after {
+    content: '◂ ▸';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    color: #333;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  /* Labels */
+  .jx-label {
+    position: absolute;
+    top: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 15;
+    pointer-events: none;
+  }
+  .jx-label-before {
+    left: 10px;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+  }
+  .jx-label-after {
+    right: 10px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+  }
+
+  /* ID cards: no iframe-level shadow (cards have their own), transparent bg */
+  .s-id-dl .jx-container iframe,
+  .s-id-passport .jx-container iframe {
+    box-shadow: none;
+    background: transparent;
+  }
+  .s-id-dl .jx-overlay,
+  .s-id-passport .jx-overlay {
+    border-radius: 0;
+    background: transparent;
+  }
+
+  /* Arrows */
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #1A1A1C;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .arrow:hover { background: #2A2A2E; border-color: #555; }
+  .arrow:active { background: #333; }
+  .arrow svg { width: 20px; height: 20px; stroke: #E5E5E5; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .arrow-left { left: 6px; }
+  .arrow-right { right: 6px; }
+
+  /* Dots */
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0 12px;
+    flex-shrink: 0;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .dot:hover { background: #555; }
+  .dot.active {
+    background: #F5A623;
+    transform: scale(1.3);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slider-wrapper { padding: 8px 44px 0; }
+    .arrow { width: 36px; height: 36px; }
+    .arrow-left { left: 2px; }
+    .arrow-right { right: 2px; }
+    .slide-body { padding: 12px; }
+    .jx-label { font-size: 8px; padding: 2px 6px; }
+    .jx-slide-handle::before { width: 28px; height: 28px; }
+    .dots { padding: 6px 0 8px; }
+  }
+  @media (max-width: 480px) {
+    .slider-wrapper { padding: 6px 36px 0; }
+    .arrow { width: 28px; height: 28px; }
+    .arrow-left { left: 2px; }
+    .arrow-right { right: 2px; }
+    .arrow svg { width: 14px; height: 14px; }
+    .slide-body { padding: 8px; }
+  }
+
+  /* Slide themes */
+  /* Light UI backgrounds */
+  .s-banking-light .slide-body,
+  .s-saas-crm .slide-body,
+  .s-medical-form .slide-body,
+  .s-medical-record .slide-body,
+  .s-id-dl .slide-body,
+  .s-id-passport .slide-body,
+  .s-email-fin .slide-body,
+  .s-spreadsheet .slide-body { background: #E8EAED; }
+  /* Dark UI backgrounds */
+  .s-banking-dark .slide-body,
+  .s-saas-dash .slide-body,
+  .s-email-hr .slide-body,
+  .s-chat .slide-body { background: #141416; }
+</style>
+</head>
+<body>
+
+<div class="slider-wrapper">
+  <div class="arrow arrow-left" onclick="goTo(current-1)">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </div>
+  <div class="arrow arrow-right" onclick="goTo(current+1)">
+    <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+  </div>
+
+  <div class="slider-viewport">
+    <div class="slider-track" id="track"></div>
+  </div>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<script>
+// Slide definitions
+var slides = [
+  { src: 'banking-dark.html', w: 375, h: 812, cls: 's-banking-dark' },
+  { src: 'banking-light.html', w: 375, h: 812, cls: 's-banking-light' },
+  { src: 'saas-crm.html', w: 375, h: 812, cls: 's-saas-crm' },
+  { src: 'saas-dashboard.html', w: 375, h: 812, cls: 's-saas-dash' },
+  { src: 'medical-form.html', w: 375, h: 900, cls: 's-medical-form' },
+  { src: 'medical-record.html', w: 780, h: 640, cls: 's-medical-record' },
+  { src: 'id-drivers-license.html', w: 560, h: 375, cls: 's-id-dl' },
+  { src: 'id-passport.html', w: 460, h: 800, cls: 's-id-passport' },
+  { src: 'email-financial.html', w: 600, h: 780, cls: 's-email-fin' },
+  { src: 'email-hr.html', w: 375, h: 812, cls: 's-email-hr' },
+  { src: 'chat-mobile.html', w: 375, h: 660, cls: 's-chat' },
+  { src: 'spreadsheet.html', w: 720, h: 540, cls: 's-spreadsheet' }
+];
+
+// Shuffle slides on each load
+for (var i = slides.length - 1; i > 0; i--) {
+  var j = Math.floor(Math.random() * (i + 1));
+  var tmp = slides[i]; slides[i] = slides[j]; slides[j] = tmp;
+}
+
+var current = 0;
+var total = slides.length;
+var track = document.getElementById('track');
+var dotsEl = document.getElementById('dots');
+var arrowL = document.querySelector('.arrow-left');
+var arrowR = document.querySelector('.arrow-right');
+
+// Build slides
+slides.forEach(function(s, i) {
+  var slide = document.createElement('div');
+  slide.className = 'slide ' + s.cls;
+
+  // Create elements properly (not innerHTML) for reliable load events
+  var body = document.createElement('div');
+  body.className = 'slide-body';
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'jx-wrapper';
+
+  var jx = document.createElement('div');
+  jx.className = 'jx-container';
+  jx.setAttribute('data-iw', s.w);
+  jx.setAttribute('data-ih', s.h);
+
+  // Original iframe (bottom layer)
+  var iframeOrig = document.createElement('iframe');
+  iframeOrig.src = s.src;
+  iframeOrig.width = s.w;
+  iframeOrig.height = s.h;
+  iframeOrig.loading = 'lazy';
+  jx.appendChild(iframeOrig);
+
+  // Overlay with redacted iframe
+  var overlay = document.createElement('div');
+  overlay.className = 'jx-overlay';
+  overlay.style.clipPath = 'inset(0 0 0 50%)';
+  overlay.style.width = s.w + 'px';
+  overlay.style.height = s.h + 'px';
+
+  var iframeRedact = document.createElement('iframe');
+  iframeRedact.src = s.src + '?redact=1';
+  iframeRedact.width = s.w;
+  iframeRedact.height = s.h;
+  iframeRedact.loading = 'lazy';
+
+  overlay.appendChild(iframeRedact);
+  jx.appendChild(overlay);
+
+  wrapper.appendChild(jx);
+  body.appendChild(wrapper);
+
+  // Labels on slide-body level
+  var lblBefore = document.createElement('div');
+  lblBefore.className = 'jx-label jx-label-before';
+  lblBefore.textContent = 'Original';
+  body.appendChild(lblBefore);
+
+  var lblAfter = document.createElement('div');
+  lblAfter.className = 'jx-label jx-label-after';
+  lblAfter.textContent = 'Redacted';
+  body.appendChild(lblAfter);
+
+  // Handle on slide-body level — full height
+  var handle = document.createElement('div');
+  handle.className = 'jx-slide-handle';
+  handle.style.left = '50%';
+  body.appendChild(handle);
+
+  slide.appendChild(body);
+  track.appendChild(slide);
+
+  // Dot
+  var d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.setAttribute('data-i', i);
+  d.onclick = function() { goTo(parseInt(this.getAttribute('data-i'))); };
+  dotsEl.appendChild(d);
+});
+
+// Handle dragging — handle is on slide-body, overlay is inside jx-container
+var activeHandle = null;
+var activeBody = null;
+
+function findHandle(el) {
+  while (el) {
+    if (el.classList && el.classList.contains('jx-slide-handle')) return el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function updateSlider(clientX) {
+  if (!activeHandle || !activeBody) return;
+  var bodyRect = activeBody.getBoundingClientRect();
+  // Handle position as % of slide-body
+  var bodyX = (clientX - bodyRect.left) / bodyRect.width;
+  bodyX = Math.max(0.02, Math.min(0.98, bodyX));
+  activeHandle.style.left = (bodyX * 100) + '%';
+  // Convert to jx-container coordinate space for clip-path
+  var jx = activeBody.querySelector('.jx-container');
+  var overlay = activeBody.querySelector('.jx-overlay');
+  if (!jx || !overlay) return;
+  var jxRect = jx.getBoundingClientRect();
+  // Map clientX to jx-container's visual bounds
+  var jxX = (clientX - jxRect.left) / jxRect.width;
+  jxX = Math.max(0, Math.min(1, jxX));
+  overlay.style.clipPath = 'inset(0 0 0 ' + (jxX * 100) + '%)';
+}
+
+document.addEventListener('mousedown', function(e) {
+  var h = findHandle(e.target);
+  if (h) {
+    activeHandle = h;
+    activeBody = h.parentElement;
+    e.preventDefault();
+  }
+});
+document.addEventListener('mousemove', function(e) { updateSlider(e.clientX); });
+document.addEventListener('mouseup', function() { activeHandle = null; activeBody = null; });
+
+document.addEventListener('touchstart', function(e) {
+  var h = findHandle(e.target);
+  if (h) { activeHandle = h; activeBody = h.parentElement; }
+}, {passive: true});
+document.addEventListener('touchmove', function(e) {
+  if (activeHandle && e.touches[0]) updateSlider(e.touches[0].clientX);
+}, {passive: true});
+document.addEventListener('touchend', function() { activeHandle = null; activeBody = null; });
+
+// Infinite scroll: clone first and last slides
+var allSlides = track.querySelectorAll('.slide');
+var firstClone = allSlides[0].cloneNode(true);
+var lastClone = allSlides[allSlides.length - 1].cloneNode(true);
+firstClone.classList.add('clone');
+lastClone.classList.add('clone');
+track.appendChild(firstClone);
+track.insertBefore(lastClone, track.firstChild);
+// With clones: [lastClone][slide0][slide1]...[slideN][firstClone]
+// Position 0 = lastClone, position 1 = slide0, etc.
+// So real slide index i maps to track position (i + 1)
+
+var isTransitioning = false;
+
+function setTrackPos(pos, animate) {
+  if (!animate) {
+    track.style.transition = 'none';
+  } else {
+    track.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+  }
+  track.style.transform = 'translateX(-' + (pos * 100) + '%)';
+  // Force reflow when disabling transition
+  if (!animate) track.offsetHeight;
+}
+
+function updateDots() {
+  var dots = dotsEl.querySelectorAll('.dot');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].className = 'dot' + (i === current ? ' active' : '');
+  }
+}
+
+// Navigation
+function goTo(n) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+  current = n;
+
+  // Reset all juxtapose sliders to 50%
+  document.querySelectorAll('.jx-slide-handle').forEach(function(h) { h.style.left = '50%'; });
+  document.querySelectorAll('.jx-overlay').forEach(function(o) { o.style.clipPath = 'inset(0 0 0 50%)'; });
+
+  // Animate to track position (includes clone offset of +1)
+  var trackPos = current + 1;
+  setTrackPos(trackPos, true);
+  updateDots();
+  scaleAll();
+
+  // After transition, snap if we're on a clone
+  setTimeout(function() {
+    if (current < 0) {
+      current = total - 1;
+      setTrackPos(current + 1, false);
+      updateDots();
+    } else if (current >= total) {
+      current = 0;
+      setTrackPos(1, false);
+      updateDots();
+    }
+    scaleAll();
+    isTransitioning = false;
+  }, 420);
+}
+
+// Initialize position to slide 0 (track position 1)
+setTrackPos(1, false);
+
+// Scale iframes to fit & hide off-screen slides
+function scaleAll() {
+  var allSl = track.querySelectorAll('.slide');
+  var activePos = current + 1; // account for clone offset
+  allSl.forEach(function(sl, idx) {
+    // Only show active slide and its immediate neighbors (for transition)
+    var visible = Math.abs(idx - activePos) <= 1;
+    sl.style.visibility = visible ? 'visible' : 'hidden';
+  });
+  document.querySelectorAll('.jx-wrapper').forEach(function(wrapper) {
+    var jx = wrapper.querySelector('.jx-container');
+    var body = wrapper.parentElement;
+    if (!body || !jx) return;
+    var iW = parseInt(jx.getAttribute('data-iw'));
+    var iH = parseInt(jx.getAttribute('data-ih'));
+    var pad = body.offsetWidth < 500 ? 16 : 48;
+    var aW = body.offsetWidth - pad;
+    var aH = body.offsetHeight - pad;
+    if (!aW || !aH) return;
+    var scale = Math.min(aW / iW, aH / iH, 1);
+    jx.style.width = iW + 'px';
+    jx.style.height = iH + 'px';
+    jx.style.transform = 'scale(' + scale + ')';
+    // Size wrapper to scaled dimensions — clips overflow
+    wrapper.style.width = (iW * scale) + 'px';
+    wrapper.style.height = (iH * scale) + 'px';
+  });
+}
+
+window.addEventListener('resize', scaleAll);
+setTimeout(scaleAll, 100);
+setTimeout(scaleAll, 500);
+
+// Keyboard nav
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft') goTo(current - 1);
+  if (e.key === 'ArrowRight') goTo(current + 1);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=600, initial-scale=1.0">
+<title>Email - Financial / Tax Information</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F3F4F6;
+    color: #111827;
+    width: 600px;
+    margin: 0 auto;
+  }
+  .email-app { min-height: 700px; }
+  .email-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #6B7280;
+  }
+  .toolbar-left { display: flex; gap: 16px; align-items: center; }
+  .toolbar-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .inbox-label {
+    font-weight: 700;
+    color: #111827;
+    font-size: 14px;
+  }
+  .email-header {
+    background: #fff;
+    padding: 20px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .email-subject {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #111827;
+  }
+  .email-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .sender-info { display: flex; gap: 12px; align-items: flex-start; }
+  .sender-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #1E40AF, #3B82F6);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  .sender-name { font-size: 14px; font-weight: 600; }
+  .sender-email { font-size: 12px; color: #6B7280; }
+  .sender-to { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+  .email-date { font-size: 12px; color: #9CA3AF; white-space: nowrap; }
+  .email-body {
+    background: #fff;
+    padding: 24px 20px;
+    line-height: 1.7;
+    font-size: 14px;
+  }
+  .email-body p { margin-bottom: 14px; }
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .info-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: #F9FAFB;
+    color: #6B7280;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #E5E7EB;
+  }
+  .info-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .info-table tr:last-child td { border-bottom: none; }
+  .highlight-box {
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .highlight-box strong { color: #92400E; }
+  .warning-box {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #991B1B;
+  }
+  .sig-block {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #E5E7EB;
+    font-size: 13px;
+    color: #6B7280;
+    line-height: 1.6;
+  }
+  .sig-name { font-weight: 600; color: #111827; }
+  .label-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .label-important { background: #FEE2E2; color: #DC2626; }
+  .attachment-bar {
+    background: #F9FAFB;
+    border-top: 1px solid #E5E7EB;
+    padding: 12px 20px;
+    display: flex;
+    gap: 10px;
+  }
+  .attachment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .attachment-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .attachment-name { font-weight: 600; }
+  .attachment-size { color: #9CA3AF; font-size: 11px; }
+  [data-pii] { position: relative; transition: all 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="email-app">
+  <div class="email-toolbar">
+    <div class="toolbar-left">
+      <span>← </span>
+      <span class="inbox-label">Inbox</span>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <span class="toolbar-btn"><span style="display:inline-flex;vertical-align:middle;margin-right:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span>Archive</span>
+      <span class="toolbar-btn"><span style="display:inline-flex;vertical-align:middle;margin-right:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>Delete</span>
+      <span class="toolbar-btn"><span style="display:inline-flex;vertical-align:middle;margin-right:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></span>Reply</span>
+    </div>
+  </div>
+
+  <div class="email-header">
+    <div class="email-subject">
+      Your 2025 Tax Documents Are Ready
+      <span class="label-tag label-important">Important</span>
+    </div>
+    <div class="email-meta">
+      <div class="sender-info">
+        <div class="sender-avatar">WF</div>
+        <div>
+          <div class="sender-name" data-pii="name" data-pii-type="full-name">Jennifer Walsh</div>
+          <div class="sender-email" data-pii="email" data-pii-type="email">jennifer.walsh@hartfield-advisory.com</div>
+          <div class="sender-to">to <span data-pii="email" data-pii-type="email">michael.brennan@outlook.com</span></div>
+        </div>
+      </div>
+      <div class="email-date" data-pii="date" data-pii-type="date">Mar 21, 2026 · 2:34 PM</div>
+    </div>
+  </div>
+
+  <div class="email-body">
+    <p>Hi <span data-pii="name" data-pii-type="first-name">Michael</span>,</p>
+
+    <p>Your 2025 tax return documents have been prepared and are ready for your review. Please find the summary below along with the attached forms.</p>
+
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th colspan="2">Taxpayer Information</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:#6B7280;">Legal Name</td>
+          <td style="font-weight:600;" data-pii="name" data-pii-type="full-name">Michael Patrick Brennan</td>
+        </tr>
+        <tr>
+          <td style="color:#6B7280;">SSN</td>
+          <td style="font-weight:600;" data-pii="ssn" data-pii-type="ssn">XXX-XX-4738</td>
+        </tr>
+        <tr>
+          <td style="color:#6B7280;">Filing Status</td>
+          <td style="font-weight:600;">Married Filing Jointly</td>
+        </tr>
+        <tr>
+          <td style="color:#6B7280;">Spouse</td>
+          <td style="font-weight:600;" data-pii="name" data-pii-type="full-name">Lauren M. Brennan (SSN: <span data-pii="ssn" data-pii-type="ssn">XXX-XX-9201</span>)</td>
+        </tr>
+        <tr>
+          <td style="color:#6B7280;">Address</td>
+          <td style="font-weight:600;" data-pii="address" data-pii-type="address">8421 Willowbrook Ct, Naperville, IL 60563</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="info-table">
+      <thead>
+        <tr>
+          <th>Income Source</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>W-2 Wages — <span data-pii="employer" data-pii-type="employer">Harmon Technologies Inc</span></td>
+          <td style="text-align:right;font-weight:600;" data-pii="financial" data-pii-type="financial">$142,800.00</td>
+        </tr>
+        <tr>
+          <td>W-2 Wages (Spouse) — <span data-pii="employer" data-pii-type="employer">Lake County Schools</span></td>
+          <td style="text-align:right;font-weight:600;" data-pii="financial" data-pii-type="financial">$67,400.00</td>
+        </tr>
+        <tr>
+          <td>1099-INT — <span data-pii="financial" data-pii-type="financial">Chase Savings ****8820</span></td>
+          <td style="text-align:right;font-weight:600;" data-pii="financial" data-pii-type="financial">$1,247.63</td>
+        </tr>
+        <tr>
+          <td>1099-DIV — <span data-pii="financial" data-pii-type="financial">Vanguard Acct ****4415</span></td>
+          <td style="text-align:right;font-weight:600;" data-pii="financial" data-pii-type="financial">$3,891.20</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;">Total Adjusted Gross Income</td>
+          <td style="text-align:right;font-weight:700;font-size:15px;" data-pii="financial" data-pii-type="financial">$215,338.83</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box">
+      <strong><span style="display:inline-flex;vertical-align:middle;margin-right:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Action Required:</strong> Your estimated tax liability is <strong data-pii="financial" data-pii-type="financial">$38,420</strong>. After withholdings and estimated payments, you have an <strong>overpayment of <span data-pii="financial" data-pii-type="financial">$2,314.00</span></strong> which can be refunded or applied to 2026.
+    </div>
+
+    <p>Please review the attached 1040, Schedule A, and Schedule D carefully. If everything looks correct, sign the 8879 (e-file authorization) and return it to me by <strong>April 8, 2026</strong>.</p>
+
+    <div class="warning-box">
+      <span style="display:inline-flex;vertical-align:middle;margin-right:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#991B1B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>This email contains sensitive personal and financial information. Do not forward. If you received this in error, please delete immediately and contact our office.
+    </div>
+
+    <div class="sig-block">
+      <div class="sig-name" data-pii="name" data-pii-type="full-name">Jennifer Walsh, CPA</div>
+      Senior Tax Advisor<br>
+      Hartfield & Associates Advisory Group<br>
+      <span data-pii="phone" data-pii-type="phone">(630) 555-0182</span> · <span data-pii="email" data-pii-type="email">jennifer.walsh@hartfield-advisory.com</span><br>
+      <span data-pii="address" data-pii-type="address">200 S Wacker Dr, Suite 1400, Chicago, IL 60606</span>
+    </div>
+  </div>
+
+  <div class="attachment-bar">
+    <div class="attachment">
+      <div class="attachment-icon" style="background:#FEE2E2;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+      <div>
+        <div class="attachment-name" data-pii="filename" data-pii-type="document">Brennan_1040_2025.pdf</div>
+        <div class="attachment-size">248 KB</div>
+      </div>
+    </div>
+    <div class="attachment">
+      <div class="attachment-icon" style="background:#DBEAFE;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+      <div>
+        <div class="attachment-name" data-pii="filename" data-pii-type="document">Brennan_8879_eSig.pdf</div>
+        <div class="attachment-size">91 KB</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+if(location.search.indexOf('redact=1')!==-1){var rs=document.createElement('style');rs.textContent='[data-pii]{position:relative !important;}[data-pii] .redact-bar{background:#000 !important;color:transparent !important;-webkit-text-fill-color:transparent !important;display:inline !important;padding:0 !important;margin:0 !important;border-radius:0 !important;line-height:inherit !important;}[data-pii-type="photo"],[data-pii-type="photo"] img{filter:brightness(0) !important;}[data-pii-type="qr-code"]{filter:brightness(0) !important;}[data-pii-type="barcode"]{filter:brightness(0) !important;}';document.head.appendChild(rs);document.querySelectorAll('[data-pii]:not([data-pii-type="photo"]):not([data-pii-type="qr-code"]):not([data-pii-type="barcode"])').forEach(function(el){if(!el.querySelector('.redact-bar')){var span=document.createElement('span');span.className='redact-bar';while(el.firstChild)span.appendChild(el.firstChild);el.appendChild(span);}});}
+</script>
+</body>
+</html>
