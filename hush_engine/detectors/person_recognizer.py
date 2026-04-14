@@ -1124,6 +1124,17 @@ class PersonRecognizer(EntityRecognizer):
         # Pattern: word ending with hyphen followed by newline and continuation
         processed = re.sub(r'(\w)-\s*\n\s*(\w)', r'\1\2', text)
 
+        # Convert ALL CAPS words to Title Case for NER recognition.
+        # NER models (NLTagger, LightGBM) expect Title Case names — they
+        # don't recognize "SARAH MITCHELL" but do recognize "Sarah Mitchell".
+        # Only convert words that are 2+ chars and fully uppercase.
+        def _title_if_upper(m):
+            word = m.group(0)
+            if len(word) >= 2 and word.isupper() and word.isalpha():
+                return word.title()
+            return word
+        processed = re.sub(r'\b[A-Z]{2,}\b', _title_if_upper, processed)
+
         # If no changes, return original with identity mapping
         if processed == text:
             return text, {}

@@ -1780,6 +1780,26 @@ class PIIDetector:
 
             self.analyzer.registry.add_recognizer(DateparserRecognizer())
 
+        # Credit card expiry dates: MM/YY, MM/YYYY
+        # Matches: "09/28", "12/2027", "EXPIRES 09/28", "EXP: 01/26"
+        card_expiry_regex = (
+            r"(?i)(?:expir(?:es|y|ation)?|exp|valid\s*(?:thru|through|until))"
+            r"[:\s]*(\d{2}\s*/\s*\d{2,4})"
+        )
+        # Standalone MM/YY near card context
+        standalone_expiry_regex = r"\b(0[1-9]|1[0-2])\s*/\s*(\d{2}|\d{4})\b"
+
+        card_expiry_recognizer = PatternRecognizer(
+            supported_entity="DATE_TIME",
+            patterns=[
+                Pattern(name="labeled_card_expiry", regex=card_expiry_regex, score=0.85),
+                Pattern(name="card_expiry_mmyy", regex=standalone_expiry_regex, score=0.50),
+            ],
+            context=["card", "credit", "debit", "visa", "mastercard", "amex",
+                     "expires", "expiry", "expiration", "exp", "valid", "cvv", "holder"]
+        )
+        self.analyzer.registry.add_recognizer(card_expiry_recognizer)
+
     def _add_age_recognizers(self):
         """Add pattern recognizers for age detection.
 
@@ -8003,6 +8023,7 @@ class PIIDetector:
                     bool(re.search(r'[\*xX]{3,}\d', entity_text))  # masked acct
                     or bool(re.search(r'(?i)balance|amount|total|salary', entity_text))
                     or bool(re.search(r'/yr|/year|/month|/week|/day|/hr|per\s', entity_text))
+                    or bool(re.search(r'[$£€¥₹]', entity_text))  # currency symbol
                 )
                 if not _is_exempt_financial:
                     # Skip if it looks like an email address
@@ -8646,9 +8667,22 @@ class PIIDetector:
                 if text_lower.strip() in brand_names:
                     continue
                 # Skip ALL-CAPS text with 2+ words (likely company names or acronyms)
-                # Examples: "ACME CORP", "ABC HOLDINGS", "JOHN DOE LLC"
+                # BUT allow if words are known person names (e.g., "SARAH MITCHELL" on a card)
                 if entity_text.isupper() and len(entity_text.split()) >= 2:
-                    continue
+                    _caps_words = entity_text.title().split()
+                    _is_known_name = False
+                    try:
+                        from hush_engine.data.names_database import get_names_database
+                        _ndb = get_names_database()
+                        if _ndb and len(_caps_words) == 2:
+                            _is_known_name = (
+                                _ndb.is_first_name(_caps_words[0].lower())
+                                and _ndb.is_last_name(_caps_words[1].lower())
+                            )
+                    except Exception:
+                        pass
+                    if not _is_known_name:
+                        continue
                 # Skip single-word ALL-CAPS (likely acronyms, not names)
                 if entity_text.isupper() and len(entity_text) <= 6:
                     continue
@@ -8965,7 +8999,8 @@ class PIIDetector:
                 has_mask = bool(re.search(r'[\*xX]{3,}\d', entity_text))
                 has_balance = bool(re.search(r'(?i)balance|amount|total', entity_text))
                 has_salary = bool(re.search(r'(?i)salary|/yr|/year|/month|/week|/day|/hr|per\s', entity_text))
-                if not (has_mask or has_balance or has_salary) and self._is_ocr_artifact(entity_text):
+                has_currency = bool(re.search(r'[$£€¥₹]', entity_text))
+                if not (has_mask or has_balance or has_salary or has_currency) and self._is_ocr_artifact(entity_text):
                     continue
                 # Skip standalone negative numbers without currency symbol (e.g., "-50", "-6286")
                 # These are typically IDs, offsets, or numeric data, not financial amounts
