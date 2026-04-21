@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 
+from PIL import Image
+
 from .anonymizers import ImageAnonymizer
 from .detectors import PIIDetector
 from .ocr import VisionOCR
 from .ocr.vision_ocr import TextDetection
-from PIL import Image
 
 
 @dataclass
