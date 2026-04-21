@@ -5,6 +5,35 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-04-21
+
+### Fixed
+
+- Bare sibling imports in `scrub_image.py`, `scrub_spreadsheet.py`,
+  `analyze_feedback.py`, `rpc_server.py`, and `ui/file_router.py` raised
+  `ModuleNotFoundError` when the package was imported normally. Converted
+  to proper relative imports (`from .anonymizers`, `from ..anonymizers`).
+  Users on 1.10.0 who called `from hush_engine.scrub_spreadsheet import ...`
+  hit this immediately.
+- Missing `import sys` in `image_optimizer.py` and
+  `barcode_detector_pyzbar.py` — error paths using `sys.stderr.write`
+  would crash on exception instead of logging.
+- `error_response` was referenced but never defined in the JSON-decode
+  error handler of `rpc_server.py`, causing a `NameError` when invalid
+  JSON was received.
+
+### Added
+
+- Hush Engine logo at the top of the README (`assets/hush-engine-logo.png`).
+- Credits for Valentine Makhouleen (https://new-media.ca) and New Media
+  Studio (https://wearenewmedia.com/) in README, LICENSE, and
+  COMMERCIAL-LICENSING.md.
+- CI: install `libomp` on macOS runners so LightGBM loads at import.
+
+### Changed
+
+- Benchmark dashboard: rotating metallic H cube replaces the bee logo.
+
 ## [1.10.0] - 2026-04-21
 
 ### Changed
