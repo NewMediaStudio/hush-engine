@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/hush-engine-logo.png" alt="Hush Engine" width="400" />
+  <img src="https://raw.githubusercontent.com/NewMediaStudio/hush-engine/main/assets/hush-engine-logo.png" alt="Hush Engine" width="400" />
 </p>
 
 # Hush Engine

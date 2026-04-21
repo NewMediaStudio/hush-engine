@@ -5,6 +5,15 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.2] - 2026-04-21
+
+### Fixed
+
+- README logo path on PyPI: switched from a repo-relative path
+  (`assets/hush-engine-logo.png`) to an absolute GitHub raw URL so the
+  logo renders on https://pypi.org/project/hush-engine/ as well as on
+  GitHub.
+
 ## [1.10.1] - 2026-04-21
 
 ### Fixed
