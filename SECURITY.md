@@ -2,45 +2,43 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Hush Engine, please report it **privately**.
+Email **studio@newmediastudio.com** with:
 
-**Do not** open a public GitHub issue for security vulnerabilities.
-
-### How to report
-
-Email: **studio@newmediastudio.com**
-
-Include:
-- A description of the vulnerability
+- A description of the issue
 - Steps to reproduce
-- Affected versions (if known)
+- Affected versions
 - Potential impact
-- Any suggested remediation
+- Any suggested fix
 
-We will acknowledge your report within 72 hours and work with you on a coordinated disclosure timeline.
+Do **not** open a public GitHub issue for security vulnerabilities.
+
+We acknowledge reports within 72 hours and coordinate disclosure from there.
 
 ## Supported Versions
 
-Only the latest minor version receives security updates. Upgrade to the newest release to stay protected.
-
 | Version | Supported |
 |---------|-----------|
-| 1.9.x   | ✅        |
-| < 1.9   | ❌        |
+| 1.9.x   | Yes       |
+| < 1.9   | No        |
+
+Upgrade to the latest minor release for security fixes.
 
 ## Scope
 
-Hush Engine is a **local-first** library — it does not make network calls except for optional model downloads on first use (from HuggingFace / spaCy) and optional API calls to Anthropic/Google when users explicitly enable those clients in the LLM comparison benchmark.
+Hush Engine runs locally. The only network calls are:
+
+- First-run model downloads from HuggingFace and spaCy
+- Optional API calls to Anthropic and Google when you enable those clients in the LLM comparison benchmark
 
 In scope:
-- PII detection bypass (an intended-PII value the engine fails to detect)
-- Code execution, path traversal, or resource exhaustion via crafted input
-- Dependency vulnerabilities that affect Hush Engine at runtime
+- PII detection bypass (the engine fails to detect a value it should)
+- Code execution, path traversal, or resource exhaustion from crafted input
+- Runtime vulnerabilities in dependencies that affect Hush
 
 Out of scope:
-- Misdetections ("false positive" — regular words flagged as PII). Report via normal GitHub issues.
-- Upstream vulnerabilities in Presidio, spaCy, or other dependencies (report those to their maintainers; we will upgrade when fixes are released).
+- Misdetections where regular text is flagged as PII. Open a regular GitHub issue for those.
+- Upstream vulnerabilities in Presidio, spaCy, or other dependencies. Report those to their maintainers; we upgrade when fixes land.
 
 ## Safe Use
 
-Hush Engine reads user-provided files (images, PDFs, spreadsheets). Treat any file parsed by the engine as untrusted input. We recommend running redaction in a sandbox (container, `nsjail`, macOS App Sandbox) when processing content from unknown sources.
+Hush reads user-provided files (images, PDFs, spreadsheets). Treat any input parsed by the engine as untrusted. Run redaction in a sandbox (container, nsjail, macOS App Sandbox) when processing content from unknown sources.

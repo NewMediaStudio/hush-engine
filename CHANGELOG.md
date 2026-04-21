@@ -9,47 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Kaggle PII Detection 2024 benchmark support** via `tools/create_kaggle_golden.py`
-  - 1,000-sample golden set builder (all PII docs + non-PII for false-positive testing)
-  - Achieved **F1 93.0%** (P=94.5%, R=91.6%) on Kaggle essays with retrained LightGBM
-- **LLM comparison benchmark** — Hush vs local LLMs (Llama, Mistral, Qwen, Phi, Gemma) and cloud models (Claude, Gemini)
-  - Results saved to `tests/benchmark_history/llm_comparison_results.json`
-  - Live progress tracking integrated with the benchmark dashboard
-- **NamesDatabase expansion** — +277 curated names for South Asian, Arabic, African, Hispanic, and European coverage (7,233 → 7,510 total)
-- **Essay-context PERSON patterns** — "According to {Name}", "{Name}'s research", "{Name} (2024)", first-line author detection
-- **Financial PII patterns**
-  - Salary/compensation: `$128k/yr`, `Salary: $75,000/year`, `per hour`, `per month`, `per week`, `per day`
-  - Masked account numbers: `****7823`, `Acct: ****1234`
-  - Labeled balances: `Balance: $14,208.43`, `Amount: $500.00`
-- **Driver's license pattern** — `K420-8891-5537` (letter + dash-separated digit groups)
-- **Credit card expiry pattern** — `EXPIRES 09/28`, `EXP: 12/27`, `Valid Thru MM/YY`
-- **OCR fragment reconstruction** — credit card numbers and expiry dates split across multiple OCR blocks (common on card graphics) are now reassembled and detected
-- **ALL CAPS name detection** — PersonRecognizer converts uppercase text to Title Case for NER; FP filter checks names database before rejecting multi-word uppercase PERSON
-- **Bootstrap confidence intervals tool** — `tools/bootstrap_ci.py` reports 95% CIs on F1/precision/recall with 5,000 resamples
-- **Held-out test set generator** — `tools/generate_holdout_set.py` for deterministic non-overlapping evaluation slices
-- **Custom dataset training** — `tools/train_lgbm_ner.py --custom-dataset <path>` supports retraining on user-provided JSON datasets
-- **Test samples** — 12 HTML mockups (banking, chat, IDs, medical, email, SaaS) with PDF/PNG exports
+- Kaggle PII Detection 2024 benchmark. `tools/create_kaggle_golden.py` builds a 1,000-sample set (945 PII + 55 non-PII). Hush scores F1 93.0% (P=94.5%, R=91.6%) after LightGBM retraining.
+- LLM comparison benchmark (`tests/benchmark_llm_comparison.py`) for Ollama (Llama, Mistral, Qwen, Phi, Gemma) and API (Claude, Gemini). Live progress feeds the dashboard.
+- Curated NamesDatabase expanded by 277 names covering South Asian, Arabic, African, Hispanic, and European locales (7,233 → 7,510).
+- Essay-context PERSON patterns: "According to {Name}", "{Name}'s research", "{Name} (2024)", first-line author detection.
+- Financial PII patterns: salary (`$128k/yr`, `per month`, `per week`, `per day`, `per hour`), masked accounts (`****7823`), labeled balances (`Balance: $14,208.43`).
+- Driver's license pattern `K420-8891-5537`.
+- Credit card expiry pattern (`EXPIRES 09/28`, `EXP: 12/27`).
+- OCR fragment reconstruction for credit card numbers and expiry dates split across separate OCR blocks.
+- ALL CAPS name detection (PersonRecognizer converts uppercase to Title Case for NER; FP filter consults the names database before rejecting).
+- Bootstrap 95% confidence intervals: `tools/bootstrap_ci.py` (5,000 resamples by default).
+- Held-out test set generator: `tools/generate_holdout_set.py`.
+- Custom training datasets: `tools/train_lgbm_ner.py --custom-dataset <path>`.
+- 12 HTML sample mockups (banking, chat, IDs, medical, email, SaaS) with PDF and PNG exports under `tests/data/samples/`.
 
 ### Changed
 
-- **LightGBM PERSON classifier retrained** on Kaggle essay data — PERSON F1 improved from 88.9% → 93.9% on essay-style text
-- **spaCy auto-enabled in balanced mode** when installed (no effect if not present)
-- **Long-text FP filters** — detect_pii applies stricter filtering for texts >500 chars (essays, articles) to cut FPs on common words, sentence-boundary artifacts, and ALL CAPS headers
-- **Benchmark scoring** — `calculate_metrics()` no longer counts plausible-looking real names as false positives when evaluating on datasets with incomplete GT labels
+- LightGBM PERSON classifier retrained with Kaggle essay data. PERSON F1 on essays: 88.9% → 93.9%.
+- spaCy auto-enabled in balanced mode when installed.
+- Long-text FP filters in `detect_pii()` for text > 500 chars (cuts common-word, sentence-boundary, and ALL-CAPS-header false positives).
+- `calculate_metrics()` stops counting plausible-name detections as FPs when the dataset has incomplete GT labels.
 
 ### Fixed
 
-- `$24,831.50` dollar amounts no longer mistakenly filtered as OCR artifacts (currency symbol now exempts from repeated-punctuation heuristic)
-- USERNAME false positives on hyphenated English words (`mind-mapping`, `start-up`) in essays
-- ID digit range extended to catch 11- and 12-digit student IDs (`762035863358`)
+- `$24,831.50` dollar amounts passed through the OCR-artifact filter that previously rejected them for having three distinct punctuation characters.
+- USERNAME false positives on hyphenated English words (`mind-mapping`, `start-up`).
+- ID digit range extended from `{6,10}` to `{6,12}` for 11- and 12-digit student IDs.
 
 ### Open source release
 
-- Removed internal `CLAUDE.md` (AI assistant instructions)
-- Removed committed training analysis data (replaced by gitignored `training/`)
-- Moved `names-dataset` (GPL-3.0) to optional `[names]` extra to keep base install MIT-compatible
-- Added `SECURITY.md`, `CODE_OF_CONDUCT.md`, GitHub issue/PR templates, and CI workflow
-- Added ruff + pytest configuration to `pyproject.toml`
+- Removed `CLAUDE.md` (AI assistant instructions).
+- Removed committed `training/` analysis data; folder is now gitignored.
+- Moved `names-dataset` (GPL-3.0) to the optional `[names]` extra. Base install is MIT-clean.
+- Added `SECURITY.md`, `CODE_OF_CONDUCT.md`, GitHub issue and PR templates, and a CI workflow.
+- Added ruff and pytest configuration to `pyproject.toml`.
 
 ## [1.4.0] - 2026-02-06
 
