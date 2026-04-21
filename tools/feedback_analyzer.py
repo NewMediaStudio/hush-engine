@@ -3,7 +3,7 @@
 Hush Engine Feedback Analyzer
 
 Ingests user feedback from training/feedback/ in the repo.
-Analyzes detection discrepancies and generates Claude-actionable recommendations.
+Analyzes detection discrepancies and generates actionable recommendations.
 
 Output: JSON file with structured action items for engine improvement.
 """
@@ -223,7 +223,7 @@ class FeedbackAnalyzer:
         return verification
 
     def generate_action_items(self, categories: Dict, patterns: Dict, verification: Dict) -> List[Dict]:
-        """Generate Claude-actionable recommendations."""
+        """Generate actionable recommendations for engine improvement."""
         action_items = []
 
         # Action items for false positives
@@ -500,8 +500,8 @@ def main():
         analyzer.print_action_items()
         output_path = analyzer.save_results()
 
-        # Also save a Claude-specific action file
-        claude_actions = {
+        # Save action items file for use by tooling or automation
+        actions = {
             'purpose': 'Hush Engine improvement actions based on user feedback',
             'instructions': 'Use these action items to improve pii_detector.py',
             'detector_file': 'hush_engine/detectors/pii_detector.py',
@@ -509,10 +509,10 @@ def main():
             'feedback_files': [item.get('_feedback_file') for item in analyzer.feedback_items],
         }
 
-        claude_path = OUTPUT_DIR / "claude_actions.json"
-        with open(claude_path, 'w') as f:
-            json.dump(claude_actions, f, indent=2)
-        print(f"Claude actions saved to: {claude_path}")
+        actions_path = OUTPUT_DIR / "action_items.json"
+        with open(actions_path, 'w') as f:
+            json.dump(actions, f, indent=2)
+        print(f"Action items saved to: {actions_path}")
 
         # Clear feedback if requested
         if args.clear or args.clear_all:

@@ -14,9 +14,8 @@ import mimetypes
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# v1.8.0: Deferred imports for heavy modules to reduce startup time and idle RAM.
-# These are loaded on first access via class properties or function calls.
-# VisionOCR, PIIDetector, and vision detectors are the heaviest modules.
+# Defer heavy imports (VisionOCR, PIIDetector, vision detectors) until first use
+# to reduce startup time and idle RAM.
 _VisionOCR = None
 _PIIDetector = None
 _TableDetector = None

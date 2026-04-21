@@ -356,8 +356,7 @@ class PIIDetector:
         # Store config for introspection
         self._enable_libpostal = enable_libpostal
 
-        # Configure NLP engine for context-aware detection
-        # v1.8.0: Try NLTagger (macOS native) first, fall back to spaCy, then regex-only
+        # Configure NLP engine: NLTagger (macOS native) first, fall back to spaCy, then regex-only
         nlp_engine = None
         self._nlp_backend = None
 
@@ -404,9 +403,8 @@ class PIIDetector:
             self.analyzer = AnalyzerEngine(nlp_engine=None)
             self._nlp_enabled = False
 
-        # v1.8.0: Split recognizer loading into core (regex-only, always loaded)
-        # and extended (NER-dependent, loaded on first analyze_text call).
-        # This reduces idle RAM by deferring heavy recognizer initialization.
+        # Split recognizer loading: core (regex-only) always loaded,
+        # extended (NER-dependent) deferred until first analyze_text call.
         self._extended_loaded = False
         self._enable_libpostal_deferred = enable_libpostal
 
@@ -1899,10 +1897,6 @@ class PIIDetector:
         # Parenthetical negative amounts: ($500.00), (€1,234.56)
         paren_negative_regex = r"\([\$£€¥₹₽]\s?\d+(?:,\d{3})*(?:\.\d{1,2})?\)"
 
-        # DISABLED: Signed amounts pattern causes too many FPs with table formatting
-        # Handles: - 1,027.00, + 1,749.00, -500.00, -500, +1000 (decimals now optional)
-        # signed_amount_regex = r"\b[+\-]\s?\d+(?:,\d{3})*(?:\.\d{1,2})?\b"
-
         # Bare currency amounts: $0, $100, $452, $ 5, €50
         # Improved to match any amount including single digit and space after symbol
         bare_currency_regex = r"[\$£€¥₹₽]\s?\d+(?:,\d{3})*(?:\.\d{1,2})?\b"
@@ -1952,19 +1946,12 @@ class PIIDetector:
                 Pattern(
                     name="currency_symbol",
                     regex=currency_regex,
-                    score=0.65,  # Reduced from 0.8 for better precision
+                    score=0.65,
                 ),
-                # REMOVED: signed_amount pattern causes too many FPs with table formatting
-                # like "- 11", "+ 50", bullet points, and list items
-                # Pattern(
-                #     name="signed_amount",
-                #     regex=signed_amount_regex,
-                #     score=0.70,
-                # ),
                 Pattern(
                     name="bare_currency",
                     regex=bare_currency_regex,
-                    score=0.75,  # Simple currency amounts like $0, $100, $452
+                    score=0.75,
                 ),
                 Pattern(
                     name="paren_negative",
@@ -4042,11 +4029,6 @@ class PIIDetector:
                     regex=r"\b[A-Z][a-z]+(?:[A-Z][a-z]+)+[!@#$%^&*][A-Z][a-z]+(?:[A-Z][a-z]+)*\b",
                     score=0.80,
                 ),
-                # REMOVED: word_year_password and pin_6digit patterns
-                # These were too broad and caused 14k+ false positives
-                # word_year_password matched "Michael1995", "California2020", "January2023"
-                # pin_6digit matched any 6-digit number (dates, ZIPs, phone fragments)
-                # Only labeled credentials are now detected via generic_credential_recognizer
             ],
             context=["password", "pwd", "pass", "secret", "pin", "passcode",
                      "passphrase", "credentials", "auth", "login", "unlock"]
@@ -9091,7 +9073,6 @@ class PIIDetector:
         Returns:
             List of detected PII entities with locale information
         """
-        # v1.8.0: Load extended recognizers on first call (lazy loading)
         self._load_extended_recognizers()
 
         # Auto-detect locale if requested and not provided

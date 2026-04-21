@@ -53,8 +53,8 @@ class NamesDatabase:
             return
         self._initialized = True
 
-        # v1.8.0: Lazy-load name data on first access instead of at import time.
-        # This avoids importing the ~150KB generated_popular_names module until needed.
+        # Lazy-load name data on first access to avoid importing the
+        # ~150KB generated_popular_names module until needed.
         self._first_names: Optional[Set[str]] = None
         self._last_names: Optional[Set[str]] = None
         self._all_names: Optional[Set[str]] = None
