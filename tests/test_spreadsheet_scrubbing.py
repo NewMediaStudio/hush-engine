@@ -185,7 +185,7 @@ def test_csv_scrubbing():
 
     # Import here to avoid circular imports
     sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-    from scrub_spreadsheet import SpreadsheetScrubber
+    from hush_engine.scrub_spreadsheet import SpreadsheetScrubber
 
     # Create test file
     input_path = "/tmp/test_customers.csv"
@@ -234,7 +234,7 @@ def test_xlsx_scrubbing():
     print("\n=== Test 6: XLSX File Scrubbing ===")
 
     sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-    from scrub_spreadsheet import SpreadsheetScrubber
+    from hush_engine.scrub_spreadsheet import SpreadsheetScrubber
 
     # Create test file
     input_path = "/tmp/test_employees.xlsx"
