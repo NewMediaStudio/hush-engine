@@ -23,7 +23,9 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: brew install poppler
+        run: |
+          brew install poppler libomp
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix libomp)/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Install package
         run: |
