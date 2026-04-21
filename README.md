@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/hush-engine-logo.png" alt="Hush Engine" width="400" />
+</p>
+
 # Hush Engine
 
 [![PyPI version](https://img.shields.io/pypi/v/hush-engine.svg)](https://pypi.org/project/hush-engine/)
