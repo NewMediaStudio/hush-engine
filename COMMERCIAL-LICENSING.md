@@ -1,6 +1,8 @@
 # Commercial Licensing
 
-Hush Engine is dual-licensed:
+Hush Engine is built and maintained by [Valentine Makhouleen](https://new-media.ca) at [New Media Studio](https://wearenewmedia.com/).
+
+It is dual-licensed:
 
 1. **[AGPL-3.0](LICENSE)** — for open source projects, research, personal use, and internal tooling where you accept AGPL obligations.
 2. **Commercial license** — for proprietary products, closed-source SaaS, and any use where AGPL terms do not fit.

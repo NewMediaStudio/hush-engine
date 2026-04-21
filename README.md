@@ -248,6 +248,10 @@ Windows and Linux support is on the roadmap but not yet available.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues per [SECURITY.md](SECURITY.md) instead of the public tracker.
 
+## Maintainers
+
+Built and maintained by [Valentine Makhouleen](https://new-media.ca) at [New Media Studio](https://wearenewmedia.com/).
+
 ## License
 
 Hush Engine is dual-licensed.
