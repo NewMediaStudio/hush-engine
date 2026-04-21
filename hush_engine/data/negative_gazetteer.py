@@ -19,10 +19,10 @@ Usage:
         pass
 """
 
-from typing import Set, Dict, Optional
-from pathlib import Path
 import json
 import logging
+from pathlib import Path
+from typing import Dict, Set
 
 logger = logging.getLogger(__name__)
 

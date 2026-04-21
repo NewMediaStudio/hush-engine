@@ -10,10 +10,10 @@ Output: JSON file with structured action items for engine improvement.
 
 import json
 import sys
-from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
-from typing import List, Dict, Any, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add repo root to path for hush_engine imports
 REPO_ROOT = Path(__file__).parent.parent
@@ -268,7 +268,7 @@ class FeedbackAnalyzer:
                     'action': f"Fix classification: {key}",
                     'examples': texts[:5],
                     'count': len(examples),
-                    'implementation_hint': f"Review pattern priority or add disambiguation logic",
+                    'implementation_hint': "Review pattern priority or add disambiguation logic",
                 })
 
         # Sort by priority

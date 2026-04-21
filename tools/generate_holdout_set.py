@@ -26,12 +26,12 @@ Usage:
     python tools/generate_holdout_set.py --verify tests/data/holdout_test_set.json
 """
 
-import json
-import hashlib
 import argparse
-from pathlib import Path
-from datetime import datetime
+import hashlib
+import json
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SOURCE = PROJECT_ROOT / "tests" / "data" / "training" / "sample_3000.json"
@@ -132,7 +132,7 @@ def write_holdout(samples: list, output_path: str, source: str, slice_id):
 
     print(f"\nWritten {len(samples)} samples to {output_path}")
     print(f"Total entities: {total_entities}")
-    print(f"\nEntity distribution:")
+    print("\nEntity distribution:")
     for etype, count in sorted(type_counts.items(), key=lambda x: -x[1]):
         print(f"  {etype:20s}: {count:,}")
 

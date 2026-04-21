@@ -8,7 +8,6 @@ be needed for every detection request.
 """
 
 import threading
-from functools import wraps
 
 
 class lazy_property:

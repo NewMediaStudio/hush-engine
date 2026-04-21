@@ -12,10 +12,9 @@ Manages locale settings for PII detection:
 
 import json
 import threading
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, asdict
-
+from typing import Any, Dict, List, Optional
 
 # Supported locales with their configurations
 SUPPORTED_LOCALES = {

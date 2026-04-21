@@ -21,10 +21,10 @@ Usage:
     filtered = apply_spatial_filtering(entities, context)
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
-import re
 import logging
+import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

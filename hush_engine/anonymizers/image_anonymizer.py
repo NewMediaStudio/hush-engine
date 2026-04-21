@@ -2,8 +2,9 @@
 Image anonymization - Redact or blur sensitive regions
 """
 
-from PIL import Image, ImageDraw, ImageFilter
 from typing import List, Tuple
+
+from PIL import Image, ImageDraw, ImageFilter
 
 
 class ImageAnonymizer:

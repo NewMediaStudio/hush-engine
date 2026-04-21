@@ -10,7 +10,8 @@ License: MIT (both libraries)
 
 import sys
 from typing import List, Optional
-from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
+
+from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerResult
 
 # Try to import medical NER libraries
 _medical_ner = None

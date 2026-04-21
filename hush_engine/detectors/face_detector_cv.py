@@ -8,9 +8,9 @@ License: Apache 2.0 (OpenCV)
 """
 
 import sys
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import cv2
 import numpy as np
 from PIL import Image

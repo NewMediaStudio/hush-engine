@@ -4,12 +4,9 @@ File Router - Routes dropped files to appropriate scrubber
 """
 
 import sys
-import json
-import time
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import mimetypes
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -77,8 +74,8 @@ except ImportError:
     pdfplumber = None
 
 from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
-from pdf import PDFProcessor
 from image_optimizer import optimize_image
+from pdf import PDFProcessor
 
 # Import locale manager for locale-aware PII detection
 try:
@@ -86,12 +83,13 @@ try:
     LOCALE_MANAGER_AVAILABLE = True
 except ImportError:
     LOCALE_MANAGER_AVAILABLE = False
-from PIL import Image
-import pandas as pd
-import tempfile
 import os
 import stat
+import tempfile
 from dataclasses import dataclass
+
+import pandas as pd
+from PIL import Image
 
 # Maximum number of parallel workers for PDF page processing
 # Limit to avoid memory pressure (each page is ~10-20MB at 400 DPI)
@@ -1302,20 +1300,20 @@ class FileRouter:
         # Convert PDF to images at same DPI as detection (400) to ensure bbox coordinates align
         page_images = self.pdf_processor.pdf_to_images(input_path)
         total_pages = len(page_images)
-        
+
         print(f"Processing {total_pages} page(s) for redaction", file=sys.stderr)
-        
+
         # Group selected detections by page
         selected_by_page = {}
         for idx in selected_indices:
             detection = detections[idx]
             page_num = detection.get('page', 1)
-            
+
             if page_num not in selected_by_page:
                 selected_by_page[page_num] = []
-            
+
             selected_by_page[page_num].append(detection['bbox'])
-        
+
         # Process each page
         scrubbed_pages = []
         for page_num in range(1, total_pages + 1):

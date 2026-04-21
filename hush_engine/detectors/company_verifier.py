@@ -12,7 +12,7 @@ Similar approach to PERSON verification, but optimized for company patterns.
 import logging
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -333,10 +333,10 @@ class CompanyVerifier:
         the average prediction probability.
         """
         from .feature_extractor import (
-            extract_features_with_context,
-            tokenize,
-            features_to_matrix,
             FEATURE_NAMES,
+            extract_features_with_context,
+            features_to_matrix,
+            tokenize,
         )
 
         # Tokenize and extract features

@@ -23,9 +23,8 @@ Usage:
         print("Valid IBAN")
 """
 
-from typing import Optional, Tuple, Dict, Any, List
 import re
-
+from typing import Any, Dict, List, Optional, Tuple
 
 # =============================================================================
 # IBAN COUNTRY SPECIFICATIONS (from php-iban registry - 116 countries)
@@ -459,7 +458,7 @@ def validate_iban(iban: str) -> Tuple[bool, Optional[str], Optional[Dict[str, An
     """
     try:
         from stdnum import iban as stdnum_iban
-        from stdnum.exceptions import InvalidChecksum, InvalidFormat, InvalidLength
+        from stdnum.exceptions import InvalidChecksum, InvalidFormat, InvalidLength  # noqa: F401
 
         # Clean the IBAN
         clean_iban = iban.replace(" ", "").replace("-", "").upper()

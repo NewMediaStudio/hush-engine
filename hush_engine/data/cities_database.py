@@ -16,8 +16,7 @@ Usage:
     db.lookup_city("Paris")  # {"country": "France", "population": 2161000, ...}
 """
 
-from typing import Set, Optional, Dict, Any
-
+from typing import Optional, Set
 
 # ============================================================================
 # Major World Cities (~500 cities)

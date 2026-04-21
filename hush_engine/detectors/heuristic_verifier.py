@@ -11,7 +11,6 @@ Strategy:
 """
 
 import re
-from typing import List, Tuple, Optional
 from dataclasses import dataclass
 
 

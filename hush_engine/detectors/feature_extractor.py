@@ -10,10 +10,10 @@ Privacy: This module does NOT store or transmit any PII.
 All processing is 100% local.
 """
 
-import re
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+import re
 from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 

@@ -4,16 +4,16 @@ CLI tool for scrubbing images
 Usage: python scrub_image.py <input_image> [output_image]
 """
 
-import sys
 import argparse
-from pathlib import Path
-from typing import List, Tuple, Optional
+import sys
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Tuple
 
+from anonymizers import ImageAnonymizer
+from detectors import PIIDetector
 from ocr import VisionOCR
 from ocr.vision_ocr import TextDetection
-from detectors import PIIDetector
-from anonymizers import ImageAnonymizer
 from PIL import Image
 
 

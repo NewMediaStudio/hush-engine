@@ -5,10 +5,9 @@ Detects table structure from OCR bounding boxes to enable context-aware PII dete
 Uses spatial clustering to identify columns, rows, and headers.
 """
 
-from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional
-from collections import defaultdict
 import re
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 
 @dataclass

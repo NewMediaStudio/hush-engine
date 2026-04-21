@@ -18,10 +18,11 @@ Supports:
 License: Apache 2.0
 """
 
-import sys
 import re
-from typing import Dict, List, Optional, Set, Tuple
-from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
+import sys
+from typing import Dict, List, Optional, Tuple
+
+from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerResult
 
 # ============================================================================
 # Lazy-loaded NER engines
@@ -101,8 +102,9 @@ def _load_address_lgbm_model():
         return
 
     try:
-        import lightgbm as lgbm
         from pathlib import Path
+
+        import lightgbm as lgbm
 
         model_path = Path(__file__).parent.parent / "models" / "lgbm" / "address_classifier.txt"
         if model_path.exists():
@@ -213,7 +215,7 @@ def _load_flair():
         return
 
     try:
-        from flair.data import Sentence
+        from flair.data import Sentence  # noqa: F401 — availability probe
         from flair.models import SequenceTagger
 
         # Use the fast NER model (good balance of speed and accuracy)

@@ -17,8 +17,8 @@ Usage in pii_detector.py:
     from hush_engine.detectors import lgbm_preloader  # noqa: F401
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)

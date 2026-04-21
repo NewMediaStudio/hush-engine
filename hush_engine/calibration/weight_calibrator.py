@@ -20,13 +20,12 @@ Usage:
     thresholds = calibrator.compute_optimal_thresholds(feedback_data)
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
-from pathlib import Path
-from collections import defaultdict
 import json
 import logging
-import math
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

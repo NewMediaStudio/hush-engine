@@ -93,7 +93,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # Add repo root to path
 REPO_ROOT = Path(__file__).parent.parent
@@ -319,8 +319,6 @@ class DatasetLoader:
         Returns:
             List of CalibrationSamples with both correct and incorrect detections
         """
-        import csv
-        import re
 
         samples = []
 
@@ -433,8 +431,9 @@ class DatasetLoader:
 
         elif suffix == '.parquet':
             try:
+                import ast  # noqa: F401
+
                 import pyarrow.parquet as pq
-                import ast
                 df = pq.read_table(path).to_pandas()
                 if max_rows:
                     df = df.head(max_rows)
@@ -825,7 +824,7 @@ class YellowbrickVisualizer:
     def is_available() -> bool:
         """Check if Yellowbrick is installed."""
         try:
-            import yellowbrick
+            import yellowbrick  # noqa: F401
             return True
         except ImportError:
             return False
@@ -854,9 +853,9 @@ class YellowbrickVisualizer:
             ThresholdResult with optimal threshold and metrics
         """
         try:
-            import numpy as np
             import matplotlib.pyplot as plt
-            from sklearn.metrics import precision_recall_curve, f1_score
+            import numpy as np
+            from sklearn.metrics import f1_score, precision_recall_curve  # noqa: F401
         except ImportError as e:
             logger.warning(f"sklearn not available: {e}")
             return None
@@ -1033,7 +1032,7 @@ class CalibrationVisualizer:
         """Generate precision-recall threshold plot."""
         try:
             import matplotlib.pyplot as plt
-            import numpy as np
+            import numpy as np  # noqa: F401
         except ImportError:
             logger.warning("matplotlib not available. Skipping visualization.")
             return

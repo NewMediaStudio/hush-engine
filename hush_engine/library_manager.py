@@ -10,15 +10,15 @@ Manages optional libraries (phonenumbers, spacy, etc.) with:
 - Config persistence in ~/.hush/config.json
 """
 
+import importlib
 import json
 import subprocess
 import sys
-import importlib
 import threading
-from pathlib import Path
-from typing import Dict, Any, Optional, Callable
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional
 
 
 class LibraryStatus(Enum):

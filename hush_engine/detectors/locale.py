@@ -21,8 +21,8 @@ Usage:
 """
 
 from dataclasses import dataclass
-from typing import List, Set, Optional, Dict
 from enum import Enum
+from typing import Dict, List, Optional, Set
 
 
 class Locale(Enum):

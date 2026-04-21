@@ -4,15 +4,15 @@ CLI tool for scrubbing spreadsheets (CSV, XLSX)
 Usage: python scrub_spreadsheet.py <input_file> [output_file]
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
-import pandas as pd
-from openpyxl import load_workbook
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
-from detectors import PIIDetector
+import pandas as pd
 from anonymizers import SpreadsheetAnonymizer
+from detectors import PIIDetector
+from openpyxl import load_workbook
 
 
 class SpreadsheetScrubber:
@@ -281,12 +281,12 @@ Examples:
             preserve_formatting=not args.no_formatting
         )
 
-        print(f"\nStep 2/3: Analyzing columns for PII...")
+        print("\nStep 2/3: Analyzing columns for PII...")
         for column, info in result['column_analysis'].items():
             print(f"  → Column '{column}': {info['primary_type']} "
                   f"(density: {info['density']:.1%}, types: {', '.join(info['entity_types'])})")
 
-        print(f"\nStep 3/3: Anonymizing...")
+        print("\nStep 3/3: Anonymizing...")
         print(f"  → Scrubbed {result['pii_columns']} columns with PII")
         print(f"  → Saved to: {result['output']}")
 

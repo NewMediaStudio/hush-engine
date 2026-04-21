@@ -9,16 +9,17 @@ License: MIT
 
 import io
 import sys
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 from PIL import Image
 
 # Try Vision framework first (macOS native, zero-install)
 VISION_AVAILABLE = False
 try:
     import Vision
-    from Quartz import CIImage
     from Cocoa import NSData
+    from Quartz import CIImage
     VISION_AVAILABLE = True
 except ImportError:
     pass

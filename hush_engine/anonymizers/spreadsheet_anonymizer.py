@@ -14,8 +14,9 @@ Supports all entity types from the PII Reference (docs/PII_REFERENCE.md):
 - API Keys: AWS_ACCESS_KEY, STRIPE_KEY
 """
 
-import pandas as pd
 from typing import Dict, List
+
+import pandas as pd
 
 
 class SpreadsheetAnonymizer:
@@ -118,4 +119,4 @@ class SpreadsheetAnonymizer:
             "STRIPE_KEY": "[REDACTED KEY]",
         }
 
-        return labels.get(entity_type, f"[REDACTED]")
+        return labels.get(entity_type, "[REDACTED]")

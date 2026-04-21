@@ -354,9 +354,9 @@ def main():
 
     # Stats breakdown
     print(f"\n{'='*60}")
-    print(f"UNIFIED NAME DATABASE")
+    print("UNIFIED NAME DATABASE")
     print(f"{'='*60}")
-    print(f"\nForenames by locale:")
+    print("\nForenames by locale:")
     for locale in sorted(merged_first.keys()):
         label = LOCALE_NAMES.get(locale, locale)
         count = len(merged_first[locale])
@@ -365,7 +365,7 @@ def main():
         print(f"  {locale:6s} ({label:15s}): {count:4d} names "
               f"(curated: {curated_count:3d}, popular: {popular_count:3d})")
 
-    print(f"\nSurnames by locale:")
+    print("\nSurnames by locale:")
     for locale in sorted(merged_last.keys()):
         label = LOCALE_NAMES.get(locale, locale)
         count = len(merged_last[locale])

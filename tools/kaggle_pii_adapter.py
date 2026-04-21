@@ -35,9 +35,8 @@ Options:
     --stats             Print entity type distribution and exit
 """
 
-import json
 import argparse
-from pathlib import Path
+import json
 from collections import defaultdict
 
 # Kaggle entity types -> Hush Engine entity types
@@ -187,11 +186,11 @@ def convert_kaggle_to_hush(input_path: str, output_path: str,
 
     # Print stats
     total_docs = min(len(kaggle_data), max_samples or len(kaggle_data))
-    print(f"\nDataset Statistics:")
+    print("\nDataset Statistics:")
     print(f"  Total documents processed: {total_docs}")
     print(f"  Documents with PII: {docs_with_pii} ({docs_with_pii/total_docs*100:.1f}%)")
     print(f"  Documents converted: {len(samples)}")
-    print(f"\n  Entity distribution:")
+    print("\n  Entity distribution:")
     for etype, count in sorted(type_counts.items(), key=lambda x: -x[1]):
         print(f"    {etype:20s}: {count:,}")
     print(f"    {'TOTAL':20s}: {sum(type_counts.values()):,}")

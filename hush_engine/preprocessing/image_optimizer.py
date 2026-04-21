@@ -7,7 +7,8 @@ to optimize images before Apple Vision Framework OCR processing.
 
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
+
 import numpy as np
 
 try:

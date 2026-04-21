@@ -15,8 +15,7 @@ Usage:
     db.is_company("Microsoft")  # True
 """
 
-from typing import Set, Optional
-
+from typing import Optional, Set
 
 # ============================================================================
 # S&P 500 Companies (as of 2024)

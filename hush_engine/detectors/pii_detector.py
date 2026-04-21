@@ -14,16 +14,16 @@ except ImportError:
     except ImportError:
         pass  # LightGBM pre-loading optional
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional
-from presidio_analyzer import AnalyzerEngine, PatternRecognizer, Pattern
-from presidio_analyzer.nlp_engine import NlpEngineProvider
-from presidio_analyzer.context_aware_enhancers import LemmaContextAwareEnhancer
-from presidio_analyzer.predefined_recognizers import PhoneRecognizer
-import pandas as pd
-import threading
 import re
-from pathlib import Path
+import threading
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Set
+
+import pandas as pd
+from presidio_analyzer import AnalyzerEngine, Pattern, PatternRecognizer
+from presidio_analyzer.context_aware_enhancers import LemmaContextAwareEnhancer
+from presidio_analyzer.nlp_engine import NlpEngineProvider
+from presidio_analyzer.predefined_recognizers import PhoneRecognizer
 
 # Phone number validation using Google's libphonenumber
 try:
@@ -36,24 +36,25 @@ except ImportError:
 # National ID validation using python-stdnum (35+ countries)
 try:
     from stdnum import luhn
-    from stdnum.us import ssn as us_ssn
-    from stdnum.gb import nino as uk_nino
-    from stdnum.de import idnr as de_steuerid
+    from stdnum.be import nn as be_nn
     from stdnum.br import cpf as br_cpf
-    from stdnum.it import codicefiscale as it_cf
+    from stdnum.de import idnr as de_steuerid
     from stdnum.es import dni as es_dni
+    from stdnum.gb import nino as uk_nino
+    from stdnum.it import codicefiscale as it_cf
+    from stdnum.nl import bsn as nl_bsn
     from stdnum.pl import pesel as pl_pesel
     from stdnum.se import personnummer as se_personnummer
-    from stdnum.nl import bsn as nl_bsn
-    from stdnum.be import nn as be_nn
+    from stdnum.us import ssn as us_ssn
     STDNUM_AVAILABLE = True
 except ImportError:
     STDNUM_AVAILABLE = False
 
 # Address parsing using libpostal
 try:
-    from postal.parser import parse_address as _parse_address_raw
     from functools import lru_cache
+
+    from postal.parser import parse_address as _parse_address_raw
 
     @lru_cache(maxsize=2000)
     def parse_address(text: str):
@@ -86,11 +87,11 @@ except ImportError:
 
 # Cities database for LOCATION detection
 try:
-    from hush_engine.data.cities_database import get_cities_db, CitiesDatabase
+    from hush_engine.data.cities_database import CitiesDatabase, get_cities_db
     CITIES_DB_AVAILABLE = True
 except ImportError:
     try:
-        from .data.cities_database import get_cities_db, CitiesDatabase
+        from .data.cities_database import CitiesDatabase, get_cities_db
         CITIES_DB_AVAILABLE = True
     except ImportError:
         CITIES_DB_AVAILABLE = False
@@ -99,11 +100,11 @@ except ImportError:
 
 # Countries database for LOCATION detection
 try:
-    from hush_engine.data.countries_database import get_countries_database, CountriesDatabase
+    from hush_engine.data.countries_database import CountriesDatabase, get_countries_database
     COUNTRIES_DB_AVAILABLE = True
 except ImportError:
     try:
-        from .data.countries_database import get_countries_database, CountriesDatabase
+        from .data.countries_database import CountriesDatabase, get_countries_database
         COUNTRIES_DB_AVAILABLE = True
     except ImportError:
         COUNTRIES_DB_AVAILABLE = False
@@ -112,9 +113,9 @@ except ImportError:
 
 # Package version - import from central config
 try:
-    from hush_engine.detection_config import VERSION, get_config
+    from hush_engine.detection_config import VERSION, get_config  # noqa: F401 — availability probe
 except ImportError:
-    from ..detection_config import VERSION, get_config
+    from ..detection_config import VERSION
 
 # Negative gazetteer for false positive suppression
 try:
@@ -156,11 +157,11 @@ except ImportError:
 
 # LightGBM-based COMPANY verification for false positive filtering
 try:
-    from hush_engine.detectors.company_verifier import verify_company_detection, is_company_verifier_available
+    from hush_engine.detectors.company_verifier import is_company_verifier_available, verify_company_detection
     COMPANY_VERIFIER_AVAILABLE = is_company_verifier_available()
 except ImportError:
     try:
-        from .company_verifier import verify_company_detection, is_company_verifier_available
+        from .company_verifier import is_company_verifier_available, verify_company_detection
         COMPANY_VERIFIER_AVAILABLE = is_company_verifier_available()
     except ImportError:
         COMPANY_VERIFIER_AVAILABLE = False
@@ -168,11 +169,11 @@ except ImportError:
 
 # LightGBM-based ADDRESS verification for false positive filtering
 try:
-    from hush_engine.detectors.address_verifier import verify_address_detection, is_address_verifier_available
+    from hush_engine.detectors.address_verifier import is_address_verifier_available, verify_address_detection
     ADDRESS_VERIFIER_AVAILABLE = is_address_verifier_available()
 except ImportError:
     try:
-        from .address_verifier import verify_address_detection, is_address_verifier_available
+        from .address_verifier import is_address_verifier_available, verify_address_detection
         ADDRESS_VERIFIER_AVAILABLE = is_address_verifier_available()
     except ImportError:
         ADDRESS_VERIFIER_AVAILABLE = False
@@ -181,17 +182,17 @@ except ImportError:
 # Shannon entropy-based CREDENTIAL verification for secret detection
 try:
     from hush_engine.detectors.credential_entropy import (
+        ENTROPY_THRESHOLDS,
         analyze_credential_entropy,
         filter_credential_by_entropy,
-        ENTROPY_THRESHOLDS,
     )
     CREDENTIAL_ENTROPY_AVAILABLE = True
 except ImportError:
     try:
         from .credential_entropy import (
+            ENTROPY_THRESHOLDS,
             analyze_credential_entropy,
             filter_credential_by_entropy,
-            ENTROPY_THRESHOLDS,
         )
         CREDENTIAL_ENTROPY_AVAILABLE = True
     except ImportError:
@@ -206,18 +207,15 @@ except ImportError:
 __version__ = VERSION
 
 # Import locale support
-from .locale import (
-    Locale, calculate_locale_boost, detect_document_locale,
-    get_locale_from_string, PATTERN_LOCALE_MAP
-)
+from .locale import PATTERN_LOCALE_MAP, calculate_locale_boost, detect_document_locale
 
 # Import text normalization for evasion defense
 try:
-    from hush_engine.preprocessing.text_normalizer import normalize_text, decode_and_scan
+    from hush_engine.preprocessing.text_normalizer import decode_and_scan, normalize_text
     TEXT_NORMALIZER_AVAILABLE = True
 except ImportError:
     try:
-        from ..preprocessing.text_normalizer import normalize_text, decode_and_scan
+        from ..preprocessing.text_normalizer import decode_and_scan, normalize_text
         TEXT_NORMALIZER_AVAILABLE = True
     except ImportError:
         TEXT_NORMALIZER_AVAILABLE = False
@@ -228,7 +226,7 @@ except ImportError:
 try:
     from company_named_entity_recognition import find_companies
     COMPANY_NER_AVAILABLE = True
-except (ImportError, FileNotFoundError, Exception) as e:
+except (ImportError, FileNotFoundError, Exception):
     # Package may be missing or have missing data files
     COMPANY_NER_AVAILABLE = False
     find_companies = None
@@ -362,7 +360,7 @@ class PIIDetector:
 
         # Try 1: macOS NLTagger (zero-install, default for Minimal tier)
         try:
-            from hush_engine.nlp.nltagger_engine import NLTaggerNlpEngine, NLTAGGER_AVAILABLE
+            from hush_engine.nlp.nltagger_engine import NLTAGGER_AVAILABLE, NLTaggerNlpEngine
             if NLTAGGER_AVAILABLE:
                 nlp_engine = NLTaggerNlpEngine()
                 nlp_engine.load()
@@ -501,19 +499,19 @@ class PIIDetector:
         # North American street types (US/Canada)
         # Expanded to include less common but valid street types
         na_street_types = r"(?:Street|St\.?|Avenue|Ave\.?|Road|Rd\.?|Boulevard|Blvd\.?|Drive|Dr\.?|Lane|Ln\.?|Court|Ct\.?|Circle|Cir\.?|Way|Place|Pl\.?|Terrace|Ter\.?|Parkway|Pkwy\.?|Highway|Hwy\.?|Crescent|Cres\.?|Trail|Cliff|Cliffs|Ramp|Haven|Village|Commons|Plaza|Bend|Loop|Cove|Ridge|Heights|Point|Center|Centre|Pass|Run|Crossing|Path|Alley|Aly\.?|Pike|Fork|Branch|Glen|Hollow|Knoll|Landing|Manor|Meadow|Mill|Orchard|Overlook|Pointe|Shores|Spring|Summit|Valley|Vista|Estates|Gardens|Grove|Oaks|Pines|Woods)"
-        
+
         # UK/Irish street types
         uk_street_types = r"(?:Road|Street|Lane|Avenue|Drive|Close|Gardens|Square|Crescent|Terrace|Grove|Place|Mews|Court|Row|Walk|Green|Park|Rise|Hill|Way|View)"
-        
+
         # Australian/NZ street types (includes NA + UK plus specific types)
         au_street_types = r"(?:Parade|Esplanade|Promenade|Circuit)"
-        
+
         # Combined English-speaking street types
         en_street_types = rf"(?:{na_street_types}|{uk_street_types}|{au_street_types})"
-        
+
         # European street prefixes
         eu_street_prefixes = r"(?:Rue|Via|Calle|Avenida|Rua|Straße|Strasse|Platz|Allee|Plein)"
-        
+
         # Canadian province abbreviations
         provinces = r"(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)"
         # Canadian postal code: A1A 1A1 or A1A1A1 (Letter-Digit-Letter Digit-Letter-Digit)
@@ -678,7 +676,7 @@ class PIIDetector:
         )
 
         # International street address recognizers
-        
+
         # 5. Basic street address with number: "12 Crane Ave", "221B Baker Street"
         street_address_with_number = PatternRecognizer(
             supported_entity="LOCATION",
@@ -692,7 +690,7 @@ class PIIDetector:
                 )
             ],
         )
-        
+
         # 6. Street name with type (no number): "Crane Avenue", "Baker Street"
         street_address_no_number = PatternRecognizer(
             supported_entity="LOCATION",
@@ -706,7 +704,7 @@ class PIIDetector:
                 )
             ],
         )
-        
+
         # 7. European street formats: "Rue de la Paix", "Via Roma", "Calle Mayor"
         european_street_address = PatternRecognizer(
             supported_entity="LOCATION",
@@ -719,7 +717,7 @@ class PIIDetector:
                 )
             ],
         )
-        
+
         # 8. PO Box addresses: "PO Box 123", "P.O. Box 456"
         po_box_address = PatternRecognizer(
             supported_entity="LOCATION",
@@ -1701,7 +1699,7 @@ class PIIDetector:
         # Add dateparser-based recognizer for natural language dates
         # This catches formats that regex misses: "Jul 13, 2009", "13th July 2009", "13/07/2009" (European)
         if DATEPARSER_AVAILABLE:
-            from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
+            from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerResult
 
             class DateparserRecognizer(EntityRecognizer):
                 """Custom recognizer using dateparser for natural language date detection."""
@@ -2193,7 +2191,7 @@ class PIIDetector:
         Respects DEFAULT_INTEGRATIONS config for heavy model loading.
         """
         try:
-            from .person_recognizer import get_person_recognizer, is_person_ner_available
+            from .person_recognizer import get_person_recognizer, is_person_ner_available  # noqa: F401
             try:
                 from hush_engine.detection_config import DEFAULT_INTEGRATIONS
             except ImportError:
@@ -4777,7 +4775,7 @@ class PIIDetector:
         - International TLDs
         - URLs with complex paths
         """
-        from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
+        from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerResult
 
         class URLExtractRecognizer(EntityRecognizer):
             """Custom recognizer using urlextract library."""

@@ -32,13 +32,13 @@ Usage:
 """
 
 import argparse
-import logging
 import json
+import logging
 import random
 import sys
-from pathlib import Path
-from typing import List, Dict, Tuple, Set
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -51,8 +51,8 @@ logger = logging.getLogger(__name__)
 
 # Check dependencies
 try:
-    import numpy as np
     import lightgbm as lgb
+    import numpy as np
     from faker import Faker
 except ImportError as e:
     logger.error(f"Missing dependency: {e}")
@@ -60,10 +60,10 @@ except ImportError as e:
     sys.exit(1)
 
 from hush_engine.detectors.feature_extractor import (
+    FEATURE_NAMES,
     extract_features_with_context,
     features_to_matrix,
     tokenize,
-    FEATURE_NAMES,
 )
 
 # Output directory for trained models
@@ -134,7 +134,7 @@ def load_ai4privacy_data(
     # Apply noise augmentation if requested
     if apply_augmentation and result:
         try:
-            from tools.training_augmentation import NoiseInjector, AugmentationConfig
+            from tools.training_augmentation import AugmentationConfig, NoiseInjector
 
             config = AugmentationConfig(
                 punctuation_removal_prob=0.30,  # PMC paper: 30%
@@ -418,7 +418,7 @@ class SyntheticDataGenerator:
 
         # Load real company names from database
         try:
-            from hush_engine.data.companies_database import SP500_COMPANIES, MAJOR_INTERNATIONAL_COMPANIES
+            from hush_engine.data.companies_database import MAJOR_INTERNATIONAL_COMPANIES, SP500_COMPANIES
             real_companies = list(SP500_COMPANIES | MAJOR_INTERNATIONAL_COMPANIES)
             # Capitalize properly
             real_companies = [c.title() for c in real_companies]
@@ -1065,8 +1065,8 @@ def train_svm_classifier(
     Returns:
         Tuple of (trained SVC model, fitted StandardScaler)
     """
-    from sklearn.svm import SVC
     from sklearn.preprocessing import StandardScaler
+    from sklearn.svm import SVC
 
     logger.info(f"Training SVM classifier for {entity_type}...")
 

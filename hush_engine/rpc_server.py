@@ -8,20 +8,20 @@ Protocol:
 - Error: {"id": <int>, "error": {"code": <int>, "message": <string>}}
 """
 
-import sys
+import builtins
 import json
-import traceback
 import logging
 import os
 import stat
-from pathlib import Path
+import sys
+import traceback
 from collections import deque
+from pathlib import Path
 from time import time
-import builtins
 
 # Save the original stdout for JSON-RPC communication
 _rpc_stdout = sys.stdout
-# Redirect sys.stdout to stderr so that any unintended print calls from 
+# Redirect sys.stdout to stderr so that any unintended print calls from
 # libraries (like Presidio or pandas) go to the diagnostic log instead of breaking RPC
 sys.stdout = sys.stderr
 
@@ -38,12 +38,11 @@ builtins.print = print_to_stderr
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ui.file_router import FileRouter
 import detection_config
 from analyze_feedback import FeedbackAnalyzer
 from library_manager import get_library_manager
 from locale_manager import get_locale_manager
-
+from ui.file_router import FileRouter
 
 # =============================================================================
 # SECURITY: Audit Logging
@@ -267,7 +266,7 @@ class RPCServer:
         audit_log.info("RPC server initialized")
         sys.stderr.write("[RPCServer] Ready to accept requests\n")
         sys.stderr.flush()
-    
+
     def handle_detect_pii(self, params):
         """Handle detectPII request"""
         file_path = params.get('filePath')
@@ -289,7 +288,7 @@ class RPCServer:
             return self.router.detect_pii_pdf(file_path_str)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
-    
+
     def handle_save_scrubbed(self, params):
         """Handle saveScrubbed request"""
         source = params.get('source')
@@ -324,7 +323,7 @@ class RPCServer:
             raise ValueError(f"Unsupported file type: {file_type}")
 
         return {"success": True}
-    
+
     def handle_get_pdf_page(self, params):
         """Handle getPDFPage request"""
         file_path = params.get('filePath')
@@ -342,11 +341,11 @@ class RPCServer:
             raise ValueError("Page number must be an integer between 1 and 10000")
 
         return self.router.get_pdf_page_image(str(validated_path), page_num, optimize=optimize)
-    
+
     def handle_get_config(self, params):
         """Handle getConfig request"""
         return detection_config.get_config().get_stats()
-    
+
     def handle_save_config(self, params):
         """Handle saveConfig request"""
         thresholds = params.get('thresholds')
@@ -358,7 +357,7 @@ class RPCServer:
         config = detection_config.get_config()
         config.update_all(thresholds=thresholds, enabled_entities=enabled_entities)
         return {"success": True}
-    
+
     def handle_reset_config(self, params):
         """Handle resetConfig request: restore shipped defaults and clear training data"""
         detection_config.reset_config()
@@ -523,35 +522,36 @@ class RPCServer:
                     "message": str(e)
                 }
             }
-    
+
     def run(self):
         """Main loop: read requests from stdin, write responses to stdout"""
         sys.stderr.write("[RPCServer] Entering main loop\n")
         sys.stderr.flush()
-        
+
         try:
             for line in sys.stdin:
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 try:
                     request = json.loads(line)
                     response = self.handle_request(request)
-                    
+
                     # Write response as single line JSON to the dedicated RPC stdout
                     response_json = json.dumps(response)
                     _rpc_stdout.write(response_json + "\n")
                     _rpc_stdout.flush()
-                    
+
                 except json.JSONDecodeError as e:
                     sys.stderr.write(f"[RPCServer] Invalid JSON: {e}\n")
                     sys.stderr.flush()
-                    # Write response as single line JSON to the dedicated RPC stdout
+                    # Write an error response as single line JSON to the dedicated RPC stdout
+                    error_response = {"error": f"Invalid JSON: {e}", "id": None}
                     response_json = json.dumps(error_response)
                     _rpc_stdout.write(response_json + "\n")
                     _rpc_stdout.flush()
-                    
+
         except KeyboardInterrupt:
             sys.stderr.write("[RPCServer] Interrupted by user\n")
             sys.stderr.flush()

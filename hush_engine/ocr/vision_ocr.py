@@ -3,15 +3,16 @@ Apple Vision Framework wrapper for OCR
 Uses hardware-accelerated text recognition on Apple Silicon
 """
 
-from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
-from PIL import Image
 import os
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
+from PIL import Image
 
 try:
     import Vision
-    from Quartz import CIImage, CIContext
     from Cocoa import NSURL
+    from Quartz import CIContext, CIImage  # noqa: F401
     VISION_AVAILABLE = True
 except ImportError:
     VISION_AVAILABLE = False
@@ -228,6 +229,7 @@ class VisionOCR:
             List of TextDetection objects with text and coordinates
         """
         import io
+
         from Cocoa import NSData
 
         # Get image dimensions for coordinate transformation
@@ -447,7 +449,7 @@ class VisionOCR:
     ) -> Tuple[float, float, float, float]:
         """
         Estimate substring bounding box using proportional division.
-        
+
         Assumes uniform character spacing (less accurate but works as fallback).
 
         Args:
@@ -468,7 +470,7 @@ class VisionOCR:
 
         # Calculate proportional positions (simple linear interpolation)
         char_width = text_width / text_len if text_len > 0 else 0
-        
+
         # Estimate x coordinates based on character positions
         sub_x1 = x1 + (start * char_width)
         sub_x2 = x1 + (end * char_width)

@@ -17,8 +17,8 @@ Usage:
     db.is_name("Maria")       # True
 """
 
-from typing import Set, Dict, Any, Optional
 import re
+from typing import Any, Dict, Optional, Set
 
 # Name titles (prefixes that indicate a name follows)
 NAME_TITLES = {

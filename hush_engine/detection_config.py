@@ -5,9 +5,9 @@ Detection Config - Manages PII detection thresholds with auto-adjustment
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -408,7 +408,7 @@ class DetectionConfig:
         total_feedback_entries = 0
         total_added_areas = 0
         total_removed_bars = 0
-        
+
         if feedback_path.exists():
             try:
                 with open(feedback_path, 'r') as f:

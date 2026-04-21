@@ -138,8 +138,9 @@ VALID_ADDRESS_COMPONENT_TYPES = frozenset({
 
 # Try to import libpostal for component validation
 try:
-    from postal.parser import parse_address as _parse_address_raw
     from functools import lru_cache
+
+    from postal.parser import parse_address as _parse_address_raw
 
     @lru_cache(maxsize=2000)
     def parse_address(text: str):
@@ -513,10 +514,10 @@ class AddressVerifier:
     ) -> float:
         """Get LightGBM score for an address span."""
         from .feature_extractor import (
-            extract_features_with_context,
-            tokenize,
-            features_to_matrix,
             FEATURE_NAMES,
+            extract_features_with_context,
+            features_to_matrix,
+            tokenize,
         )
 
         tokens = tokenize(text)

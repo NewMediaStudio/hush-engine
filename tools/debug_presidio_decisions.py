@@ -31,13 +31,12 @@ Usage:
     python3 tools/debug_presidio_decisions.py --entity PERSON --text "Dr. John Smith"
 """
 
-import sys
-import os
 import argparse
 import json
-from dataclasses import dataclass, asdict
-from typing import List, Optional, Dict, Any
+import sys
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -49,8 +48,8 @@ except ImportError:
     pass
 
 from presidio_analyzer import AnalyzerEngine
-from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_analyzer.context_aware_enhancers import LemmaContextAwareEnhancer
+from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 
 @dataclass
@@ -300,7 +299,7 @@ class PresidioDebugger:
             print(f"Position: {t.start}:{t.end}")
             print(f"Final Score: {t.final_score:.3f}")
 
-            print(f"\nDecision Details:")
+            print("\nDecision Details:")
             print(f"  Recognizer: {t.recognizer}")
             if t.pattern_name:
                 print(f"  Pattern Name: {t.pattern_name}")
@@ -315,7 +314,7 @@ class PresidioDebugger:
                 print(f"  Explanation: {t.textual_explanation}")
 
             if show_metadata and t.recognition_metadata:
-                print(f"\nRecognition Metadata:")
+                print("\nRecognition Metadata:")
                 for key, value in t.recognition_metadata.items():
                     print(f"  {key}: {value}")
 

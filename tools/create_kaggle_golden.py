@@ -21,14 +21,14 @@ Input:  tests/data/pii-detection-removal-from-educational-data/train.json
 Output: tests/data/kaggle_golden_1000.json
 """
 
+import argparse
+import hashlib
 import json
 import random
-import hashlib
-import argparse
 import sys
-from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_INPUT = PROJECT_ROOT / "tests" / "data" / "pii-detection-removal-from-educational-data" / "train.json"
@@ -206,7 +206,7 @@ def create_kaggle_golden(input_path: str, output_path: str,
     print(f"  PII documents: {len(pii_docs)}")
     print(f"  Non-PII documents: {non_pii_needed} (false positive testing)")
     print(f"  Total entities: {total_entities}")
-    print(f"\n  Entity distribution:")
+    print("\n  Entity distribution:")
     for etype, count in sorted(type_counts.items(), key=lambda x: -x[1]):
         print(f"    {etype:20s}: {count:,}")
 
@@ -286,7 +286,7 @@ def validate(path: str):
 
     pii_count = sum(1 for s in samples if s.get("ground_truth"))
     non_pii_count = len(samples) - pii_count
-    print(f"Validation PASSED")
+    print("Validation PASSED")
     print(f"  {len(samples)} samples ({pii_count} PII, {non_pii_count} non-PII)")
     print(f"  {sum(type_counts.values())} total entities across {len(type_counts)} types")
     print(f"  {len(set(texts))} unique texts (0 duplicates)")

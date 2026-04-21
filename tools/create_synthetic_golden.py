@@ -16,7 +16,7 @@ import random
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict
 
 try:
     from faker import Faker
@@ -251,7 +251,7 @@ def main():
         json.dump(golden_set, f, indent=2)
 
     print(f"\nGenerated {golden_set['total_samples']} samples with {golden_set['total_entities']} entities")
-    print(f"\nEntity distribution:")
+    print("\nEntity distribution:")
     for entity_type, count in sorted(golden_set['composition'].items(), key=lambda x: -x[1]):
         print(f"  {entity_type}: {count}")
 

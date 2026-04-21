@@ -12,6 +12,7 @@ Usage:
 """
 
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -74,7 +75,7 @@ def optimize_png(input_path: str, output_path: Optional[str] = None) -> str:
             if output_path != str(path):
                 with open(output_path, 'wb') as f:
                     f.write(data)
-            sys.stderr.write(f"[ImageOptimizer] PNG already optimal, no changes made\n")
+            sys.stderr.write("[ImageOptimizer] PNG already optimal, no changes made\n")
 
         return output_path
 
@@ -123,7 +124,7 @@ def optimize_jpeg(input_path: str, output_path: Optional[str] = None) -> str:
             if output_path != str(path):
                 with open(output_path, 'wb') as f:
                     f.write(data)
-            sys.stderr.write(f"[ImageOptimizer] JPEG already optimal, no changes made\n")
+            sys.stderr.write("[ImageOptimizer] JPEG already optimal, no changes made\n")
 
         return output_path
 

@@ -13,10 +13,9 @@ No user data is ever used for training.
 """
 
 import logging
-import json
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Set
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +176,7 @@ class LightGBMNERClassifier:
         try:
             # Convert to format LightGBM expects
             import numpy as np
+
             from .feature_extractor import FEATURE_NAMES
 
             # Build feature matrix
@@ -299,7 +299,7 @@ class LightweightNER:
             return []
 
         # Extract features
-        from .feature_extractor import extract_features_with_context, tokenize, features_to_matrix
+        from .feature_extractor import extract_features_with_context, features_to_matrix, tokenize
 
         tokens = tokenize(text)
         if not tokens:

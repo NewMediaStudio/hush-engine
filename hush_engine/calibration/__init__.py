@@ -6,8 +6,8 @@ based on feedback data and precision-recall analysis.
 """
 
 from .weight_calibrator import (
-    WeightCalibrator,
     ModelMetrics,
+    WeightCalibrator,
     calibrate_from_feedback,
     get_calibrator,
 )

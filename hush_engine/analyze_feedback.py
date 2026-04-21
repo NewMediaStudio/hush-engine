@@ -5,14 +5,14 @@ Feedback Analyzer - Analyzes training feedback to improve PII detection
 
 import json
 import sys
-from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Any
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Import config for auto-adjustment
 sys.path.insert(0, str(Path(__file__).parent))
-from detection_config import get_config, DetectionConfig
+from detection_config import get_config
 
 
 class FeedbackAnalyzer:
@@ -276,7 +276,7 @@ class FeedbackAnalyzer:
 
         # False positives
         fp = analysis["false_positives"]
-        print(f"\n--- FALSE POSITIVES (bars removed by user) ---")
+        print("\n--- FALSE POSITIVES (bars removed by user) ---")
         print(f"Total: {fp['total']}")
         if fp["by_entity_type"]:
             print("By entity type:")
@@ -287,7 +287,7 @@ class FeedbackAnalyzer:
 
         # Missed detections
         missed = analysis["missed_detections"]
-        print(f"\n--- MISSED DETECTIONS (areas added by user) ---")
+        print("\n--- MISSED DETECTIONS (areas added by user) ---")
         print(f"Total: {missed['total']}")
         if missed["avg_bbox_size"]:
             size = missed["avg_bbox_size"]
@@ -296,19 +296,19 @@ class FeedbackAnalyzer:
         # Entity accuracy
         accuracy = analysis["entity_accuracy"]
         if accuracy:
-            print(f"\n--- ENTITY TYPE ACCURACY ---")
+            print("\n--- ENTITY TYPE ACCURACY ---")
             for entity_type, stats in sorted(accuracy.items(), key=lambda x: x[1]["precision"]):
                 print(f"  {entity_type}: {stats['precision']:.0%} precision "
                       f"({stats['kept']}/{stats['total_detected']} kept)")
 
         # Suggestions
-        print(f"\n--- SUGGESTIONS ---")
+        print("\n--- SUGGESTIONS ---")
         for i, suggestion in enumerate(analysis["suggestions"], 1):
             print(f"{i}. {suggestion}")
 
         # Auto-adjust thresholds if enabled
         if auto_adjust:
-            print(f"\n--- AUTO-ADJUSTMENT ---")
+            print("\n--- AUTO-ADJUSTMENT ---")
             adj_result = self.auto_adjust_thresholds()
             if adj_result["status"] == "success" and adj_result["adjustments"]:
                 print("Thresholds adjusted based on feedback:")

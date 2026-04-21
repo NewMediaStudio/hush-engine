@@ -16,13 +16,13 @@ Output:
     tests/data/golden_test_set.json - Fixed test set with ground truth
 """
 
+import argparse
 import json
 import random
-import argparse
 import sys
-from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -265,7 +265,7 @@ def select_balanced_sample(all_rows, target_samples):
             row['difficulty'] = calculate_difficulty(row)
             by_category[category].append(row)
 
-    print(f"\nDataset distribution:")
+    print("\nDataset distribution:")
     for cat, rows in sorted(by_category.items()):
         print(f"  {cat}: {len(rows)} rows")
 
@@ -395,8 +395,8 @@ def show_stats(golden_path):
     with open(golden_path, 'r') as f:
         golden = json.load(f)
 
-    print(f"Golden Test Set Statistics")
-    print(f"=" * 50)
+    print("Golden Test Set Statistics")
+    print("=" * 50)
     print(f"Version: {golden.get('version', 'unknown')}")
     print(f"Created: {golden.get('created', 'unknown')}")
     print(f"Seed: {golden.get('seed', 'unknown')}")

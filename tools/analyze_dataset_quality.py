@@ -9,13 +9,13 @@ Usage:
     python3 tools/analyze_dataset_quality.py
 """
 
+import ast
+import csv
 import json
 import re
-import csv
-import ast
-from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Any, Set, Tuple
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent

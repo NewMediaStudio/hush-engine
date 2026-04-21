@@ -8,8 +8,10 @@ License: MIT (pyzbar)
 """
 
 import logging
-from typing import List, Optional
+import sys
 from dataclasses import dataclass
+from typing import List, Optional
+
 import numpy as np
 from PIL import Image
 

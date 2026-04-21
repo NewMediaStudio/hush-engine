@@ -11,10 +11,11 @@ License: MIT
 """
 
 import io
-import sys
 import logging
-from typing import List, Optional
+import sys
 from dataclasses import dataclass
+from typing import List, Optional
+
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,8 @@ logger = logging.getLogger(__name__)
 VISION_AVAILABLE = False
 try:
     import Vision
-    from Quartz import CIImage
     from Cocoa import NSData
+    from Quartz import CIImage
     VISION_AVAILABLE = True
 except ImportError:
     pass

@@ -5,7 +5,7 @@ Provides a comprehensive list of country names and variations for
 detecting country mentions in text as LOCATION entities.
 """
 
-from typing import Set, Optional, Tuple
+from typing import Optional, Set
 
 # All countries with common variations and abbreviations
 COUNTRIES = {

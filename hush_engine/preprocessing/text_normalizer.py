@@ -6,11 +6,11 @@ This module provides preprocessing functions to handle:
 - Encoded PII detection (Base64, URL-encoded, Hex-encoded strings)
 """
 
-import unicodedata
-import re
 import base64
+import re
+import unicodedata
+from typing import List, Optional, Tuple
 from urllib.parse import unquote
-from typing import List, Tuple, Optional
 
 
 def normalize_text(text: str) -> str:

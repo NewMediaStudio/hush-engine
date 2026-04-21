@@ -13,19 +13,20 @@ Usage:
     python tools/bootstrap_ci.py --dataset tests/data/synthetic_golden.json --samples 200 --latex
 """
 
+import argparse
 import json
 import sys
 import time
-import argparse
-import numpy as np
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+
+import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "tests"))
 
-from benchmark_accuracy import detect_pii, calculate_metrics, extract_ground_truth
+from benchmark_accuracy import calculate_metrics, detect_pii
 
 
 def load_dataset(path: str) -> list:
@@ -179,7 +180,7 @@ def main():
 
     # Per-entity
     print(f"\n{'='*70}")
-    print(f"Per-Entity")
+    print("Per-Entity")
     print(f"{'='*70}")
     print(f"  {'Type':<20} {'Prec':>7} {'Recall':>7} {'F1':>7} {'TP':>5} {'FP':>5} {'GT':>5}")
     for etype in sorted(per_entity_agg.keys()):
@@ -203,7 +204,7 @@ def main():
     print(f"  Recall:    {r_ci['mean']:.1%}  (95% CI: {r_ci['ci_lower']:.1%} – {r_ci['ci_upper']:.1%})")
 
     if args.latex:
-        print(f"\n% LaTeX:")
+        print("\n% LaTeX:")
         print(f"Hush Engine & Local & "
               f"{p_ci['mean']:.1%} & {r_ci['mean']:.1%} & "
               f"{f1_ci['mean']:.1%} ({{95\\% CI: {f1_ci['ci_lower']:.1%}--{f1_ci['ci_upper']:.1%}}}) & "

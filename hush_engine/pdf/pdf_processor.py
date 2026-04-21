@@ -3,8 +3,8 @@ PDF Processor - Convert PDFs to images and back for secure redaction
 """
 
 import sys
-from pathlib import Path
-from typing import List, Generator, Tuple
+from typing import Generator, List, Tuple
+
 from PIL import Image
 
 try:

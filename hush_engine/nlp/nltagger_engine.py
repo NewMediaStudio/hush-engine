@@ -13,7 +13,7 @@ License: MIT
 
 import string
 import sys
-from typing import List, Optional, Iterator, Iterable, Tuple
+from typing import Iterable, Iterator, List, Tuple
 
 # Defer Presidio imports to avoid triggering the spaCy import chain at module load.
 # Presidio's NlpArtifacts does `from spacy.tokens import Doc, Span` at import time,
@@ -27,7 +27,7 @@ def _get_presidio_types():
     """Lazy-import Presidio NLP types."""
     global _NlpEngine, _NlpArtifacts
     if _NlpEngine is None:
-        from presidio_analyzer.nlp_engine import NlpEngine, NlpArtifacts
+        from presidio_analyzer.nlp_engine import NlpArtifacts, NlpEngine
         _NlpEngine = NlpEngine
         _NlpArtifacts = NlpArtifacts
     return _NlpEngine, _NlpArtifacts
@@ -382,7 +382,7 @@ class NLTaggerNlpEngine:
         batch_size: int = 1,
         n_process: int = 1,
         **kwargs,
-    ) -> Iterator[Tuple[str, NlpArtifacts]]:
+    ) -> Iterator[Tuple[str, "NlpArtifacts"]]:  # noqa: F821 — lazy-loaded from Presidio
         """Process multiple texts sequentially (NLTagger doesn't support batch mode)."""
         for text in texts:
             yield text, self.process_text(text, language)

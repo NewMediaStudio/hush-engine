@@ -43,13 +43,13 @@ Usage:
 import argparse
 import json
 import logging
+import random
 import re
 import sys
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Set, Any
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
-import random
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -771,7 +771,7 @@ class AI4PrivacyConverter:
             print(f"  {lang}: {count:,}")
 
         if self.stats.sentences_extracted > 0:
-            print(f"\nSentence extraction:")
+            print("\nSentence extraction:")
             print(f"  Total sentences: {self.stats.sentences_extracted:,}")
             print(f"  With entities: {self.stats.sentences_with_entities:,}")
             print(f"  Negative samples: {self.stats.sentences_negative:,}")
