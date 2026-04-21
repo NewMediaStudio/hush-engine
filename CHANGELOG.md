@@ -5,7 +5,30 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.9.0] - 2026-04-21
+## [1.10.0] - 2026-04-21
+
+### Changed
+
+- **License: MIT → AGPL-3.0.** Hush Engine is now dual-licensed. Open source use
+  falls under AGPL-3.0. Proprietary and closed-source commercial use requires a
+  commercial license; see [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md).
+- Version 1.9.0 (MIT) was yanked from PyPI before any significant uptake. Users
+  already on 1.9.0 retain their MIT grant for that release under its original terms.
+
+### Why
+
+The MIT release invited unrestricted commercial use, including by surveillance
+and mass-data-collection products that the project explicitly aims to be used
+against. AGPL-3.0 with a commercial option preserves open source values for
+researchers, non-commercial users, and AGPL-compatible projects while giving us
+a conversation with commercial integrators about how Hush will be used.
+
+## [1.9.0] - 2026-04-21 [YANKED]
+
+> This release was published to PyPI under MIT and yanked the same day as part
+> of the license change to AGPL-3.0. See 1.10.0 for the current release.
+
+
 
 ### Added
 

@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.9.0"
+version = "1.10.0"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-or-later"}
 authors = [
     {name = "Valentine Makhouleen", email = "valentine@newmediastudio.com"}
 ]
@@ -16,7 +16,7 @@ keywords = ["pii", "privacy", "detection", "ocr", "presidio", "anonymization", "
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

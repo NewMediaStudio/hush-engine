@@ -1,7 +1,7 @@
 # Hush Engine
 
 [![PyPI version](https://img.shields.io/pypi/v/hush-engine.svg)](https://pypi.org/project/hush-engine/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/NewMediaStudio/hush-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/NewMediaStudio/hush-engine/actions/workflows/tests.yml)
 
@@ -179,7 +179,7 @@ Same Kaggle set, 1,000 samples:
 
 | Model | F1 | Precision | Recall | Latency | RAM |
 |---|---|---|---|---|---|
-| **Hush Engine v1.9.0** | **93.0%** | **94.5%** | 91.6% | **266ms** | **~15MB** |
+| **Hush Engine v1.10.0** | **93.0%** | **94.5%** | 91.6% | **266ms** | **~15MB** |
 | Mistral 7B | 77.8% | 64.6% | 97.9% | 3,486ms | 10.2GB |
 | Phi-4 (14B) | 75.3% | 65.0% | 89.5% | 6,046ms | 14.3GB |
 | Qwen 2.5 (7B) | 65.7% | 49.8% | 96.5% | 3,105ms | 8.4GB |
@@ -246,7 +246,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues per [SECURITY.md]
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Hush Engine is dual-licensed.
+
+**Open source:** [AGPL-3.0](LICENSE). Free to use, modify, and distribute under AGPL terms. If you run Hush over a network (for example, inside a SaaS), AGPL § 13 requires you to open-source the service that uses it.
+
+**Commercial:** a paid commercial license is available for proprietary products, closed-source SaaS, or any use where AGPL obligations don't fit. See [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md) or email **studio@newmediastudio.com**.
 
 ## Related
 
