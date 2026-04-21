@@ -1,8 +1,13 @@
 # Hush Engine
 
+[![PyPI version](https://img.shields.io/pypi/v/hush-engine.svg)](https://pypi.org/project/hush-engine/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://github.com/NewMediaStudio/hush-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/NewMediaStudio/hush-engine/actions/workflows/tests.yml)
+
 **Local-first PII detection engine using Presidio and Apple Vision OCR**
 
-Hush Engine is an open-source Python library for detecting personally identifiable information (PII) in images, PDFs, and spreadsheets. It uses Microsoft Presidio for text-based PII detection and Apple Vision OCR for extracting text from images.
+Hush Engine is an open-source Python library for detecting personally identifiable information (PII) in images, PDFs, and spreadsheets. It uses Microsoft Presidio for text-based PII detection and Apple Vision OCR for extracting text from images. All processing runs locally — nothing leaves your machine.
 
 ## Features
 

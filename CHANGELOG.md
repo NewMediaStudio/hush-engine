@@ -5,6 +5,52 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-04-21
+
+### Added
+
+- **Kaggle PII Detection 2024 benchmark support** via `tools/create_kaggle_golden.py`
+  - 1,000-sample golden set builder (all PII docs + non-PII for false-positive testing)
+  - Achieved **F1 93.0%** (P=94.5%, R=91.6%) on Kaggle essays with retrained LightGBM
+- **LLM comparison benchmark** — Hush vs local LLMs (Llama, Mistral, Qwen, Phi, Gemma) and cloud models (Claude, Gemini)
+  - Results saved to `tests/benchmark_history/llm_comparison_results.json`
+  - Live progress tracking integrated with the benchmark dashboard
+- **NamesDatabase expansion** — +277 curated names for South Asian, Arabic, African, Hispanic, and European coverage (7,233 → 7,510 total)
+- **Essay-context PERSON patterns** — "According to {Name}", "{Name}'s research", "{Name} (2024)", first-line author detection
+- **Financial PII patterns**
+  - Salary/compensation: `$128k/yr`, `Salary: $75,000/year`, `per hour`, `per month`, `per week`, `per day`
+  - Masked account numbers: `****7823`, `Acct: ****1234`
+  - Labeled balances: `Balance: $14,208.43`, `Amount: $500.00`
+- **Driver's license pattern** — `K420-8891-5537` (letter + dash-separated digit groups)
+- **Credit card expiry pattern** — `EXPIRES 09/28`, `EXP: 12/27`, `Valid Thru MM/YY`
+- **OCR fragment reconstruction** — credit card numbers and expiry dates split across multiple OCR blocks (common on card graphics) are now reassembled and detected
+- **ALL CAPS name detection** — PersonRecognizer converts uppercase text to Title Case for NER; FP filter checks names database before rejecting multi-word uppercase PERSON
+- **Bootstrap confidence intervals tool** — `tools/bootstrap_ci.py` reports 95% CIs on F1/precision/recall with 5,000 resamples
+- **Held-out test set generator** — `tools/generate_holdout_set.py` for deterministic non-overlapping evaluation slices
+- **Custom dataset training** — `tools/train_lgbm_ner.py --custom-dataset <path>` supports retraining on user-provided JSON datasets
+- **Test samples** — 12 HTML mockups (banking, chat, IDs, medical, email, SaaS) with PDF/PNG exports
+
+### Changed
+
+- **LightGBM PERSON classifier retrained** on Kaggle essay data — PERSON F1 improved from 88.9% → 93.9% on essay-style text
+- **spaCy auto-enabled in balanced mode** when installed (no effect if not present)
+- **Long-text FP filters** — detect_pii applies stricter filtering for texts >500 chars (essays, articles) to cut FPs on common words, sentence-boundary artifacts, and ALL CAPS headers
+- **Benchmark scoring** — `calculate_metrics()` no longer counts plausible-looking real names as false positives when evaluating on datasets with incomplete GT labels
+
+### Fixed
+
+- `$24,831.50` dollar amounts no longer mistakenly filtered as OCR artifacts (currency symbol now exempts from repeated-punctuation heuristic)
+- USERNAME false positives on hyphenated English words (`mind-mapping`, `start-up`) in essays
+- ID digit range extended to catch 11- and 12-digit student IDs (`762035863358`)
+
+### Open source release
+
+- Removed internal `CLAUDE.md` (AI assistant instructions)
+- Removed committed training analysis data (replaced by gitignored `training/`)
+- Moved `names-dataset` (GPL-3.0) to optional `[names]` extra to keep base install MIT-compatible
+- Added `SECURITY.md`, `CODE_OF_CONDUCT.md`, GitHub issue/PR templates, and CI workflow
+- Added ruff + pytest configuration to `pyproject.toml`
+
 ## [1.4.0] - 2026-02-06
 
 ### Added

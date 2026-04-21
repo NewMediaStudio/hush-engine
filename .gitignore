@@ -58,6 +58,24 @@ test_outputs/
 training/
 icons/
 .claude/
+CLAUDE.md
 
 # Spacy models (downloaded separately)
 en_core_web_lg/
+
+# Dataset files — users download/generate these separately
+tests/data/kaggle_*.json
+tests/data/kaggle_*.csv
+tests/data/kaggle_*.parquet
+tests/data/pii-detection-removal-from-educational-data/
+tests/data/ai4privacy/
+tests/data/training/
+tests/data/sample_3000.json
+tests/data/holdout_test_set.json
+tests/data/golden_test_set.json
+
+# Bootstrap / benchmark history (user-generated)
+tests/benchmark_history/kaggle_*.json
+tests/benchmark_history/golden_bootstrap.json
+tests/benchmark_history/llm_comparison_*.json
+tests/benchmark_history/benchmark_output.log

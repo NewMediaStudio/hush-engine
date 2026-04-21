@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.8.0"
+version = "1.9.0"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
 readme = "README.md"
 license = {text = "MIT"}
@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
-    # Core numerics - relaxed numpy constraint now that spaCy is optional
+    # Core numerics
     "numpy>=1.24.0",
     "presidio-analyzer>=2.2.0",
     "presidio-anonymizer>=2.2.0",
@@ -39,53 +39,62 @@ dependencies = [
     # macOS native frameworks (Vision, NaturalLanguage, Cocoa)
     "pyobjc-framework-Vision>=9.0",
     "pyobjc-framework-Cocoa>=9.0",
-    "pyobjc-framework-NaturalLanguage>=9.0",  # v1.8.0: NLTagger for NER/lemmatization
+    "pyobjc-framework-NaturalLanguage>=9.0",
     "watchdog>=3.0.0",
-    # Image optimization (commercial-friendly licenses)
-    "zopfli>=0.2.0",  # Apache 2.0 - PNG compression
-    "mozjpeg-lossless-optimization>=1.0.0",  # BSD-3 - JPEG optimization
-    # PII Validation (LGPL-2.1 license)
-    "python-stdnum>=2.2",  # National ID, IBAN, BIC validation for 35+ countries
-    "phonenumbers>=9.0.0",  # International phone validation for 249 countries
-    "dateparser>=1.2.0",  # Natural language date parsing (BSD license)
-    # Lightweight ML (MIT license) - fast, low-memory NER
-    "lightgbm>=4.0.0",  # MIT license - Gradient boosting for token classification
-    "names-dataset>=3.1.0",  # GPL-3.0 - First/last name validation
-    # PDF text extraction (MIT license) - supplements OCR for small text in digital PDFs
-    "pdfplumber>=0.10.0",  # MIT - Direct text extraction with positions
+    # Image optimization (Apache 2.0 / BSD)
+    "zopfli>=0.2.0",
+    "mozjpeg-lossless-optimization>=1.0.0",
+    # PII Validation (LGPL-2.1 — safe for proprietary linking when library-distributed)
+    "python-stdnum>=2.2",
+    "phonenumbers>=9.0.0",
+    # Natural language date parsing (BSD)
+    "dateparser>=1.2.0",
+    # Lightweight ML (MIT)
+    "lightgbm>=4.0.0",
+    # PDF text extraction (MIT)
+    "pdfplumber>=0.10.0",
 ]
 
 [project.optional-dependencies]
-# Medical NER (MIT license) - zero dependencies, lightweight
+# Extended name validation (GPL-3.0 — opt-in due to license).
+# Hush ships a built-in curated NamesDatabase (7,500+ names across 54 locales)
+# that works without this extra. Install for broader coverage.
+names = [
+    "names-dataset>=3.1.0",
+]
+# Medical NER (MIT) — zero dependencies, lightweight
 medical = [
-    "medical-named-entity-recognition>=0.1.0",  # MIT - Disease/condition detection
-    "drug-named-entity-recognition>=0.1.0",  # MIT - Drug/medication detection
+    "medical-named-entity-recognition>=0.1.0",
+    "drug-named-entity-recognition>=0.1.0",
 ]
-# Address parsing (MIT license) - requires system libpostal: brew install libpostal
+# Address parsing (MIT) — requires system libpostal: brew install libpostal
 address = [
-    "postal>=1.1.9",  # MIT - libpostal Python bindings (99.45% accuracy)
+    "postal>=1.1.9",
 ]
-# Heavy NER models for maximum accuracy (adds ~2GB)
+# Heavy NER models for maximum accuracy (~2GB)
 accurate = [
-    "flair>=0.13.0",  # MIT license - Flair NER models (~400MB)
-    "transformers>=4.30.0",  # Apache 2.0 - HuggingFace transformer models (~600MB)
-    "gliner>=0.2.0",  # Apache 2.0 - Zero-shot NER (~1GB)
+    "flair>=0.13.0",
+    "transformers>=4.30.0",
+    "gliner>=0.2.0",
 ]
-# Everything
+# Everything (excluding the GPL names extra — add it explicitly if you want it)
 full = [
     "hush-engine[medical,address,accurate]",
 ]
+# Development and testing
 dev = [
-    "presidio-evaluator>=0.1.0",  # Token-level evaluation and debugging
+    "presidio-evaluator>=0.1.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "scikit-learn>=1.3.0",  # For model training and evaluation
+    "scikit-learn>=1.3.0",
+    "ruff>=0.6.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/NewMediaStudio/hush-engine"
 Repository = "https://github.com/NewMediaStudio/hush-engine"
 Issues = "https://github.com/NewMediaStudio/hush-engine/issues"
+Changelog = "https://github.com/NewMediaStudio/hush-engine/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -93,3 +102,20 @@ include = ["hush_engine*"]
 
 [tool.setuptools.package-data]
 hush_engine = ["*.json", "*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # line-too-long handled by formatter
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]  # module-level imports not at top of file
+"tools/*" = ["E402"]
