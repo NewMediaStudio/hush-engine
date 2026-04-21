@@ -7,8 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="icons/hush-1024.png">
+    <link rel="icon" type="image/png" href="assets/hush-engine-logo.png">
     <link rel="stylesheet" href="benchmark_history.css">
+    <style>
+        @keyframes logo-spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        .logo-spin {
+            width: 40px;
+            height: 40px;
+            animation: logo-spin 8s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .logo-spin { animation: none; }
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -16,9 +30,9 @@
 <div class="container">
     <div class="top-bar">
         <div class="logo" onclick="toggleView('trend')" style="cursor: pointer;" title="Back to Total Runs">
-            <img src="icons/hush-1024.png" alt="Hush" style="width: 40px; height: 40px;" id="logo-bee">
+            <img src="assets/hush-engine-logo.png" alt="Hush Engine" class="logo-spin" id="logo">
             <span>Hush</span><span style="font-weight: 300;">Engine</span>
-            <span style="font-size: 0.65rem; color: var(--muted); font-weight: 400; margin-left: 0.5rem; align-self: flex-end; margin-bottom: 2px;">v1.8.0</span>
+            <span style="font-size: 0.65rem; color: var(--muted); font-weight: 400; margin-left: 0.5rem; align-self: flex-end; margin-bottom: 2px;">v1.10.0</span>
         </div>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
             <button class="job-status-btn hidden" id="job-status-btn" onclick="toggleProgressBanner()">
@@ -265,28 +279,5 @@
 </div>
 
 <script src="benchmark_history.js"></script>
-<script>
-(function() {
-    const bee = document.getElementById('logo-bee');
-    const openEye = 'icons/hush-1024.png';
-    const closedEye = 'icons/hush-1024-blink.png';
-
-    function blink() {
-        bee.src = closedEye;
-        setTimeout(() => { bee.src = openEye; }, 150);
-    }
-
-    // Blink every 3-5 seconds (random interval for natural feel)
-    function scheduleBlink() {
-        const delay = 3000 + Math.random() * 2000;
-        setTimeout(() => {
-            blink();
-            scheduleBlink();
-        }, delay);
-    }
-
-    scheduleBlink();
-})();
-</script>
 </body>
 </html>
