@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import pandas as pd
-from anonymizers import SpreadsheetAnonymizer
-from detectors import PIIDetector
+from .anonymizers import SpreadsheetAnonymizer
+from .detectors import PIIDetector
 from openpyxl import load_workbook
 
 

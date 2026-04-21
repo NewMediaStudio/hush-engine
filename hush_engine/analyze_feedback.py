@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 
 # Import config for auto-adjustment
 sys.path.insert(0, str(Path(__file__).parent))
-from detection_config import get_config
+from .detection_config import get_config
 
 
 class FeedbackAnalyzer:

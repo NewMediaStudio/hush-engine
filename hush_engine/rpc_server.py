@@ -38,11 +38,11 @@ builtins.print = print_to_stderr
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-import detection_config
-from analyze_feedback import FeedbackAnalyzer
-from library_manager import get_library_manager
-from locale_manager import get_locale_manager
-from ui.file_router import FileRouter
+from . import detection_config
+from .analyze_feedback import FeedbackAnalyzer
+from .library_manager import get_library_manager
+from .locale_manager import get_locale_manager
+from .ui.file_router import FileRouter
 
 # =============================================================================
 # SECURITY: Audit Logging

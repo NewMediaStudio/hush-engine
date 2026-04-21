@@ -73,9 +73,9 @@ except ImportError:
     PDFPLUMBER_AVAILABLE = False
     pdfplumber = None
 
-from anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
-from image_optimizer import optimize_image
-from pdf import PDFProcessor
+from ..anonymizers import ImageAnonymizer, SpreadsheetAnonymizer
+from ..image_optimizer import optimize_image
+from ..pdf import PDFProcessor
 
 # Import locale manager for locale-aware PII detection
 try:
