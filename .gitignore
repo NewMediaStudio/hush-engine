@@ -79,3 +79,12 @@ tests/benchmark_history/kaggle_*.json
 tests/benchmark_history/golden_bootstrap.json
 tests/benchmark_history/llm_comparison_*.json
 tests/benchmark_history/benchmark_output.log
+tests/benchmark_history/benchmark_progress.json
+
+# Stray benchmark output from running commands in unexpected cwd
+tests/tests/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
