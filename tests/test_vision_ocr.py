@@ -10,7 +10,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.ocr import VisionOCR, TextDetection
+from hush_engine.ocr import VisionOCR, TextDetection
 from PIL import Image, ImageDraw, ImageFont
 
 

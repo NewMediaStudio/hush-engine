@@ -9,9 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.ocr import VisionOCR
-from src.detectors import PIIDetector
-from src.anonymizers import ImageAnonymizer
+from hush_engine.ocr import VisionOCR
+from hush_engine.detectors import PIIDetector
+from hush_engine.anonymizers import ImageAnonymizer
 from PIL import Image, ImageDraw, ImageFont
 
 

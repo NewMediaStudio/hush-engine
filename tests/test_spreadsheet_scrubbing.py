@@ -10,8 +10,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.anonymizers import SpreadsheetAnonymizer
-from src.detectors import PIIDetector
+from hush_engine.anonymizers import SpreadsheetAnonymizer
+from hush_engine.detectors import PIIDetector
 
 
 def create_test_csv(output_path: str):
