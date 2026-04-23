@@ -187,6 +187,79 @@ Privacy Filter covers 8 span categories: `private_person`, `private_email`, `pri
 
 License compatibility: Privacy Filter ships under Apache-2.0, which the AGPL-3.0 engine can link against. See the [LICENSE](LICENSE) for Hush and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md) for proprietary-deployment terms. The add-on does not change either.
 
+## Agent integrations
+
+Hush ships wrappers for the three current agent transports so any Claude Code, Cursor, Zed, Cline, Windsurf, or Continue user — plus any OpenAI Agents or Claude Agent SDK builder — can drop PII detection into their tool chain without writing glue code.
+
+### MCP server (any stdio MCP client)
+
+```bash
+pip install hush-engine[mcp]
+```
+
+Add to your client config. Example for Claude Code:
+
+```bash
+claude mcp add hush -- hush-mcp
+```
+
+Or drop this into the `mcpServers` block of your client's settings:
+
+```json
+{
+  "mcpServers": {
+    "hush": { "command": "hush-mcp" }
+  }
+}
+```
+
+Exposes two tools the model can call: `detect_pii(text, entity_types=None)` and `redact_text(text, entity_types=None, mask="[{entity_type}]")`.
+
+### Claude Agent SDK (in-process)
+
+```bash
+pip install hush-engine[agent-claude]
+```
+
+```python
+from claude_agent_sdk import ClaudeAgentOptions, query
+from hush_engine.agents.claude_sdk import hush_server
+
+options = ClaudeAgentOptions(
+    mcp_servers={"hush": hush_server},
+    allowed_tools=["mcp__hush__detect_pii", "mcp__hush__redact_text"],
+)
+async for msg in query(prompt="Redact PII then summarize: ...", options=options):
+    print(msg)
+```
+
+### OpenAI Agents SDK
+
+```bash
+pip install hush-engine[agent-openai]
+```
+
+```python
+from agents import Agent, Runner
+from hush_engine.agents.openai_agent import detect_pii_tool, redact_text_tool
+
+agent = Agent(
+    name="SafeAssistant",
+    instructions="Redact PII before answering questions about user data.",
+    tools=[detect_pii_tool, redact_text_tool],
+)
+result = await Runner.run(agent, "Summarize: My name is John Doe, email john@x.com.")
+print(result.final_output)
+```
+
+### Bundle
+
+```bash
+pip install hush-engine[agents]  # mcp + agent-claude + agent-openai
+```
+
+All three wrappers share the same `hush_engine.agents._core` helpers so detector behavior stays consistent across transports.
+
 ## Release privacy gates
 
 Set the `HUSH_AUDIT=1` environment variable to opt into internal audit logging (dev + calibration use). Release builds should leave it unset, which:

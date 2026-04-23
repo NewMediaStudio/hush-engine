@@ -83,9 +83,25 @@ privacy-filter = [
     "transformers>=4.40.0",
     "torch>=2.0.0",
 ]
+# MCP server for any stdio MCP client (Claude Code, Cursor, Zed, Cline, etc.)
+mcp = [
+    "mcp>=1.0.0",
+]
+# Claude Agent SDK in-process MCP server
+agent-claude = [
+    "claude-agent-sdk>=0.1.0",
+]
+# OpenAI Agents SDK @function_tool wrappers
+agent-openai = [
+    "openai-agents>=0.14.0",
+]
+# All agent transports bundled
+agents = [
+    "hush-engine[mcp,agent-claude,agent-openai]",
+]
 # Everything (excluding the GPL names extra — add it explicitly if you want it)
 full = [
-    "hush-engine[medical,address,accurate,privacy-filter]",
+    "hush-engine[medical,address,accurate,privacy-filter,agents]",
 ]
 # Development and testing
 dev = [
@@ -101,6 +117,9 @@ Homepage = "https://github.com/NewMediaStudio/hush-engine"
 Repository = "https://github.com/NewMediaStudio/hush-engine"
 Issues = "https://github.com/NewMediaStudio/hush-engine/issues"
 Changelog = "https://github.com/NewMediaStudio/hush-engine/blob/main/CHANGELOG.md"
+
+[project.scripts]
+hush-mcp = "hush_engine.agents.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
