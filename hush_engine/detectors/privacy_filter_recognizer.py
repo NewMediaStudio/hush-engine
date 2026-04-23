@@ -29,7 +29,7 @@ Silent import failure keeps the engine usable without the extra installed.
 """
 
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerResult
 
