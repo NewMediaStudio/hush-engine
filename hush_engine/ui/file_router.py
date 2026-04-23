@@ -522,6 +522,31 @@ def get_secure_temp_dir() -> Path:
     return temp_dir
 
 
+def sweep_orphan_temp_files() -> int:
+    """
+    Delete stale temp files in ~/.hush/tmp left behind by crashed prior runs.
+
+    Each normal code path wraps its `create_secure_temp_file` caller in
+    try/finally, but a SIGKILL / power loss / uncaught exception before the
+    finally runs can leak a JPEG to disk. This sweep runs at FileRouter init
+    so stale files never accumulate (Val observed 61 orphans in a single
+    user's ~/.hush/tmp before this shipped).
+
+    Returns the number of files removed.
+    """
+    temp_dir = Path.home() / ".hush" / "tmp"
+    if not temp_dir.exists():
+        return 0
+    removed = 0
+    for f in temp_dir.glob("tmp*"):
+        try:
+            f.unlink()
+            removed += 1
+        except OSError:
+            pass  # file in use, permission issue, etc. — best-effort
+    return removed
+
+
 def create_secure_temp_file(suffix: str = '.png') -> str:
     """
     Create a secure temporary file with restrictive permissions.
@@ -554,6 +579,10 @@ class FileRouter:
         Args:
             output_dir: Directory to save scrubbed files (default: same as input)
         """
+        # Clear orphan JPEGs from crashed prior runs before this session starts
+        # writing new ones. Normal exits clean up via try/finally at each caller.
+        sweep_orphan_temp_files()
+
         self.output_dir = Path(output_dir) if output_dir else None
 
         # Initialize engines (lazy loading for performance)
@@ -1234,7 +1263,18 @@ class FileRouter:
 
         page_image = page_images[0]
 
-        # SECURITY: Save to secure temporary file with restrictive permissions
+        # NOTE: This is the one create_secure_temp_file caller that cannot be
+        # wrapped in try/finally — the path IS the RPC response body (Swift
+        # renders the preview by reading from disk). Orphans are handled by
+        # the startup sweep in FileRouter.__init__ and the below per-request
+        # sweep that clears prior previews before writing the new one.
+        # Future: switch to base64 image bytes in the response so no temp
+        # JPEG touches disk for PDF previews either.
+        for stale in (Path.home() / ".hush" / "tmp").glob("tmp*.jpg"):
+            try:
+                stale.unlink()
+            except OSError:
+                pass
         temp_path = create_secure_temp_file(suffix='.jpg')
         page_image.save(temp_path, 'JPEG', quality=85)
 
@@ -1335,10 +1375,12 @@ class FileRouter:
                     # Optionally optimize the page image
                     if optimize:
                         opt_temp = create_secure_temp_file(suffix='.jpg')
-                        scrubbed.save(opt_temp, 'JPEG', quality=85)
-                        optimize_image(opt_temp)
-                        scrubbed = Image.open(opt_temp)
-                        os.unlink(opt_temp)
+                        try:
+                            scrubbed.save(opt_temp, 'JPEG', quality=85)
+                            optimize_image(opt_temp)
+                            scrubbed = Image.open(opt_temp)
+                        finally:
+                            os.unlink(opt_temp)
 
                     scrubbed_pages.append(scrubbed)
                     print(f"Page {page_num}: Redacted {len(page_bboxes)} region(s)", file=sys.stderr)
@@ -1348,10 +1390,12 @@ class FileRouter:
                 # No redactions on this page, but still optimize if requested
                 if optimize:
                     opt_temp = create_secure_temp_file(suffix='.jpg')
-                    page_image.save(opt_temp, 'JPEG', quality=85)
-                    optimize_image(opt_temp)
-                    page_image = Image.open(opt_temp)
-                    os.unlink(opt_temp)
+                    try:
+                        page_image.save(opt_temp, 'JPEG', quality=85)
+                        optimize_image(opt_temp)
+                        page_image = Image.open(opt_temp)
+                    finally:
+                        os.unlink(opt_temp)
 
                 scrubbed_pages.append(page_image)
                 print(f"Page {page_num}: No redactions", file=sys.stderr)

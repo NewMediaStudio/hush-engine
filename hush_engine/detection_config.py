@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 # Engine version - single source of truth
-VERSION = "1.10.2"
+VERSION = "1.11.0"
 
 # Detection library/integration toggles
 # These control which detection backends are enabled
@@ -31,6 +31,15 @@ DEFAULT_INTEGRATIONS = {
     "gliner": False,         # GLiNER zero-shot PII model (~1GB)
     "flair": False,          # Flair NER (~400MB, high accuracy)
     "transformers": False,   # Transformers BERT NER (~600MB, high precision)
+
+    # OpenAI Privacy Filter add-on (disabled by default - install with: pip install hush-engine[privacy-filter])
+    # Released 2026-04-22, Apache-2.0, bidirectional token classifier (~3GB BF16).
+    # Covers 8 span categories: private_person, private_email, private_phone,
+    # private_address, private_url, private_date, account_number, secret.
+    "openai_privacy_filter": False,
+    # If True, a Privacy Filter PERSON hit short-circuits the cascade (authoritative).
+    # If False (default), it feeds into the ensemble vote like other engines (candidate).
+    "openai_privacy_filter_authoritative": False,
 
     # Vision detectors (v1.8.0 - macOS native, replaces OpenCV/pyzbar)
     "vision_face": True,     # Vision VNDetectFaceRectanglesRequest (zero-install)

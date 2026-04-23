@@ -2193,25 +2193,60 @@ class PIIDetector:
         try:
             from .person_recognizer import get_person_recognizer, is_person_ner_available  # noqa: F401
             try:
-                from hush_engine.detection_config import DEFAULT_INTEGRATIONS
+                from hush_engine.detection_config import DEFAULT_INTEGRATIONS, get_config
             except ImportError:
-                from ..detection_config import DEFAULT_INTEGRATIONS
+                from ..detection_config import DEFAULT_INTEGRATIONS, get_config
+
+            # Prefer persisted user config over module defaults when present.
+            try:
+                integrations = get_config().get_enabled_integrations()
+            except Exception:
+                integrations = DEFAULT_INTEGRATIONS
 
             # Check config to determine mode
             # Use "accurate" only if heavy models are explicitly enabled
             use_heavy = (
-                DEFAULT_INTEGRATIONS.get("gliner", False) or
-                DEFAULT_INTEGRATIONS.get("flair", False) or
-                DEFAULT_INTEGRATIONS.get("transformers", False)
+                integrations.get("gliner", False) or
+                integrations.get("flair", False) or
+                integrations.get("transformers", False)
             )
             mode = "accurate" if use_heavy else "balanced"
 
-            person_recognizer = get_person_recognizer(mode=mode)
+            use_pf = integrations.get("openai_privacy_filter", False)
+            pf_authoritative = integrations.get("openai_privacy_filter_authoritative", False)
+
+            person_recognizer = get_person_recognizer(
+                mode=mode,
+                use_privacy_filter=use_pf,
+                privacy_filter_authoritative=pf_authoritative,
+            )
             self.analyzer.registry.add_recognizer(person_recognizer)
 
             # Log which mode was used (don't call is_person_ner_available() as it loads heavy models)
             import sys
-            sys.stderr.write(f"[PIIDetector] PersonRecognizer loaded (mode={mode})\n")
+            pf_tag = (
+                f" +privacy_filter[{'authoritative' if pf_authoritative else 'candidate'}]"
+                if use_pf else ""
+            )
+            sys.stderr.write(f"[PIIDetector] PersonRecognizer loaded (mode={mode}{pf_tag})\n")
+
+            # Register PrivacyFilterRecognizer for the six non-PERSON classes so
+            # toggling `openai_privacy_filter` also lifts EMAIL/PHONE/URL/
+            # LOCATION/DATE_TIME/FINANCIAL/CREDENTIAL recall.
+            if use_pf:
+                try:
+                    from .privacy_filter_recognizer import get_privacy_filter_recognizer
+                    pf_recognizer = get_privacy_filter_recognizer()
+                    if pf_recognizer is not None:
+                        self.analyzer.registry.add_recognizer(pf_recognizer)
+                        sys.stderr.write("[PIIDetector] PrivacyFilterRecognizer loaded\n")
+                    else:
+                        sys.stderr.write(
+                            "[PIIDetector] openai_privacy_filter enabled but the model failed to load; "
+                            "install with: pip install hush-engine[privacy-filter]\n"
+                        )
+                except ImportError:
+                    sys.stderr.write("[PIIDetector] privacy_filter_recognizer module missing\n")
 
         except ImportError:
             # Fallback to basic pattern recognizers if person_recognizer module unavailable

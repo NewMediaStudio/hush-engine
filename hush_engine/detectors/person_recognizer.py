@@ -1043,6 +1043,8 @@ class PersonRecognizer(EntityRecognizer):
         use_gliner: bool = False,
         use_flair: bool = False,
         use_transformers: bool = False,
+        use_privacy_filter: bool = False,
+        privacy_filter_authoritative: bool = False,
         use_name_dataset: bool = True,
         use_patterns: bool = True,
         min_confidence: float = 0.55,  # Lowered from 0.70 to allow Tier 3 single-model detections through
@@ -1061,6 +1063,13 @@ class PersonRecognizer(EntityRecognizer):
             use_gliner: Enable GLiNER zero-shot NER
             use_flair: Enable Flair NER (high accuracy)
             use_transformers: Enable Transformers BERT NER (high precision)
+            use_privacy_filter: Enable OpenAI Privacy Filter (Apache-2.0,
+                bidirectional token classifier; ~3GB BF16)
+            privacy_filter_authoritative: If True, a Privacy Filter run short-
+                circuits the cascade — its PERSON hits are emitted directly and
+                all other engines' PERSON detections are discarded for this doc.
+                If False (default), Privacy Filter contributes to ensemble voting
+                like any other engine.
             use_name_dataset: Enable dictionary lookup
             use_patterns: Enable regex pattern matching
             min_confidence: Minimum confidence threshold
@@ -1076,6 +1085,8 @@ class PersonRecognizer(EntityRecognizer):
         self.use_gliner = use_gliner
         self.use_flair = use_flair
         self.use_transformers = use_transformers
+        self.use_privacy_filter = use_privacy_filter
+        self.privacy_filter_authoritative = privacy_filter_authoritative
         self.use_name_dataset = use_name_dataset
         self.use_patterns = use_patterns
         self.min_confidence = min_confidence
@@ -1103,6 +1114,9 @@ class PersonRecognizer(EntityRecognizer):
             _load_flair()
         if self.use_transformers:
             _load_transformers_ner()
+        if self.use_privacy_filter:
+            from hush_engine.detectors.privacy_filter_recognizer import _load_privacy_filter
+            _load_privacy_filter()
         if self.use_name_dataset:
             _load_name_dataset()
 
@@ -1172,6 +1186,47 @@ class PersonRecognizer(EntityRecognizer):
 
         # Preprocess text to handle hyphenated line breaks
         processed_text, _ = self._preprocess_text(text)
+
+        # Step 0: OpenAI Privacy Filter — when in authoritative mode, its verdict
+        # is final and the rest of the cascade is bypassed. The model runs at
+        # most once per document; when unavailable (not installed / load failed)
+        # we fall through to the normal cascade as a safety net.
+        if self.use_privacy_filter and self.privacy_filter_authoritative:
+            from hush_engine.detectors.privacy_filter_recognizer import (
+                detect_persons_with_privacy_filter,
+                is_privacy_filter_available,
+            )
+            pf_hits = detect_persons_with_privacy_filter(processed_text)
+            if is_privacy_filter_available():
+                results: List[RecognizerResult] = []
+                for text_match, start, end, score in pf_hits:
+                    if score < self.min_confidence:
+                        continue
+                    if self._is_false_positive(text_match):
+                        continue
+                    explanation = AnalysisExplanation(
+                        recognizer=self.name,
+                        original_score=score,
+                        pattern_name="privacy_filter_authoritative",
+                        pattern=None,
+                        validation_result=None,
+                    )
+                    results.append(
+                        RecognizerResult(
+                            entity_type="PERSON",
+                            start=start,
+                            end=end,
+                            score=score,
+                            analysis_explanation=explanation,
+                            recognition_metadata={
+                                "recognizer_name": self.name,
+                                "detection_source": "privacy_filter",
+                                "engine_count": 1,
+                                "authoritative": True,
+                            },
+                        )
+                    )
+                return results
 
         # Collect ALL detections from all engines for ensemble scoring
         all_detections: List[Tuple[str, int, int, float, str]] = []
@@ -1261,6 +1316,21 @@ class PersonRecognizer(EntityRecognizer):
                 for text_match, start, end, score in detect_with_transformers(processed_text):
                     all_detections.append((text_match, start, end, score, "transformers"))
 
+                # Check again after Transformers
+                found_high_conf = any(
+                    d[3] >= self.early_exit_confidence for d in all_detections
+                )
+
+            # Try OpenAI Privacy Filter (candidate mode — ensemble voter).
+            # Authoritative mode was handled at Step 0; in candidate mode PF
+            # just contributes spans like any other NER backend.
+            if self.use_privacy_filter and not found_high_conf:
+                from hush_engine.detectors.privacy_filter_recognizer import (
+                    detect_persons_with_privacy_filter,
+                )
+                for text_match, start, end, score in detect_persons_with_privacy_filter(processed_text):
+                    all_detections.append((text_match, start, end, score, "privacy_filter"))
+
         # Ensemble scoring: aggregate overlapping detections
         merged_detections = self._merge_overlapping_detections(all_detections)
 
@@ -1311,6 +1381,9 @@ class PersonRecognizer(EntityRecognizer):
         "gliner": 0.82,        # Zero-shot NER
         "name_dataset": 0.78,  # UP from 0.68 - improved recall for single-word names
         "names_db": 0.75,     # Curated NamesDatabase (53 locales, 5349 names)
+        # OpenAI Privacy Filter (candidate mode only — authoritative mode
+        # short-circuits the cascade before this table is consulted).
+        "privacy_filter": 0.90,
     }
 
     # Soft voting acceptance threshold (lowered for better recall)
@@ -1740,6 +1813,8 @@ class PersonRecognizer(EntityRecognizer):
 def get_person_recognizer(
     mode: str = "balanced",
     spreadsheet_mode: bool = False,
+    use_privacy_filter: bool = False,
+    privacy_filter_authoritative: bool = False,
 ) -> PersonRecognizer:
     """
     Get a PersonRecognizer configured for specific use case.
@@ -1750,6 +1825,10 @@ def get_person_recognizer(
             - "balanced": Patterns + name-dataset + spaCy (default)
             - "accurate": All engines including GLiNER/Flair/Transformers
         spreadsheet_mode: Optimize for contextless spreadsheet cells
+        use_privacy_filter: Enable OpenAI Privacy Filter as an extra cascade
+            stage (add-on backend, Apache-2.0). Orthogonal to `mode`.
+        privacy_filter_authoritative: If True, Privacy Filter's verdict on
+            PERSON short-circuits the cascade.
 
     Returns:
         Configured PersonRecognizer instance
@@ -1761,6 +1840,8 @@ def get_person_recognizer(
             use_gliner=False,
             use_flair=False,
             use_transformers=False,
+            use_privacy_filter=use_privacy_filter,
+            privacy_filter_authoritative=privacy_filter_authoritative,
             use_name_dataset=False,
             use_patterns=True,
             spreadsheet_mode=spreadsheet_mode,
@@ -1772,6 +1853,8 @@ def get_person_recognizer(
             use_gliner=True,
             use_flair=True,
             use_transformers=True,
+            use_privacy_filter=use_privacy_filter,
+            privacy_filter_authoritative=privacy_filter_authoritative,
             use_name_dataset=True,
             use_patterns=True,
             early_exit_confidence=0.80,  # Lower threshold to allow more cascade
@@ -1792,6 +1875,8 @@ def get_person_recognizer(
             use_gliner=False,
             use_flair=False,
             use_transformers=False,
+            use_privacy_filter=use_privacy_filter,
+            privacy_filter_authoritative=privacy_filter_authoritative,
             use_name_dataset=True,
             use_patterns=True,
             spreadsheet_mode=spreadsheet_mode,
@@ -1805,6 +1890,8 @@ def is_person_ner_available() -> bool:
     _load_gliner()
     _load_flair()
     _load_transformers_ner()
+    # Intentionally NOT probing Privacy Filter here — it's a ~3GB opt-in
+    # model and availability is reported via is_privacy_filter_available().
     return NLTAGGER_NER_AVAILABLE or SPACY_AVAILABLE or GLINER_AVAILABLE or FLAIR_AVAILABLE or TRANSFORMERS_NER_AVAILABLE
 
 
@@ -1830,5 +1917,13 @@ def get_available_engines() -> List[str]:
         engines.append("transformers")
     if NAME_DATASET_AVAILABLE:
         engines.append("name_dataset")
+    # Report Privacy Filter only if it has already been loaded by a caller;
+    # don't trigger an expensive load here.
+    try:
+        from hush_engine.detectors.privacy_filter_recognizer import is_privacy_filter_available
+        if is_privacy_filter_available():
+            engines.append("privacy_filter")
+    except ImportError:
+        pass
 
     return engines

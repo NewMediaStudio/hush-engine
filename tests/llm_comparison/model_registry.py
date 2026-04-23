@@ -4,12 +4,28 @@
 # Prices are per 1M tokens in USD
 MODELS = {
     "hush_engine": {
-        "display_name": "Hush Engine v1.8.0",
+        "display_name": "Hush Engine v1.11.0",
         "family": "Rule-based + LightGBM",
         "params_b": 0,
         "disk_size_mb": 15,
         "ram_estimate_mb": 200,
         "ollama_tag": None,
+        "api_pricing_input": 0,
+        "api_pricing_output": 0,
+    },
+    # OpenAI Privacy Filter (standalone): the Apache-2.0 open-weight token
+    # classifier released 2026-04-22. Not an Ollama model — driven through
+    # transformers.pipeline() by run_privacy_filter(). Unlike the autoregressive
+    # LLMs in this table, it outputs BIOES spans directly (no prompt parsing).
+    "openai-privacy-filter": {
+        "display_name": "OpenAI Privacy Filter",
+        "family": "Token classifier (MoE)",
+        "params_b": 1.5,
+        "active_params_b": 0.05,
+        "disk_size_mb": 3000,  # BF16 safetensors
+        "ram_estimate_mb": 3000,
+        "ollama_tag": None,
+        "backend": "privacy_filter",
         "api_pricing_input": 0,
         "api_pricing_output": 0,
     },

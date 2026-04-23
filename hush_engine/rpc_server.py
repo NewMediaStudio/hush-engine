@@ -9,6 +9,7 @@ Protocol:
 """
 
 import builtins
+import hashlib
 import json
 import logging
 import os
@@ -18,6 +19,20 @@ import traceback
 from collections import deque
 from pathlib import Path
 from time import time
+
+# =============================================================================
+# Release gating: HUSH_AUDIT=1 enables internal audit logging and the
+# ingestTrainingFeedback RPC. Unset (default) = release mode, no filenames
+# touch disk, no training-feedback reader exposed to the UI.
+# =============================================================================
+AUDIT_ENABLED = os.environ.get("HUSH_AUDIT") == "1"
+
+
+def _audit_hash(value: str) -> str:
+    """Short, stable identifier for correlated debugging. Never reversible to a filename."""
+    if not value:
+        return "-"
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:10]
 
 # Save the original stdout for JSON-RPC communication
 _rpc_stdout = sys.stdout
@@ -49,27 +64,41 @@ from .ui.file_router import FileRouter
 # =============================================================================
 
 def setup_audit_logger():
-    """Configure audit logger for file operations."""
-    hush_dir = Path.home() / ".hush"
-    hush_dir.mkdir(parents=True, exist_ok=True)
+    """Configure audit logger for file operations.
 
+    Release builds (HUSH_AUDIT unset) attach only a NullHandler — nothing is
+    written to disk, so `~/.hush/audit.log` never appears on user machines.
+    Set HUSH_AUDIT=1 to enable the file handler for internal debugging; in
+    that mode the per-event call sites below still log only event types,
+    counts, and 10-char SHA-256 prefixes of filenames (never the filenames
+    themselves), so even internal logs do not leak PII-bearing names.
+    """
     audit_log = logging.getLogger("hush.audit")
     audit_log.setLevel(logging.INFO)
+    audit_log.propagate = False  # don't bubble into the root logger's stderr
 
-    # Avoid duplicate handlers
-    if not audit_log.handlers:
-        log_file = hush_dir / "audit.log"
-        handler = logging.FileHandler(log_file)
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s'
-        ))
-        audit_log.addHandler(handler)
+    # Drop any pre-existing handlers so repeated calls don't duplicate.
+    for h in list(audit_log.handlers):
+        audit_log.removeHandler(h)
 
-        # Set restrictive permissions on audit log
-        try:
-            os.chmod(log_file, stat.S_IRUSR | stat.S_IWUSR)  # 0o600
-        except OSError:
-            pass  # May fail if file doesn't exist yet
+    if not AUDIT_ENABLED:
+        audit_log.addHandler(logging.NullHandler())
+        return audit_log
+
+    hush_dir = Path.home() / ".hush"
+    hush_dir.mkdir(parents=True, exist_ok=True)
+    log_file = hush_dir / "audit.log"
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s'
+    ))
+    audit_log.addHandler(handler)
+
+    # Set restrictive permissions on audit log
+    try:
+        os.chmod(log_file, stat.S_IRUSR | stat.S_IWUSR)  # 0o600
+    except OSError:
+        pass  # May fail if file doesn't exist yet
 
     return audit_log
 
@@ -106,7 +135,12 @@ class RateLimiter:
 # SECURITY: Path Validation
 # =============================================================================
 
-# Allowed RPC methods (whitelist)
+# Allowed RPC methods (whitelist).
+# `ingestTrainingFeedback` is a dev/calibration path that reads
+# ~/.hush/training_feedback.jsonl and adjusts thresholds; it's only exposed
+# when HUSH_AUDIT=1 so release builds can honestly say Hushbee doesn't
+# persist feedback. The Swift UI must have no code path that invokes it
+# in release.
 ALLOWED_METHODS = {
     'detectPII',
     'saveScrubbed',
@@ -114,7 +148,6 @@ ALLOWED_METHODS = {
     'getConfig',
     'saveConfig',
     'resetConfig',
-    'ingestTrainingFeedback',
     # Library management
     'getLibraryStatus',
     'setLibraryEnabled',
@@ -123,6 +156,8 @@ ALLOWED_METHODS = {
     'getLocale',
     'setLocale',
 }
+if AUDIT_ENABLED:
+    ALLOWED_METHODS.add('ingestTrainingFeedback')
 
 # Protected locations that should never be written to
 PROTECTED_PATHS = [
@@ -142,8 +177,9 @@ def validate_input_path(file_path: str) -> Path:
 
     Raises ValueError if path is unsafe.
 
-    NOTE: Audit logs only contain filenames (not full paths) to avoid
-    exposing directory structure or potentially sensitive path components.
+    NOTE: Audit logs (when HUSH_AUDIT=1) contain only a SHA-256 prefix of
+    the full path — never the filename. Release builds attach a NullHandler
+    and write nothing.
     """
     if not file_path:
         raise ValueError("File path cannot be empty")
@@ -178,8 +214,9 @@ def validate_output_path(file_path: str) -> Path:
     Only allows writes to user's home directory (excluding protected locations)
     or system temp directories.
 
-    NOTE: Audit logs only contain filenames (not full paths) to avoid
-    exposing directory structure or potentially sensitive path components.
+    NOTE: Audit logs (when HUSH_AUDIT=1) contain only a SHA-256 prefix of
+    the full path — never the filename. Release builds attach a NullHandler
+    and write nothing.
     """
     if not file_path:
         raise ValueError("Output path cannot be empty")
@@ -277,8 +314,9 @@ class RPCServer:
 
         file_type = self.router.detect_file_type(file_path_str)
 
-        # SECURITY: Log operation (path only, never contents/results)
-        audit_log.info(f"DETECT | type={file_type} | file={validated_path.name}")
+        # SECURITY: Log only event type + hashed identifier; never the filename,
+        # which regularly contains PII (e.g. jane_doe_passport.jpg).
+        audit_log.info(f"DETECT | type={file_type} | id={_audit_hash(str(validated_path))}")
 
         if file_type == 'image':
             return self.router.detect_pii_image(file_path_str)
@@ -309,9 +347,13 @@ class RPCServer:
 
         file_type = self.router.detect_file_type(source_str)
 
-        # SECURITY: Log operation (filenames only, never detection contents)
+        # SECURITY: Log event type + hashed identifiers + counts only; never
+        # the source/destination filename (which can itself carry PII).
         num_redactions = len(selected_indices) if selected_indices else 0
-        audit_log.info(f"SAVE | type={file_type} | src={validated_source.name} | dst={validated_dest.name} | redactions={num_redactions} | optimize={optimize}")
+        audit_log.info(
+            f"SAVE | type={file_type} | src_id={_audit_hash(str(validated_source))} "
+            f"| dst_id={_audit_hash(str(validated_dest))} | redactions={num_redactions} | optimize={optimize}"
+        )
 
         if file_type == 'image':
             self.router.save_scrubbed_image(source_str, dest_str, detections, selected_indices, optimize=optimize)
@@ -364,7 +406,15 @@ class RPCServer:
         return {"success": True}
 
     def handle_ingest_training_feedback(self, params):
-        """Handle ingestTrainingFeedback: read ~/.hush/training_feedback.jsonl and adjust thresholds"""
+        """Handle ingestTrainingFeedback: read ~/.hush/training_feedback.jsonl and adjust thresholds.
+
+        Defense-in-depth: even though `ingestTrainingFeedback` is absent from
+        ALLOWED_METHODS in release builds, this handler also self-gates on
+        AUDIT_ENABLED so a stale UI call or programmer mistake cannot trigger
+        the file read.
+        """
+        if not AUDIT_ENABLED:
+            raise ValueError("ingestTrainingFeedback is not available in release builds")
         feedback_path = Path.home() / ".hush" / "training_feedback.jsonl"
         if not feedback_path.exists():
             return {"status": "no_data", "adjustments": [], "message": "No feedback file yet"}

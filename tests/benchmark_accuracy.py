@@ -491,8 +491,11 @@ def get_engine_version():
 
 _detector_instance = None
 _detector_fast_mode = None  # Track if detector was created in fast mode
+_detector_privacy_filter = None  # Track whether PF was enabled for the cached detector
 _pii_module = None  # Cache the loaded module
 _benchmark_fast_mode = False  # Global setting for current benchmark run
+_benchmark_privacy_filter = False  # Global setting: enable OpenAI Privacy Filter add-on
+_last_benchmark_results = None  # Populated by run_full_benchmark, read by --privacy-filter-ablation
 
 def _load_module(base_path, module_name, sys_modules):
     """Load a module using importlib and register it in sys.modules."""
@@ -519,14 +522,32 @@ def _get_detector(fast_mode: bool = False):
 
     Args:
         fast_mode: If True, disable libpostal for faster detection (~30-40% speedup).
-    """
-    global _detector_instance, _detector_fast_mode
 
-    # Recreate detector if fast_mode setting changed
-    if _detector_instance is not None and _detector_fast_mode != fast_mode:
+    Also honors the module-level `_benchmark_privacy_filter` flag: when it flips
+    between runs (e.g. during --privacy-filter-ablation) the cached detector is
+    rebuilt and the DetectionConfig is toggled so the PIIDetector picks up the
+    new state on construction.
+    """
+    global _detector_instance, _detector_fast_mode, _detector_privacy_filter
+
+    # Recreate detector if fast_mode or privacy-filter setting changed
+    if _detector_instance is not None and (
+        _detector_fast_mode != fast_mode
+        or _detector_privacy_filter != _benchmark_privacy_filter
+    ):
         _detector_instance = None
 
     if _detector_instance is None:
+        # Sync DetectionConfig to the current benchmark flag so the PIIDetector
+        # wires Privacy Filter (or doesn't) on construction.
+        try:
+            from hush_engine.detection_config import get_config
+            get_config().set_enabled_integration(
+                "openai_privacy_filter", bool(_benchmark_privacy_filter)
+            )
+        except Exception:
+            pass
+
         # Use normal import since package should be installed
         from hush_engine.detectors.pii_detector import PIIDetector
 
@@ -534,9 +555,12 @@ def _get_detector(fast_mode: bool = False):
         # fast_mode disables libpostal (the slowest recognizer)
         _detector_instance = PIIDetector(enable_libpostal=not fast_mode)
         _detector_fast_mode = fast_mode
+        _detector_privacy_filter = _benchmark_privacy_filter
 
         if fast_mode:
             print("[Fast mode] Libpostal disabled for faster detection")
+        if _benchmark_privacy_filter:
+            print("[Privacy Filter] OpenAI Privacy Filter add-on enabled for this run")
 
     return _detector_instance
 
@@ -2119,7 +2143,7 @@ def print_history(history, limit=10):
 
 def run_full_benchmark(args):
     """Run the complete benchmark workflow."""
-    global _benchmark_fast_mode
+    global _benchmark_fast_mode, _benchmark_privacy_filter
 
     start_time = time.time()
 
@@ -2127,10 +2151,16 @@ def run_full_benchmark(args):
     fast_mode = getattr(args, 'fast', False)
     _benchmark_fast_mode = fast_mode
 
+    # Set Privacy Filter add-on for this benchmark run
+    _benchmark_privacy_filter = bool(getattr(args, 'with_privacy_filter', False))
+
     if fast_mode:
         print("\n[Fast mode enabled]")
         print("  - Libpostal address validation: DISABLED (30-40% speedup)")
         print("  - PDF converter: wkhtmltopdf preferred (2-3x faster)")
+
+    if _benchmark_privacy_filter:
+        print("\n[Privacy Filter enabled for this run]")
 
     # Paths
     base_dir = Path(__file__).parent
@@ -2190,8 +2220,8 @@ def run_full_benchmark(args):
         'elapsed_seconds': 0,
     })
 
-    # Check template exists
-    if not template_path.exists():
+    # Check template exists (only required when PDF generation is active)
+    if not template_path.exists() and not getattr(args, 'no_pdf', False):
         print(f"Error: {template_path} not found")
         return None
 
@@ -2796,6 +2826,12 @@ def run_full_benchmark(args):
         'duration_seconds': elapsed,
     }
 
+    # Expose results dict to the module so --privacy-filter-ablation (and any
+    # other orchestrator that calls run_full_benchmark more than once) can
+    # compare runs without re-reading benchmark_history.json.
+    global _last_benchmark_results
+    _last_benchmark_results = results
+
     # Save to history (skip if stopped early with no detections)
     if stopped_by_signal and csv_total_detections == 0:
         print(f"\nBenchmark stopped early - skipping history save (0 detections)")
@@ -2918,6 +2954,87 @@ def run_full_benchmark(args):
         return 1
 
 
+def _run_privacy_filter_ablation(args):
+    """Run baseline + Privacy-Filter-on back-to-back and print a comparison.
+
+    Reuses the same sampled data across both runs by forcing --keep-files +
+    --reuse-data on the second pass, so numbers are strictly comparable.
+    """
+    global _detector_instance
+
+    def _pct(x):
+        return f"{x * 100:.1f}%" if x is not None else "N/A"
+
+    def _row(label, r):
+        if r is None:
+            return f"{label:<28} {'--':>7} {'--':>7} {'--':>7} {'--':>9}"
+        return (
+            f"{label:<28} "
+            f"{_pct(r.get('csv_overall_f1')):>7} "
+            f"{_pct(r.get('csv_overall_precision')):>7} "
+            f"{_pct(r.get('csv_overall_recall')):>7} "
+            f"{r.get('duration_seconds', 0):>8.1f}s"
+        )
+
+    # Run 1: baseline (PF off)
+    args.with_privacy_filter = False
+    args.keep_files = True  # so run 2 can reuse data
+    print("\n" + "=" * 75)
+    print("PRIVACY FILTER ABLATION — pass 1/2: baseline (Hush Engine only)")
+    print("=" * 75)
+    _detector_instance = None  # force rebuild
+    run_full_benchmark(args)
+    baseline = _last_benchmark_results
+
+    # Run 2: with Privacy Filter (candidate mode). Reuse the same sampled rows
+    # so per-type metrics diff cleanly.
+    args.with_privacy_filter = True
+    args.reuse_data = True
+    print("\n" + "=" * 75)
+    print("PRIVACY FILTER ABLATION — pass 2/2: Hush Engine + OpenAI Privacy Filter")
+    print("=" * 75)
+    _detector_instance = None  # force rebuild so PF wiring engages
+    run_full_benchmark(args)
+    with_pf = _last_benchmark_results
+
+    # Summary
+    print("\n" + "=" * 75)
+    print("PRIVACY FILTER ABLATION — comparison")
+    print("=" * 75)
+    print(f"{'Config':<28} {'F1':>7} {'Prec':>7} {'Recall':>7} {'Duration':>9}")
+    print("-" * 75)
+    print(_row("Hush Engine (baseline)", baseline))
+    print(_row("Hush Engine + PF", with_pf))
+
+    if baseline and with_pf:
+        d_f1 = (with_pf.get('csv_overall_f1') or 0) - (baseline.get('csv_overall_f1') or 0)
+        d_p = (with_pf.get('csv_overall_precision') or 0) - (baseline.get('csv_overall_precision') or 0)
+        d_r = (with_pf.get('csv_overall_recall') or 0) - (baseline.get('csv_overall_recall') or 0)
+        sign = lambda v: ('+' if v >= 0 else '') + f"{v * 100:.2f}pp"
+        print(f"{'delta (PF − baseline)':<28} {sign(d_f1):>7} {sign(d_p):>7} {sign(d_r):>7}")
+
+        # Per-entity delta for the 7 types Privacy Filter covers.
+        pf_covered = ["PERSON", "EMAIL", "PHONE", "ADDRESS", "URL", "DATE_TIME", "FINANCIAL", "CREDENTIAL"]
+        base_m = baseline.get('csv_metrics_by_type', {}) or {}
+        pf_m = with_pf.get('csv_metrics_by_type', {}) or {}
+        rows = []
+        for t in pf_covered:
+            b = base_m.get(t, {})
+            w = pf_m.get(t, {})
+            if b.get('total', 0) == 0 and w.get('total', 0) == 0:
+                continue
+            rows.append((t, b.get('f1', 0), w.get('f1', 0), w.get('f1', 0) - b.get('f1', 0)))
+        if rows:
+            print()
+            print(f"{'Entity (PF-covered)':<20} {'baseline F1':>12} {'+PF F1':>10} {'Δ':>8}")
+            print("-" * 55)
+            for t, bf, wf, d in rows:
+                print(f"{t:<20} {_pct(bf):>12} {_pct(wf):>10} {sign(d):>8}")
+    print("=" * 75)
+
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description='PII Detection Accuracy Benchmark')
     parser.add_argument('--samples', type=int, default=500,
@@ -2963,6 +3080,10 @@ def main():
                        help='Use the fixed golden test set instead of random sampling (eliminates variance)')
     parser.add_argument('--create-golden', action='store_true',
                        help='Create/regenerate the golden test set (500 samples by default)')
+    parser.add_argument('--with-privacy-filter', action='store_true',
+                       help='Enable the OpenAI Privacy Filter add-on for this run (candidate mode; requires pip install hush-engine[privacy-filter])')
+    parser.add_argument('--privacy-filter-ablation', action='store_true',
+                       help='Run the benchmark twice (baseline, then with Privacy Filter enabled) and print a side-by-side comparison. Ignores --loops.')
     args = parser.parse_args()
 
     # Handle comma-separated datasets from dashboard UI
@@ -3043,6 +3164,11 @@ def main():
         else:
             print(f"Error: {create_script} not found")
             return 1
+
+    # Handle Privacy Filter ablation: run the same benchmark twice (baseline,
+    # then with PF enabled) and print a side-by-side comparison.
+    if getattr(args, 'privacy_filter_ablation', False):
+        return _run_privacy_filter_ablation(args)
 
     # Handle loop mode - run benchmark multiple times
     loops = getattr(args, 'loops', 1)

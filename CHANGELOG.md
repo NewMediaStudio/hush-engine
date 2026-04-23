@@ -5,6 +5,68 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-04-23
+
+### Added
+
+- **OpenAI Privacy Filter integration** (Apache-2.0, bidirectional token
+  classifier, 1.5B total parameters with 50M active). Ships as an opt-in
+  add-on backend. Install with `pip install hush-engine[privacy-filter]`
+  and toggle on via `DetectionConfig.set_enabled_integration(
+  "openai_privacy_filter", True)`. Two gating modes:
+  - **candidate** (default): Privacy Filter votes in the PERSON cascade
+    alongside LightGBM, spaCy, Flair, Transformers, and contributes spans
+    for EMAIL, PHONE, URL, LOCATION, DATE_TIME, FINANCIAL, CREDENTIAL.
+  - **authoritative**: Privacy Filter's PERSON verdict short-circuits the
+    cascade, verifiers skipped.
+  Set `HUSH_PRIVACY_FILTER_MODEL=/path/to/local/dir` to load weights from
+  disk instead of HuggingFace Hub.
+- `PrivacyFilterRecognizer` in `hush_engine.detectors.privacy_filter_recognizer`
+  maps the 7 non-PERSON OpenAI labels into the existing Presidio entity
+  taxonomy.
+- `tests/benchmark_accuracy.py` gains `--with-privacy-filter` and
+  `--privacy-filter-ablation` flags. The ablation runs baseline and
+  with-PF passes back-to-back on the same sampled rows and prints a
+  side-by-side comparison with per-entity deltas.
+- `tests/benchmark_llm_comparison.py` gains `openai-privacy-filter` as a
+  model row, driven through `run_privacy_filter()` (uses the HF pipeline
+  directly, no Ollama or LLM prompt plumbing).
+- **Release privacy gates** behind a new `HUSH_AUDIT` environment flag
+  (default off):
+  - `~/.hush/audit.log` writer attaches a `NullHandler` when
+    `HUSH_AUDIT` is unset. Release builds produce no audit log.
+  - `ingestTrainingFeedback` RPC method disappears from the allow-list
+    when `HUSH_AUDIT` is unset, and its handler self-gates as
+    defense-in-depth.
+  - When `HUSH_AUDIT=1` is set (internal debugging), audit lines carry a
+    10-char SHA-256 prefix of the path instead of `.name`, `src`, `dst`.
+- `FileRouter.__init__` now sweeps stale `tmp*` files out of
+  `~/.hush/tmp` on startup. Every `create_secure_temp_file` caller sits
+  in a `try/finally` unlink block, so preview JPEGs no longer accumulate
+  between runs.
+
+### Changed
+
+- `pyproject.toml` adds a new `[privacy-filter]` extra (`transformers>=4.40.0`,
+  `torch>=2.0.0`). The `[full]` meta-extra now includes it.
+- `DEFAULT_INTEGRATIONS` in `detection_config.py` gains two keys:
+  `openai_privacy_filter` and `openai_privacy_filter_authoritative`,
+  both default `False`.
+- `PersonRecognizer.__init__` accepts `use_privacy_filter` and
+  `privacy_filter_authoritative` kwargs. `get_person_recognizer()`
+  factory passes them through.
+- Audit-log comments in `rpc_server.py` walked back from the old
+  claim that logging filenames was safe. Filenames carry PII (e.g.
+  `jane_doe_passport.jpg`), so they no longer touch disk even when
+  `HUSH_AUDIT=1`.
+
+### Fixed
+
+- `tests/benchmark_accuracy.py` raised a hard error on missing
+  `benchmark_template.html` even under `--no-pdf`, when the template
+  is never used. The check now skips when `--no-pdf` is set, so the
+  new ablation mode runs cleanly without a PDF converter installed.
+
 ## [1.10.2] - 2026-04-21
 
 ### Fixed

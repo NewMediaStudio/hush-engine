@@ -96,11 +96,14 @@ MODEL_WEIGHTS = {
 - Flair NER (LSTM-CRF)
 - GLiNER (zero-shot)
 - spaCy `en_core_web_lg`
+- OpenAI Privacy Filter (1.11.0+, optional, bidirectional token classifier)
 
 Adding `en_core_web_trf` would be:
 - **Redundant** with existing BERT NER
 - **10x slower** without ensemble benefit
 - **No accuracy gain** over current consensus approach
+
+The 2026-04-23 ablation on the 1,000-sample Kaggle set confirmed the same conclusion for OpenAI Privacy Filter in candidate mode: it ties Hush on F1 and costs 17x the runtime. Authoritative mode is available for workloads where PERSON recall matters more than precision, but the precision-first cascade is the default.
 
 **Status**: Recommendation declined.
 

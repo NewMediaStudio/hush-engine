@@ -267,6 +267,146 @@ def run_hush_engine(rows: list, dataset_name: str, store: ResultStore):
     _print_model_result("Hush Engine", summary)
 
 
+def run_privacy_filter(rows: list, dataset_name: str, store: ResultStore):
+    """Run OpenAI Privacy Filter standalone on all samples.
+
+    Uses the HF token-classification pipeline directly (not via Hush's
+    PIIDetector) so the row reports what the OpenAI model produces on its own,
+    independent of Hush's regex/LightGBM layers. Per-type metrics are computed
+    against the same ground truth as every other row in the comparison table.
+    """
+    model_id = "openai-privacy-filter"
+    model_info = MODELS.get(model_id, {})
+    display_name = model_info.get("display_name", model_id)
+
+    completed = store.get_completed_indices(model_id, dataset_name)
+    remaining = [(i, row) for i, row in enumerate(rows) if i not in completed]
+
+    if not remaining:
+        print(f"  {display_name}: already completed on {dataset_name}")
+        return
+
+    # Lazy import: only pull transformers + torch into process memory if this
+    # model is actually being run.
+    try:
+        from hush_engine.detectors.privacy_filter_recognizer import (
+            OPENAI_LABEL_TO_HUSH,
+            detect_with_privacy_filter,
+            is_privacy_filter_available,
+            _load_privacy_filter,
+        )
+    except ImportError:
+        print(f"  {display_name}: hush_engine privacy_filter module missing — skipping")
+        return
+
+    _load_privacy_filter()
+    if not is_privacy_filter_available():
+        print(
+            f"  {display_name}: model failed to load. "
+            "Install with: pip install hush-engine[privacy-filter]"
+        )
+        return
+
+    # Map OpenAI labels -> benchmark entity types (same shape as benchmark_accuracy.detect_pii).
+    # private_person is PERSON; the other six map through OPENAI_LABEL_TO_HUSH, then through
+    # the benchmark's Hush-type -> benchmark-type convention.
+    HUSH_TO_BENCHMARK = {
+        "EMAIL_ADDRESS": "EMAIL",
+        "PHONE_NUMBER": "PHONE",
+        "LOCATION": "ADDRESS",
+        "URL": "URL",
+        "DATE_TIME": "DATE_TIME",
+        "FINANCIAL": "FINANCIAL",
+        "CREDENTIAL": "CREDENTIAL",
+    }
+
+    print(f"\n  Running {display_name} on {len(remaining)} samples...")
+
+    _progress_state["current_model"] = display_name
+    _progress_state["current_model_samples"] = 0
+    _progress_state["current_model_total"] = len(remaining)
+    _update_progress()
+
+    batch_count = 0
+    for idx, row in tqdm(remaining, desc=display_name, disable=not TQDM_AVAILABLE):
+        text = row.get("text", "")
+        if not text:
+            store.save_sample_result(model_id, dataset_name, idx, {}, 0.0)
+            batch_count += 1
+            _progress_state["current_model_samples"] = batch_count
+            _progress_state["samples_done_all"] += 1
+            continue
+
+        start = time.perf_counter()
+        try:
+            hits = detect_with_privacy_filter(text, target_labels=None)
+        except Exception as e:
+            hits = []
+            if batch_count < 3:
+                print(f"\n    Error on sample {idx}: {e}")
+        latency_ms = (time.perf_counter() - start) * 1000
+
+        detections = defaultdict(list)
+        for span_text, span_start, span_end, score, openai_label in hits:
+            if openai_label == "private_person":
+                bench_type = "PERSON"
+            else:
+                hush_type = OPENAI_LABEL_TO_HUSH.get(openai_label)
+                bench_type = HUSH_TO_BENCHMARK.get(hush_type) if hush_type else None
+            if not bench_type:
+                continue
+            detections[bench_type].append({
+                "text": span_text,
+                "confidence": float(score),
+                "source_model": "openai_privacy_filter",
+            })
+
+        store.save_sample_result(model_id, dataset_name, idx, dict(detections), latency_ms)
+        batch_count += 1
+        _progress_state["current_model_samples"] = batch_count
+        _progress_state["samples_done_all"] += 1
+
+        if batch_count % 50 == 0:
+            store.save_batch()
+            if _update_progress():
+                print(f"\n  {display_name}: stopped by user")
+                store.save_batch()
+                return
+
+    store.save_batch()
+
+    # Final metrics
+    all_dets = store.get_all_detections(model_id, dataset_name)
+    ground_truth = extract_ground_truth(rows)
+    metrics = calculate_metrics(all_dets, ground_truth)
+
+    ds_data = store.data["models"][model_id][dataset_name]
+    latencies = [l for l in ds_data.get("latencies_ms", []) if l > 0]
+
+    summary = {
+        "metrics": metrics,
+        "memory_mb": model_info.get("ram_estimate_mb"),
+        "avg_latency_ms": sum(latencies) / len(latencies) if latencies else 0,
+        "median_latency_ms": sorted(latencies)[len(latencies) // 2] if latencies else 0,
+        "p95_latency_ms": sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0,
+        "samples_per_sec": 1000 / (sum(latencies) / len(latencies)) if latencies else 0,
+        "total_samples": len(rows),
+    }
+
+    total_tp = sum(m.get("tp", 0) for m in metrics.values())
+    total_fp = sum(m.get("fp", 0) for m in metrics.values())
+    total_gt = sum(m.get("total", 0) for m in metrics.values())
+    overall_recall = total_tp / total_gt if total_gt > 0 else 0
+    overall_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
+    overall_f1 = 2 * (overall_precision * overall_recall) / (overall_precision + overall_recall) if (overall_precision + overall_recall) > 0 else 0
+    summary["overall_recall"] = overall_recall
+    summary["overall_precision"] = overall_precision
+    summary["overall_f1"] = overall_f1
+
+    store.save_model_summary(model_id, dataset_name, summary)
+    _print_model_result(display_name, summary)
+
+
 def run_llm_model(client: OllamaClient, model_id: str, rows: list,
                    dataset_name: str, store: ResultStore, few_shot: bool = False):
     """Run a single LLM model on all samples."""
@@ -711,7 +851,10 @@ def run_comparison(args):
         "timestamp": datetime.now().isoformat(),
     })
 
-    # Split models by provider
+    # Split models by provider. openai-privacy-filter is its own special branch
+    # because it's a local token classifier, not an LLM endpoint.
+    privacy_filter_selected = "openai-privacy-filter" in model_ids
+    model_ids = [m for m in model_ids if m != "openai-privacy-filter"]
     ollama_models = [m for m in model_ids if not is_claude_model(m) and not is_gemini_model(m)]
     claude_models = [m for m in model_ids if is_claude_model(m)]
     gemini_models = [m for m in model_ids if is_gemini_model(m)]
@@ -751,7 +894,8 @@ def run_comparison(args):
             gemini_models = []
 
     total_models = len(ollama_models) + len(claude_models) + len(gemini_models)
-    all_model_count = 1 + total_models  # Hush + LLMs
+    pf_count = 1 if privacy_filter_selected else 0
+    all_model_count = 1 + total_models + pf_count  # Hush + LLMs + Privacy Filter
     print(f"\nBenchmark Configuration:")
     print(f"  Datasets: {', '.join(selected.keys())}")
     print(f"  Samples per dataset: {args.samples}")
@@ -759,7 +903,8 @@ def run_comparison(args):
     if ollama_models: providers.append(f"{len(ollama_models)} Ollama")
     if claude_models: providers.append(f"{len(claude_models)} Claude")
     if gemini_models: providers.append(f"{len(gemini_models)} Gemini")
-    print(f"  Models: Hush Engine + {total_models} LLMs ({', '.join(providers)})")
+    if privacy_filter_selected: providers.append("1 OpenAI Privacy Filter")
+    print(f"  Models: Hush Engine + {total_models + pf_count} other ({', '.join(providers)})")
     print(f"  Prompt: {'few-shot' if args.few_shot else 'zero-shot'}")
     print(f"  Results: {results_path}")
 
@@ -804,6 +949,11 @@ def run_comparison(args):
         # Run Hush Engine
         run_hush_engine(rows, ds_name, store)
         _update_progress(model_done=True)
+
+        # Run OpenAI Privacy Filter (standalone, local token classifier)
+        if privacy_filter_selected:
+            run_privacy_filter(rows, ds_name, store)
+            _update_progress(model_done=True)
 
         # Run Ollama models
         for model_id in ollama_models:

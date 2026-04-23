@@ -22,7 +22,7 @@ Images (PNG, JPEG, HEIC), PDFs, Excel and CSV. Apple Vision OCR runs at 400 DPI.
 27 PII types out of the box: names, emails, phone numbers, SSN, credit cards, IBAN, API keys, crypto wallets, passports, medical identifiers, and more. The full table is below.
 
 **NER stack**
-LightGBM classifiers handle token-level PERSON, LOCATION, ORGANIZATION, DATE_TIME, and ADDRESS at ~10MB total. A 7,500-name curated database across 54 locales provides fallback coverage. Optional heavyweight models (Flair, Transformers/BERT, GLiNER) add 2-3 percentage points of F1 for users who want maximum accuracy.
+LightGBM classifiers handle token-level PERSON, LOCATION, ORGANIZATION, DATE_TIME, and ADDRESS at ~10MB total. A 7,500-name curated database across 54 locales provides fallback coverage. Optional heavyweight models (Flair, Transformers/BERT, GLiNER, OpenAI Privacy Filter) slot into the cascade for workloads where recall matters more than throughput.
 
 **International**
 116 IBAN countries via `python-stdnum`. 249 phone country codes via `phonenumbers`. 35+ national ID formats. 800+ cities for LOCATION disambiguation.
@@ -44,11 +44,12 @@ brew install poppler  # for PDFs
 Optional extras:
 
 ```bash
-pip install hush-engine[accurate]  # Flair + Transformers + GLiNER (~2GB)
-pip install hush-engine[medical]   # Disease + drug NER
-pip install hush-engine[address]   # libpostal bindings (99.45% accuracy, requires brew install libpostal)
-pip install hush-engine[names]     # names-dataset (GPL-3.0, opt-in)
-pip install hush-engine[full]      # medical + address + accurate
+pip install hush-engine[accurate]         # Flair + Transformers + GLiNER (~2GB)
+pip install hush-engine[medical]          # Disease + drug NER
+pip install hush-engine[address]          # libpostal bindings (99.45% accuracy, requires brew install libpostal)
+pip install hush-engine[names]            # names-dataset (GPL-3.0, opt-in)
+pip install hush-engine[privacy-filter]   # OpenAI Privacy Filter add-on backend (~3GB, Apache-2.0)
+pip install hush-engine[full]             # medical + address + accurate + privacy-filter
 ```
 
 ## Quick start
@@ -124,10 +125,12 @@ See [docs/PII_REFERENCE.md](docs/PII_REFERENCE.md) for regulatory mapping (HIPAA
 ### PERSON cascade
 
 ```
-pattern match → LightGBM NER → NLTagger → names database → [spaCy] → [Flair] → [Transformers] → [GLiNER]
+pattern match → LightGBM NER → NLTagger → names database → [spaCy] → [Flair] → [Transformers] → [GLiNER] → [Privacy Filter]
 ```
 
 Lightweight engines run first. The cascade exits early when a high-confidence match is found. Heavy engines are skipped unless installed and explicitly enabled.
+
+When `openai_privacy_filter_authoritative=True`, Privacy Filter runs before anything else and its verdict replaces the rest of the cascade for PERSON.
 
 ## Custom recognizers
 
@@ -155,7 +158,42 @@ config.set_enabled_entity("FACE", False)
 config.set_enabled_integration("flair", False)
 ```
 
-Thresholds persist to `~/.hush/detection_config.json`. Integrations: `lgbm_ner`, `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`.
+Thresholds persist to `~/.hush/detection_config.json`. Integrations: `lgbm_ner`, `spacy`, `flair`, `transformers`, `gliner`, `name_dataset`, `libpostal`, `urlextract`, `phonenumbers`, `openai_privacy_filter`, `openai_privacy_filter_authoritative`.
+
+## Add-on backend: OpenAI Privacy Filter
+
+Hush ships an opt-in integration with [OpenAI Privacy Filter](https://huggingface.co/openai/privacy-filter) (Apache-2.0, 1.5B parameters, 50M active, bidirectional token classifier). Install the extra and flip two flags:
+
+```bash
+pip install hush-engine[privacy-filter]
+```
+
+```python
+from hush_engine import DetectionConfig
+cfg = DetectionConfig()
+cfg.set_enabled_integration("openai_privacy_filter", True)
+# Optional: let Privacy Filter's PERSON verdict short-circuit the cascade.
+cfg.set_enabled_integration("openai_privacy_filter_authoritative", False)
+```
+
+Two gating modes:
+
+- **candidate** (default when enabled): Privacy Filter votes in the ensemble alongside LightGBM, spaCy, Flair, Transformers. The cascade's early-exit threshold still applies, so it runs only when lighter engines haven't produced a high-confidence hit.
+- **authoritative**: Privacy Filter's PERSON decision replaces the cascade output. Verifiers skip.
+
+Privacy Filter covers 8 span categories: `private_person`, `private_email`, `private_phone`, `private_address`, `private_url`, `private_date`, `account_number`, `secret`. The six non-PERSON categories register as a Presidio recognizer that feeds into Hush's standard entity-type pipeline. To load weights from disk instead of HuggingFace Hub, set `HUSH_PRIVACY_FILTER_MODEL=/path/to/dir`.
+
+## Release privacy gates
+
+Set the `HUSH_AUDIT=1` environment variable to opt into internal audit logging (dev + calibration use). Release builds should leave it unset, which:
+
+- Attaches a `NullHandler` to `hush.audit`, so `~/.hush/audit.log` never gets created.
+- Removes `ingestTrainingFeedback` from the RPC allow-list, so the Swift UI has no path to read `~/.hush/training_feedback.jsonl` on end-user machines.
+- Hashes filenames in any audit line that does emit (defense-in-depth), so a 10-char SHA-256 prefix takes the place of the filename.
+
+`~/.hush/config.json` and `~/.hush/detection_config.json` stay unchanged. Those are user settings (locale, thresholds, enabled libraries), not telemetry.
+
+`FileRouter` also sweeps stragglers out of `~/.hush/tmp` on startup and wraps every temp-file caller in `try/finally` unlink, so preview JPEGs don't accumulate between runs.
 
 ## Performance
 
@@ -171,29 +209,43 @@ Kaggle PII Detection 2024 (1,000 student essays, 1,606 GT entities):
 
 | Metric | Score |
 |---|---|
-| F1 | 93.0% |
-| Precision | 94.5% |
-| Recall | 91.6% |
+| F1 | 93.2% |
+| Precision | 94.4% |
+| Recall | 91.9% |
 
-Per-entity on the Kaggle set: PERSON 93.9% F1, EMAIL 98.7%, ID 88.6%, URL 87.2%, PHONE 85.7%. Latency: 266 ms/doc.
+Per-entity on the Kaggle set: PERSON 93.7% F1, EMAIL 98.7%, ID 88.6%, URL 88.8%, PHONE 85.7%. Latency: 289 ms/doc with libpostal enabled.
 
 ## Hush vs LLMs
 
-Same Kaggle set, 1,000 samples:
+Same Kaggle set, 1,000 samples. The Privacy Filter rows come from the same benchmark harness, run with `[privacy-filter]` installed and `openai_privacy_filter` enabled.
 
 | Model | F1 | Precision | Recall | Latency | RAM |
 |---|---|---|---|---|---|
-| **Hush Engine v1.10.0** | **93.0%** | **94.5%** | 91.6% | **266ms** | **~15MB** |
+| **Hush Engine v1.11.0** | **93.2%** | **94.4%** | 91.9% | **289ms** | **~15MB** |
+| Hush + OpenAI Privacy Filter | 93.0% | 94.2% | 91.9% | 5,017ms | ~3GB |
+| OpenAI Privacy Filter (standalone) | 86.9% | 77.2% | **99.4%** | 5,386ms | ~3GB |
 | Mistral 7B | 77.8% | 64.6% | 97.9% | 3,486ms | 10.2GB |
 | Phi-4 (14B) | 75.3% | 65.0% | 89.5% | 6,046ms | 14.3GB |
 | Qwen 2.5 (7B) | 65.7% | 49.8% | 96.5% | 3,105ms | 8.4GB |
 | Gemma 2 (9B) | 63.7% | 47.2% | 97.9% | 4,250ms | 9.0GB |
 | Llama 3.2 (1B) | 21.2% | 11.9% | 95.3% | 4,208ms | 4.7GB |
 
+Two results stand out.
+
+OpenAI Privacy Filter alone catches almost every PII span (99.4% recall) and flags 23% false positives. In a redaction pipeline, each false positive deletes text the user wants kept. The 17-point precision gap translates into real content loss.
+
+Adding Privacy Filter to Hush in candidate mode does not lift F1 (93.0% vs 93.2% baseline) and costs 17x the runtime. Hush sits at the ceiling its validators produce on this set. A learned model cannot push past it for entities that already pass Luhn, mod-97, or similar arithmetic.
+
 Reproduce:
 
 ```bash
-python tests/benchmark_llm_comparison.py --samples 1000 --models mistral:7b,phi4:latest
+# LLM comparison: Hush vs LLMs (includes openai-privacy-filter as a row)
+python tests/benchmark_llm_comparison.py --samples 1000 \
+  --models mistral:7b,phi4:latest,openai-privacy-filter
+
+# Ablation: baseline vs Hush + Privacy Filter
+python tests/benchmark_accuracy.py --samples 1000 \
+  --datasets kaggle_golden_1000.json --privacy-filter-ablation --no-pdf
 ```
 
 ## Development
