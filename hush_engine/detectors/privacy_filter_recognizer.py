@@ -164,6 +164,12 @@ class PrivacyFilterRecognizer(EntityRecognizer):
     PERSON is intentionally excluded so the existing `PersonRecognizer`
     cascade retains ownership of that entity type (and so the
     `privacy_filter_authoritative` toggle can gate it without double-counting).
+
+    The `excluded_entities` parameter removes specific hush-mapped entity types
+    from the output even when PF detects them. Default shipping exclude list
+    is ["PHONE_NUMBER"] because the 2026-04-23 Kaggle ablation showed PF's
+    phone spans cost 5.71 pp of PHONE F1 versus Hush's libphonenumber-validated
+    output. Set to an empty iterable to let PF contribute everywhere.
     """
 
     ENTITIES = sorted(set(OPENAI_LABEL_TO_HUSH.values()))
@@ -173,9 +179,11 @@ class PrivacyFilterRecognizer(EntityRecognizer):
         supported_language: str = "en",
         supported_entities: Optional[List[str]] = None,
         min_confidence: float = 0.55,
+        excluded_entities: Optional[List[str]] = None,
     ):
         supported_entities = supported_entities or self.ENTITIES
         self.min_confidence = min_confidence
+        self.excluded_entities = set(excluded_entities or [])
         super().__init__(
             supported_entities=supported_entities,
             supported_language=supported_language,
@@ -193,6 +201,9 @@ class PrivacyFilterRecognizer(EntityRecognizer):
     ) -> List[RecognizerResult]:
         # Only run if at least one requested entity is one we produce.
         wanted = set(entities) & set(self.ENTITIES)
+        # Honor the excluded_entities filter: PF won't run at all if every
+        # requested entity type is excluded.
+        wanted = wanted - self.excluded_entities
         if not wanted:
             return []
 
@@ -234,12 +245,20 @@ class PrivacyFilterRecognizer(EntityRecognizer):
         return results
 
 
-def get_privacy_filter_recognizer() -> Optional["PrivacyFilterRecognizer"]:
-    """Return a ready recognizer instance, or None if the model is unavailable."""
+def get_privacy_filter_recognizer(
+    excluded_entities: Optional[List[str]] = None,
+) -> Optional["PrivacyFilterRecognizer"]:
+    """Return a ready recognizer instance, or None if the model is unavailable.
+
+    Args:
+        excluded_entities: Hush entity types to suppress in PF output. Callers
+            that read `DetectionConfig.get_privacy_filter_excluded_entities()`
+            pass the list here.
+    """
     _load_privacy_filter()
     if not PRIVACY_FILTER_AVAILABLE:
         return None
-    return PrivacyFilterRecognizer()
+    return PrivacyFilterRecognizer(excluded_entities=excluded_entities)
 
 
 __all__ = [

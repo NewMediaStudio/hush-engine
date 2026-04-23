@@ -1045,6 +1045,9 @@ class PersonRecognizer(EntityRecognizer):
         use_transformers: bool = False,
         use_privacy_filter: bool = False,
         privacy_filter_authoritative: bool = False,
+        privacy_filter_mode: str = "",
+        privacy_filter_contested_band: Tuple[float, float] = (0.45, 0.75),
+        privacy_filter_arbiter=None,
         use_name_dataset: bool = True,
         use_patterns: bool = True,
         min_confidence: float = 0.55,  # Lowered from 0.70 to allow Tier 3 single-model detections through
@@ -1064,12 +1067,35 @@ class PersonRecognizer(EntityRecognizer):
             use_flair: Enable Flair NER (high accuracy)
             use_transformers: Enable Transformers BERT NER (high precision)
             use_privacy_filter: Enable OpenAI Privacy Filter (Apache-2.0,
-                bidirectional token classifier; ~3GB BF16)
-            privacy_filter_authoritative: If True, a Privacy Filter run short-
-                circuits the cascade — its PERSON hits are emitted directly and
-                all other engines' PERSON detections are discarded for this doc.
-                If False (default), Privacy Filter contributes to ensemble voting
-                like any other engine.
+                bidirectional token classifier; ~3GB BF16). Legacy bool; see
+                `privacy_filter_mode` for finer control.
+            privacy_filter_authoritative: Legacy bool. If True and
+                `privacy_filter_mode` is empty, the effective mode is
+                "authoritative".
+            privacy_filter_mode: Explicit cascade mode, takes precedence over
+                the two legacy booleans. One of "", "off", "candidate",
+                "authoritative", "tiebreaker", "veto":
+                  - ""             derive from the legacy booleans (1.11 behavior)
+                  - "off"          skip Privacy Filter entirely
+                  - "candidate"    ensemble voter when cascade doesn't early-exit
+                  - "authoritative" PF verdict short-circuits the cascade
+                  - "tiebreaker"   PF runs only on documents with a contested-band
+                    span (see `privacy_filter_contested_band`), boosts matching
+                    spans past threshold, adds PF-only spans as new detections
+                  - "veto"         PF runs, drops Hush spans below 0.75 that
+                    PF does not confirm
+            privacy_filter_contested_band: (low, high) score window that
+                triggers `tiebreaker` mode. Any ensemble detection with
+                low < score < high and no early-exit winner qualifies the
+                document for a PF call.
+            privacy_filter_arbiter: Optional callable for resolving PF/Hush
+                disagreements. Signature:
+                  arbiter(text, span_text, start, end, hush_score, pf_score) -> Optional[float]
+                Return the new confidence score (0.0-1.0) to assign, or None
+                to drop the span. Scores are None when that engine didn't
+                produce a hit. Invoked in tiebreaker/veto modes only when
+                a non-trivial disagreement exists. If None, built-in merge
+                logic (score averaging for overlaps) is used.
             use_name_dataset: Enable dictionary lookup
             use_patterns: Enable regex pattern matching
             min_confidence: Minimum confidence threshold
@@ -1087,6 +1113,9 @@ class PersonRecognizer(EntityRecognizer):
         self.use_transformers = use_transformers
         self.use_privacy_filter = use_privacy_filter
         self.privacy_filter_authoritative = privacy_filter_authoritative
+        self.privacy_filter_mode = privacy_filter_mode
+        self.privacy_filter_contested_band = tuple(privacy_filter_contested_band)
+        self.privacy_filter_arbiter = privacy_filter_arbiter
         self.use_name_dataset = use_name_dataset
         self.use_patterns = use_patterns
         self.min_confidence = min_confidence
@@ -1099,6 +1128,75 @@ class PersonRecognizer(EntityRecognizer):
             supported_language=supported_language,
             name="PersonRecognizer",
         )
+
+    def _effective_privacy_filter_mode(self) -> str:
+        """Resolve the PF cascade mode, honoring explicit `privacy_filter_mode` first.
+
+        Returns one of: "off", "candidate", "authoritative", "tiebreaker", "veto".
+        """
+        if self.privacy_filter_mode and self.privacy_filter_mode != "":
+            return self.privacy_filter_mode
+        if not self.use_privacy_filter:
+            return "off"
+        return "authoritative" if self.privacy_filter_authoritative else "candidate"
+
+    def _has_contested_span(self, all_detections, found_high_conf: bool) -> bool:
+        """True when at least one ensemble span lands in the contested band and
+        no early-exit winner exists. Used to gate tiebreaker-mode PF calls.
+        """
+        if found_high_conf:
+            return False
+        low, high = self.privacy_filter_contested_band
+        return any(low < d[3] < high for d in all_detections)
+
+    @staticmethod
+    def _spans_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+        return a_start < b_end and b_start < a_end
+
+    def _apply_veto(
+        self,
+        all_detections,
+        pf_spans,
+        text: str,
+    ):
+        """Veto mode: drop Hush detections below 0.75 that PF did not confirm.
+
+        A Hush span is considered "confirmed by PF" when any PF span overlaps
+        its character range. If an arbiter callable is configured, it decides
+        the fate of each unconfirmed low-confidence Hush span instead.
+        """
+        VETO_THRESHOLD = 0.75
+        kept = []
+        for det in all_detections:
+            text_match, start, end, score, source = det
+            # High-confidence spans are kept regardless of PF.
+            if score >= VETO_THRESHOLD:
+                kept.append(det)
+                continue
+            # PF's own spans stay.
+            if source == "privacy_filter":
+                kept.append(det)
+                continue
+            # Otherwise, look for overlapping PF confirmation.
+            pf_overlap = next(
+                ((ps, pe, psc) for ps, pe, psc in pf_spans if self._spans_overlap(start, end, ps, pe)),
+                None,
+            )
+            if pf_overlap is not None:
+                kept.append(det)
+                continue
+            # Disagreement: Hush says yes (below threshold), PF says no.
+            if self.privacy_filter_arbiter is not None:
+                try:
+                    new_score = self.privacy_filter_arbiter(
+                        text, text_match, start, end, score, None,
+                    )
+                except Exception:
+                    new_score = None
+                if new_score is not None and new_score >= self.min_confidence:
+                    kept.append((text_match, start, end, float(new_score), source))
+            # No arbiter, or arbiter dropped it, or kept below threshold: drop.
+        return kept
 
     def _preload_models(self):
         """Preload configured NER models."""
@@ -1114,7 +1212,10 @@ class PersonRecognizer(EntityRecognizer):
             _load_flair()
         if self.use_transformers:
             _load_transformers_ner()
-        if self.use_privacy_filter:
+        # Preload Privacy Filter weights when ANY mode expects to call it.
+        # The legacy `use_privacy_filter` bool is still honored for 1.11.x
+        # configs; `privacy_filter_mode` takes precedence when set.
+        if self._effective_privacy_filter_mode() != "off":
             from hush_engine.detectors.privacy_filter_recognizer import _load_privacy_filter
             _load_privacy_filter()
         if self.use_name_dataset:
@@ -1187,11 +1288,12 @@ class PersonRecognizer(EntityRecognizer):
         # Preprocess text to handle hyphenated line breaks
         processed_text, _ = self._preprocess_text(text)
 
-        # Step 0: OpenAI Privacy Filter — when in authoritative mode, its verdict
-        # is final and the rest of the cascade is bypassed. The model runs at
-        # most once per document; when unavailable (not installed / load failed)
-        # we fall through to the normal cascade as a safety net.
-        if self.use_privacy_filter and self.privacy_filter_authoritative:
+        # Step 0: OpenAI Privacy Filter in "authoritative" mode short-circuits
+        # the whole cascade. The model runs at most once per document; when
+        # unavailable (not installed / load failed) we fall through to the
+        # normal cascade as a safety net.
+        pf_mode = self._effective_privacy_filter_mode()
+        if pf_mode == "authoritative":
             from hush_engine.detectors.privacy_filter_recognizer import (
                 detect_persons_with_privacy_filter,
                 is_privacy_filter_available,
@@ -1321,15 +1423,39 @@ class PersonRecognizer(EntityRecognizer):
                     d[3] >= self.early_exit_confidence for d in all_detections
                 )
 
-            # Try OpenAI Privacy Filter (candidate mode — ensemble voter).
-            # Authoritative mode was handled at Step 0; in candidate mode PF
-            # just contributes spans like any other NER backend.
-            if self.use_privacy_filter and not found_high_conf:
+            # Privacy Filter (candidate mode — ensemble voter).
+            # Authoritative mode was handled at Step 0; "off" skips PF
+            # entirely; tiebreaker + veto are handled below, after the cascade.
+            if pf_mode == "candidate" and not found_high_conf:
                 from hush_engine.detectors.privacy_filter_recognizer import (
                     detect_persons_with_privacy_filter,
                 )
                 for text_match, start, end, score in detect_persons_with_privacy_filter(processed_text):
                     all_detections.append((text_match, start, end, score, "privacy_filter"))
+
+        # Step 6: Privacy Filter in tiebreaker / veto modes.
+        # These run AFTER the full cascade so they have the ensemble state to
+        # judge what's contested vs confident.
+        if pf_mode == "tiebreaker" and self._has_contested_span(all_detections, found_high_conf):
+            from hush_engine.detectors.privacy_filter_recognizer import (
+                detect_persons_with_privacy_filter,
+            )
+            for text_match, start, end, score in detect_persons_with_privacy_filter(processed_text):
+                all_detections.append((text_match, start, end, score, "privacy_filter"))
+
+        elif pf_mode == "veto":
+            from hush_engine.detectors.privacy_filter_recognizer import (
+                detect_persons_with_privacy_filter,
+            )
+            pf_hits = detect_persons_with_privacy_filter(processed_text)
+            pf_spans = [(s, e, sc) for _t, s, e, sc in pf_hits]
+            # Add PF hits to the cascade so the merge captures them.
+            for text_match, start, end, score in pf_hits:
+                all_detections.append((text_match, start, end, score, "privacy_filter"))
+            # Drop low-confidence Hush spans that PF did not corroborate.
+            all_detections = self._apply_veto(
+                all_detections, pf_spans, text=processed_text
+            )
 
         # Ensemble scoring: aggregate overlapping detections
         merged_detections = self._merge_overlapping_detections(all_detections)
@@ -1815,6 +1941,9 @@ def get_person_recognizer(
     spreadsheet_mode: bool = False,
     use_privacy_filter: bool = False,
     privacy_filter_authoritative: bool = False,
+    privacy_filter_mode: str = "",
+    privacy_filter_contested_band: Tuple[float, float] = (0.45, 0.75),
+    privacy_filter_arbiter=None,
 ) -> PersonRecognizer:
     """
     Get a PersonRecognizer configured for specific use case.
@@ -1825,10 +1954,15 @@ def get_person_recognizer(
             - "balanced": Patterns + name-dataset + spaCy (default)
             - "accurate": All engines including GLiNER/Flair/Transformers
         spreadsheet_mode: Optimize for contextless spreadsheet cells
-        use_privacy_filter: Enable OpenAI Privacy Filter as an extra cascade
-            stage (add-on backend, Apache-2.0). Orthogonal to `mode`.
-        privacy_filter_authoritative: If True, Privacy Filter's verdict on
+        use_privacy_filter: Legacy bool. Enable OpenAI Privacy Filter as an
+            extra cascade stage (Apache-2.0). Orthogonal to `mode`.
+        privacy_filter_authoritative: Legacy bool. If True, PF's verdict on
             PERSON short-circuits the cascade.
+        privacy_filter_mode: Explicit PF cascade mode, takes precedence over
+            the two legacy booleans. See PersonRecognizer.__init__.
+        privacy_filter_contested_band: (low, high) score window that triggers
+            tiebreaker mode.
+        privacy_filter_arbiter: Optional callable resolving PF/Hush disagreements.
 
     Returns:
         Configured PersonRecognizer instance
@@ -1842,6 +1976,9 @@ def get_person_recognizer(
             use_transformers=False,
             use_privacy_filter=use_privacy_filter,
             privacy_filter_authoritative=privacy_filter_authoritative,
+            privacy_filter_mode=privacy_filter_mode,
+            privacy_filter_contested_band=privacy_filter_contested_band,
+            privacy_filter_arbiter=privacy_filter_arbiter,
             use_name_dataset=False,
             use_patterns=True,
             spreadsheet_mode=spreadsheet_mode,
@@ -1855,6 +1992,9 @@ def get_person_recognizer(
             use_transformers=True,
             use_privacy_filter=use_privacy_filter,
             privacy_filter_authoritative=privacy_filter_authoritative,
+            privacy_filter_mode=privacy_filter_mode,
+            privacy_filter_contested_band=privacy_filter_contested_band,
+            privacy_filter_arbiter=privacy_filter_arbiter,
             use_name_dataset=True,
             use_patterns=True,
             early_exit_confidence=0.80,  # Lower threshold to allow more cascade
@@ -1877,6 +2017,9 @@ def get_person_recognizer(
             use_transformers=False,
             use_privacy_filter=use_privacy_filter,
             privacy_filter_authoritative=privacy_filter_authoritative,
+            privacy_filter_mode=privacy_filter_mode,
+            privacy_filter_contested_band=privacy_filter_contested_band,
+            privacy_filter_arbiter=privacy_filter_arbiter,
             use_name_dataset=True,
             use_patterns=True,
             spreadsheet_mode=spreadsheet_mode,

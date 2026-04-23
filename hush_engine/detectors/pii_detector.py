@@ -2198,8 +2198,10 @@ class PIIDetector:
                 from ..detection_config import DEFAULT_INTEGRATIONS, get_config
 
             # Prefer persisted user config over module defaults when present.
+            cfg = None
             try:
-                integrations = get_config().get_enabled_integrations()
+                cfg = get_config()
+                integrations = cfg.get_enabled_integrations()
             except Exception:
                 integrations = DEFAULT_INTEGRATIONS
 
@@ -2212,37 +2214,50 @@ class PIIDetector:
             )
             mode = "accurate" if use_heavy else "balanced"
 
+            # Privacy Filter controls. The effective mode honors explicit
+            # `privacy_filter_mode` first; falls back to legacy booleans.
             use_pf = integrations.get("openai_privacy_filter", False)
             pf_authoritative = integrations.get("openai_privacy_filter_authoritative", False)
+            pf_mode = ""
+            pf_band = (0.45, 0.75)
+            pf_excluded: list = []
+            if cfg is not None:
+                try:
+                    pf_mode = cfg.get_privacy_filter_mode()
+                    pf_band = tuple(cfg.get_privacy_filter_contested_band())
+                    pf_excluded = cfg.get_privacy_filter_excluded_entities()
+                except Exception:
+                    pass
 
             person_recognizer = get_person_recognizer(
                 mode=mode,
                 use_privacy_filter=use_pf,
                 privacy_filter_authoritative=pf_authoritative,
+                privacy_filter_mode=pf_mode,
+                privacy_filter_contested_band=pf_band,
             )
             self.analyzer.registry.add_recognizer(person_recognizer)
 
             # Log which mode was used (don't call is_person_ner_available() as it loads heavy models)
             import sys
-            pf_tag = (
-                f" +privacy_filter[{'authoritative' if pf_authoritative else 'candidate'}]"
-                if use_pf else ""
-            )
+            resolved_pf_mode = person_recognizer._effective_privacy_filter_mode()
+            pf_tag = f" +privacy_filter[{resolved_pf_mode}]" if resolved_pf_mode != "off" else ""
             sys.stderr.write(f"[PIIDetector] PersonRecognizer loaded (mode={mode}{pf_tag})\n")
 
-            # Register PrivacyFilterRecognizer for the six non-PERSON classes so
-            # toggling `openai_privacy_filter` also lifts EMAIL/PHONE/URL/
-            # LOCATION/DATE_TIME/FINANCIAL/CREDENTIAL recall.
-            if use_pf:
+            # Register PrivacyFilterRecognizer for the six non-PERSON classes when
+            # PF is enabled in any mode except "off". The excluded_entities list
+            # removes regression-prone classes (default: ["PHONE_NUMBER"]).
+            if resolved_pf_mode != "off":
                 try:
                     from .privacy_filter_recognizer import get_privacy_filter_recognizer
-                    pf_recognizer = get_privacy_filter_recognizer()
+                    pf_recognizer = get_privacy_filter_recognizer(excluded_entities=pf_excluded)
                     if pf_recognizer is not None:
                         self.analyzer.registry.add_recognizer(pf_recognizer)
-                        sys.stderr.write("[PIIDetector] PrivacyFilterRecognizer loaded\n")
+                        excl_tag = f" (exclude={pf_excluded})" if pf_excluded else ""
+                        sys.stderr.write(f"[PIIDetector] PrivacyFilterRecognizer loaded{excl_tag}\n")
                     else:
                         sys.stderr.write(
-                            "[PIIDetector] openai_privacy_filter enabled but the model failed to load; "
+                            "[PIIDetector] Privacy Filter enabled but the model failed to load; "
                             "install with: pip install hush-engine[privacy-filter]\n"
                         )
                 except ImportError:

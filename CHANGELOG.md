@@ -5,6 +5,60 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — feat/privacy-filter-modes branch
+
+### Added
+
+- **Privacy Filter cascade modes.** New `privacy_filter_mode` setting on
+  `DetectionConfig` with five options: `off` (default), `candidate`,
+  `authoritative`, `tiebreaker`, `veto`. The old `openai_privacy_filter`
+  and `openai_privacy_filter_authoritative` booleans keep working; when
+  `privacy_filter_mode` is non-empty, it wins.
+  - `tiebreaker` runs PF only when the ensemble has a contested-band span
+    and no early-exit winner. Much lower latency than `candidate` on
+    non-ambiguous documents.
+  - `veto` runs PF after the cascade and drops low-confidence Hush spans
+    that PF doesn't corroborate. Precision-first trade-off.
+- **Per-entity exclude list.** New `privacy_filter_excluded_entities`
+  setting suppresses specific hush-mapped entity types in PF output.
+  Ships with `["PHONE_NUMBER"]` as the default. The 2026-04-23 Kaggle
+  ablation showed PF's phone spans costing 5.71 pp of PHONE F1 versus
+  Hush's libphonenumber-validated spans.
+- **Contested-band tuning.** New `privacy_filter_contested_band` setting
+  is the `[low, high]` score window that triggers tiebreaker mode.
+  Default `[0.45, 0.75]`. Widening reduces PF call rate; narrowing
+  raises it.
+- **Arbiter callback hook.** `PersonRecognizer(privacy_filter_arbiter=...)`
+  accepts an optional callable invoked on PF/Hush disagreements in
+  tiebreaker/veto modes. Signature:
+  `arbiter(text, span_text, start, end, hush_score, pf_score) -> Optional[float]`.
+  Return the new score (or `None` to drop). Lets callers plug in a local
+  LLM, rules engine, or custom heuristic without forking the cascade.
+- `handle_save_config` RPC forwards the three new settings
+  (`privacy_filter_mode`, `privacy_filter_excluded_entities`,
+  `privacy_filter_contested_band`), so the Hushbee UI can expose them
+  as Preferences toggles.
+- 33 new unit tests under `tests/test_privacy_filter_modes.py`. They
+  mock the PF model, so they run in CI without the 3 GB weights.
+
+### Changed
+
+- `PrivacyFilterRecognizer.__init__` accepts `excluded_entities`.
+- `get_privacy_filter_recognizer(excluded_entities=...)` threads the list
+  through.
+- `PersonRecognizer.__init__` gains `privacy_filter_mode`,
+  `privacy_filter_contested_band`, `privacy_filter_arbiter` kwargs. The
+  factory `get_person_recognizer(...)` passes them through.
+- `PIIDetector._add_person_recognizers` reads the new config keys and
+  threads them through the factory + `PrivacyFilterRecognizer`.
+
+### Backward compatibility
+
+- No change to default behavior. 1.11.x users with
+  `openai_privacy_filter=True` still get the candidate mode they had.
+- The two legacy booleans remain functional; the new mode overrides
+  them only when explicitly set.
+
 ## [1.11.2] - 2026-04-23
 
 ### Fixed
