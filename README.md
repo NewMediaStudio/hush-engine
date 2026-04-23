@@ -162,7 +162,9 @@ Thresholds persist to `~/.hush/detection_config.json`. Integrations: `lgbm_ner`,
 
 ## Add-on backend: OpenAI Privacy Filter
 
-Hush ships an opt-in integration with [OpenAI Privacy Filter](https://huggingface.co/openai/privacy-filter) (Apache-2.0, 1.5B parameters, 50M active, bidirectional token classifier). Install the extra and flip two flags:
+OpenAI released [Privacy Filter](https://openai.com/index/introducing-openai-privacy-filter/) on 2026-04-22 as an open-weight PII-redaction model: Apache-2.0, 1.5B parameters total with 50M active (mixture-of-experts), 128K context, bidirectional token classifier with constrained Viterbi span decoding. Weights sit on [HuggingFace](https://huggingface.co/openai/privacy-filter); source is at [github.com/openai/privacy-filter](https://github.com/openai/privacy-filter); the full methodology is in the [model card PDF](https://cdn.openai.com/pdf/c66281ed-b638-456a-8ce1-97e9f5264a90/OpenAI-Privacy-Filter-Model-Card.pdf).
+
+Hush 1.11.0 ships an opt-in integration. Install the extra, then enable it through the config:
 
 ```bash
 pip install hush-engine[privacy-filter]
@@ -181,7 +183,9 @@ Two gating modes:
 - **candidate** (default when enabled): Privacy Filter votes in the ensemble alongside LightGBM, spaCy, Flair, Transformers. The cascade's early-exit threshold still applies, so it runs only when lighter engines haven't produced a high-confidence hit.
 - **authoritative**: Privacy Filter's PERSON decision replaces the cascade output. Verifiers skip.
 
-Privacy Filter covers 8 span categories: `private_person`, `private_email`, `private_phone`, `private_address`, `private_url`, `private_date`, `account_number`, `secret`. The six non-PERSON categories register as a Presidio recognizer that feeds into Hush's standard entity-type pipeline. To load weights from disk instead of HuggingFace Hub, set `HUSH_PRIVACY_FILTER_MODEL=/path/to/dir`.
+Privacy Filter covers 8 span categories: `private_person`, `private_email`, `private_phone`, `private_address`, `private_url`, `private_date`, `account_number`, `secret`. The 6 non-PERSON categories register as a Presidio recognizer that feeds into Hush's standard entity-type pipeline. To load weights from disk instead of HuggingFace Hub, set `HUSH_PRIVACY_FILTER_MODEL=/path/to/dir`.
+
+License compatibility: Privacy Filter ships under Apache-2.0, which the AGPL-3.0 engine can link against. See the [LICENSE](LICENSE) for Hush and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md) for proprietary-deployment terms. The add-on does not change either.
 
 ## Release privacy gates
 
@@ -316,7 +320,8 @@ Hush Engine is dual-licensed.
 
 - **[Hushbee](https://hushbee.app)** — free macOS app built on this engine. Download there for a drag-and-drop GUI over the same detection pipeline.
 - **[Microsoft Presidio](https://github.com/microsoft/presidio)** — the detection framework Hush builds on.
+- **[OpenAI Privacy Filter](https://openai.com/index/introducing-openai-privacy-filter/)** — add-on backend for contextual PII redaction ([HuggingFace](https://huggingface.co/openai/privacy-filter), [source](https://github.com/openai/privacy-filter), [model card PDF](https://cdn.openai.com/pdf/c66281ed-b638-456a-8ce1-97e9f5264a90/OpenAI-Privacy-Filter-Model-Card.pdf)).
 
 ## Acknowledgments
 
-Built on [Presidio](https://github.com/microsoft/presidio), [Apple Vision](https://developer.apple.com/documentation/vision), [spaCy](https://spacy.io/), [Flair](https://github.com/flairNLP/flair), [GLiNER](https://github.com/urchade/GLiNER), [libpostal](https://github.com/openvenues/libpostal), and [python-stdnum](https://github.com/arthurdejong/python-stdnum).
+Built on [Presidio](https://github.com/microsoft/presidio), [Apple Vision](https://developer.apple.com/documentation/vision), [spaCy](https://spacy.io/), [Flair](https://github.com/flairNLP/flair), [GLiNER](https://github.com/urchade/GLiNER), [libpostal](https://github.com/openvenues/libpostal), and [python-stdnum](https://github.com/arthurdejong/python-stdnum). Optional add-on: [OpenAI Privacy Filter](https://huggingface.co/openai/privacy-filter).

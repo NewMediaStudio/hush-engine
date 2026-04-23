@@ -5,6 +5,22 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-04-23
+
+### Changed
+
+- README expansion for the OpenAI Privacy Filter add-on section:
+  full link set to the OpenAI announcement, the HuggingFace model page,
+  the GitHub source, and the model card PDF. Acknowledgments and Related
+  sections updated to credit Privacy Filter as an optional backend.
+  License-compatibility note clarifies that Apache-2.0 links cleanly
+  against Hush's AGPL-3.0 license.
+- CI: PyPI publishing now runs through a Trusted Publishing workflow
+  (`.github/workflows/publish.yml`). Future releases ship on `v*` tag
+  push, no API tokens stored anywhere.
+
+Docs-only patch. No code changes from 1.11.0.
+
 ## [1.11.0] - 2026-04-23
 
 ### Added
