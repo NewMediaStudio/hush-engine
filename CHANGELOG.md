@@ -5,6 +5,35 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — feat/agent-integrations branch
+
+### Added
+
+- **Agent integrations**. New subpackage `hush_engine.agents` with three
+  thin wrappers that expose the detector as tools in the current agent
+  ecosystems:
+  - `hush_engine.agents.mcp_server` — stdio MCP server (FastMCP). Console
+    script `hush-mcp` added via `[project.scripts]`. Install with
+    `pip install hush-engine[mcp]`.
+  - `hush_engine.agents.claude_sdk` — in-process MCP server via
+    `create_sdk_mcp_server`. Exports `hush_server` ready for
+    `ClaudeAgentOptions(mcp_servers={"hush": hush_server})`. Install
+    with `pip install hush-engine[agent-claude]`.
+  - `hush_engine.agents.openai_agent` — `@function_tool` wrappers
+    (`detect_pii_tool`, `redact_text_tool`) for the OpenAI Agents SDK.
+    Install with `pip install hush-engine[agent-openai]`.
+- Bundle extra: `pip install hush-engine[agents]` pulls all three.
+- New shared helpers in `hush_engine.agents._core`: `detect_pii_json`
+  and `redact_text_inline`. Every transport delegates here, so detector
+  contract changes flow through one place.
+- Unit tests under `tests/agents/` cover the core helpers and verify
+  each wrapper raises a pointed `ImportError` when its SDK is missing.
+
+### Changed
+
+- `[full]` extra now pulls `[agents]` in addition to the existing
+  `medical,address,accurate,privacy-filter`.
+
 ## [1.11.2] - 2026-04-23
 
 ### Fixed
