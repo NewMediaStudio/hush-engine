@@ -1,0 +1,51 @@
+name: Publish to PyPI
+
+# Triggers:
+#   - Push a tag matching `v*` (e.g. `v1.11.0`)
+#   - Manual dispatch from the Actions tab (useful for re-publishing a tag
+#     or publishing a HEAD with a pyproject.toml bump without a new tag)
+#
+# PyPI Trusted Publishing authenticates via OIDC — no API token stored
+# anywhere. The PyPI project must have a matching pending publisher
+# configured at
+# https://pypi.org/manage/project/hush-engine/settings/publishing/ with:
+#   owner=NewMediaStudio, repository=hush-engine, workflow=publish.yml,
+#   environment=<blank>.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # required for PyPI Trusted Publishing (OIDC)
+      contents: read
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Verify artifacts render on PyPI
+        run: |
+          python -m pip install twine
+          twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
