@@ -389,15 +389,27 @@ class RPCServer:
         return detection_config.get_config().get_stats()
 
     def handle_save_config(self, params):
-        """Handle saveConfig request"""
+        """Handle saveConfig request.
+
+        Forwards thresholds, per-entity toggles, and per-integration toggles
+        to DetectionConfig. The integrations path is what the Hushbee UI uses
+        to flip `openai_privacy_filter`, `flair`, `transformers`, etc.
+        """
         thresholds = params.get('thresholds')
         enabled_entities = params.get('enabled_entities')
+        enabled_integrations = params.get('enabled_integrations')
 
-        if thresholds is None and enabled_entities is None:
-            raise ValueError("At least one of thresholds or enabled_entities must be provided")
+        if thresholds is None and enabled_entities is None and enabled_integrations is None:
+            raise ValueError(
+                "At least one of thresholds, enabled_entities, or enabled_integrations must be provided"
+            )
 
         config = detection_config.get_config()
-        config.update_all(thresholds=thresholds, enabled_entities=enabled_entities)
+        config.update_all(
+            thresholds=thresholds,
+            enabled_entities=enabled_entities,
+            enabled_integrations=enabled_integrations,
+        )
         return {"success": True}
 
     def handle_reset_config(self, params):

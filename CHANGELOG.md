@@ -5,6 +5,19 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2026-04-23
+
+### Fixed
+
+- `handle_save_config` RPC now forwards `enabled_integrations` through to
+  `DetectionConfig.update_all`. 1.11.0 shipped the Privacy Filter toggles
+  (`openai_privacy_filter`, `openai_privacy_filter_authoritative`) and the
+  existing `spacy`, `flair`, `transformers`, `gliner` keys, but the RPC
+  only accepted `thresholds` and `enabled_entities` — so the Hushbee UI
+  had no path to flip any integration from Preferences. The Python API
+  (`DetectionConfig.set_enabled_integration`) already worked; this
+  closes the UI gap.
+
 ## [1.11.1] - 2026-04-23
 
 ### Changed

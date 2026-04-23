@@ -4,7 +4,7 @@
 # Prices are per 1M tokens in USD
 MODELS = {
     "hush_engine": {
-        "display_name": "Hush Engine v1.11.1",
+        "display_name": "Hush Engine v1.11.2",
         "family": "Rule-based + LightGBM",
         "params_b": 0,
         "disk_size_mb": 15,
