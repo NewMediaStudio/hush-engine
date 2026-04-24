@@ -391,17 +391,33 @@ class RPCServer:
     def handle_save_config(self, params):
         """Handle saveConfig request.
 
-        Forwards thresholds, per-entity toggles, and per-integration toggles
-        to DetectionConfig. The integrations path is what the Hushbee UI uses
-        to flip `openai_privacy_filter`, `flair`, `transformers`, etc.
+        Forwards thresholds, per-entity toggles, per-integration toggles, and
+        the Privacy Filter mode controls (1.12.0+) to DetectionConfig. The
+        Hushbee UI calls this to flip `openai_privacy_filter`,
+        `privacy_filter_mode`, etc.
         """
         thresholds = params.get('thresholds')
         enabled_entities = params.get('enabled_entities')
         enabled_integrations = params.get('enabled_integrations')
+        privacy_filter_mode = params.get('privacy_filter_mode')
+        privacy_filter_excluded_entities = params.get('privacy_filter_excluded_entities')
+        privacy_filter_contested_band = params.get('privacy_filter_contested_band')
 
-        if thresholds is None and enabled_entities is None and enabled_integrations is None:
+        if all(
+            v is None
+            for v in (
+                thresholds,
+                enabled_entities,
+                enabled_integrations,
+                privacy_filter_mode,
+                privacy_filter_excluded_entities,
+                privacy_filter_contested_band,
+            )
+        ):
             raise ValueError(
-                "At least one of thresholds, enabled_entities, or enabled_integrations must be provided"
+                "At least one of thresholds, enabled_entities, enabled_integrations, "
+                "privacy_filter_mode, privacy_filter_excluded_entities, or "
+                "privacy_filter_contested_band must be provided"
             )
 
         config = detection_config.get_config()
@@ -409,6 +425,9 @@ class RPCServer:
             thresholds=thresholds,
             enabled_entities=enabled_entities,
             enabled_integrations=enabled_integrations,
+            privacy_filter_mode=privacy_filter_mode,
+            privacy_filter_excluded_entities=privacy_filter_excluded_entities,
+            privacy_filter_contested_band=privacy_filter_contested_band,
         )
         return {"success": True}
 

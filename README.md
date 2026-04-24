@@ -185,6 +185,41 @@ Two gating modes:
 
 Privacy Filter covers 8 span categories: `private_person`, `private_email`, `private_phone`, `private_address`, `private_url`, `private_date`, `account_number`, `secret`. The 6 non-PERSON categories register as a Presidio recognizer that feeds into Hush's standard entity-type pipeline. To load weights from disk instead of HuggingFace Hub, set `HUSH_PRIVACY_FILTER_MODEL=/path/to/dir`.
 
+### Cascade modes (1.12.0+)
+
+`privacy_filter_mode` replaces the `authoritative` boolean with five options. Default is `off`, so 1.11.x configs keep working unchanged.
+
+| Mode | Trigger | Action |
+|---|---|---|
+| `off` (default) | — | Skip PF entirely. |
+| `candidate` | Cascade didn't hit the early-exit confidence | PF votes in the ensemble alongside LightGBM, spaCy, Flair, Transformers. |
+| `authoritative` | Always | PF's PERSON verdict short-circuits the cascade; verifiers skip. |
+| `tiebreaker` | Any ensemble span in `privacy_filter_contested_band` (default `[0.45, 0.75]`) and no early-exit winner | PF runs once. Matching spans get boosted; PF-only spans are added. |
+| `veto` | Every Hush detection with score < 0.75 | PF scans the document. Hush spans PF doesn't corroborate are dropped (unless an arbiter keeps them). |
+
+```python
+from hush_engine import DetectionConfig
+cfg = DetectionConfig()
+cfg.set_privacy_filter_mode("tiebreaker")
+cfg.set_privacy_filter_contested_band([0.40, 0.80])
+cfg.set_privacy_filter_excluded_entities(["PHONE_NUMBER"])  # default
+```
+
+### Per-entity exclude
+
+`privacy_filter_excluded_entities` removes specific hush-mapped entity types from PF output. The default ships with `["PHONE_NUMBER"]` because the 2026-04-23 Kaggle ablation showed PF dropping PHONE F1 by 5.71 pp versus Hush's libphonenumber-validated spans. Empty the list to let PF contribute phones when your document mix benefits.
+
+### Arbiter callback
+
+`PersonRecognizer(privacy_filter_arbiter=callable)` passes a callback that fires on tiebreaker/veto disagreements:
+
+```python
+def arbiter(text, span_text, start, end, hush_score, pf_score) -> float | None:
+    """Return the new confidence, or None to drop the span."""
+```
+
+Scores are `None` when that engine didn't produce a hit. Plug in a local LLM, an external rules engine, or any custom heuristic to resolve hard cases.
+
 License compatibility: Privacy Filter ships under Apache-2.0, which the AGPL-3.0 engine can link against. See the [LICENSE](LICENSE) for Hush and [COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md) for proprietary-deployment terms. The add-on does not change either.
 
 ## Release privacy gates
