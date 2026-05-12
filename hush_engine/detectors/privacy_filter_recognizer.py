@@ -37,6 +37,19 @@ from presidio_analyzer import AnalysisExplanation, EntityRecognizer, RecognizerR
 # have a fine-tuned checkpoint on disk.
 _DEFAULT_MODEL_ID = "openai/privacy-filter"
 
+# Pinned commit on huggingface.co/openai/privacy-filter as of 2026-05-12.
+# Mitigates supply-chain risk: a malicious typosquat (Open-OSS/privacy-filter)
+# briefly hit HF's trending list with 244K downloads before takedown. Pinning
+# a known-good SHA closes the door on a future repo compromise. Overridable
+# via HUSH_PRIVACY_FILTER_REVISION (set to empty string to disable pinning).
+# Only applied when loading the canonical Hub model; user-supplied paths
+# bypass the pin.
+_PINNED_REVISION = "7ffa9a043d54d1be65afb281eddf0ffbe629385b"
+
+# ONNX file inside the repo when HUSH_PRIVACY_FILTER_BACKEND=onnx. The
+# quantized variant is ~4x smaller than BF16 and runs without torch.
+_DEFAULT_ONNX_FILE = "onnx/model_quantized.onnx"
+
 # OpenAI label -> hush entity type.
 # `private_person` is intentionally absent: PERSON is routed through the
 # PersonRecognizer cascade so authoritative/candidate gating applies.
@@ -57,37 +70,91 @@ PRIVACY_FILTER_AVAILABLE = False
 
 
 def _load_privacy_filter(model_id: Optional[str] = None) -> None:
-    """Lazy-load the OpenAI Privacy Filter HF pipeline on first use."""
+    """Lazy-load the OpenAI Privacy Filter HF pipeline on first use.
+
+    Backend selection via ``HUSH_PRIVACY_FILTER_BACKEND``:
+      - ``torch`` (default): the original transformers pipeline path.
+      - ``onnx``: load via ``optimum.onnxruntime`` for browser/edge deployments
+        where torch is too heavy. Requires ``pip install hush-engine[privacy-filter-onnx]``.
+        File inside the repo is controlled by ``HUSH_PRIVACY_FILTER_ONNX_FILE``
+        (default ``onnx/model_quantized.onnx``; other options published by
+        OpenAI: ``onnx/model.onnx``, ``onnx/model_fp16.onnx``,
+        ``onnx/model_q4.onnx``, ``onnx/model_q4f16.onnx``).
+    """
     global _privacy_filter_pipeline, PRIVACY_FILTER_AVAILABLE
 
     if _privacy_filter_pipeline is not None:
         return
 
     import os
-    model_id = model_id or os.environ.get("HUSH_PRIVACY_FILTER_MODEL", _DEFAULT_MODEL_ID)
+    resolved_model = (
+        model_id
+        or os.environ.get("HUSH_PRIVACY_FILTER_MODEL")
+        or _DEFAULT_MODEL_ID
+    )
+
+    # Apply the pinned revision only when fetching the canonical Hub model.
+    # User-supplied paths/fine-tunes bypass the pin so local checkpoints work.
+    revision_env = os.environ.get("HUSH_PRIVACY_FILTER_REVISION")
+    if revision_env is not None:
+        revision = revision_env or None  # empty string disables pinning
+    elif resolved_model == _DEFAULT_MODEL_ID:
+        revision = _PINNED_REVISION
+    else:
+        revision = None
+
+    backend = os.environ.get("HUSH_PRIVACY_FILTER_BACKEND", "torch").lower()
 
     try:
         from transformers import pipeline
     except ImportError:
         sys.stderr.write(
             "[PrivacyFilter] transformers not installed. "
-            "Run: pip install hush-engine[privacy-filter]\n"
+            "Run: pip install hush-engine[privacy-filter] (or [privacy-filter-onnx])\n"
         )
         return
 
     try:
-        # aggregation_strategy="simple" collapses BIOES token tags into whole
-        # spans and is what the HF model card example uses.
-        _privacy_filter_pipeline = pipeline(
-            task="token-classification",
-            model=model_id,
-            aggregation_strategy="simple",
-            device=-1,  # CPU; transformers auto-upgrades to MPS/CUDA if available elsewhere
-        )
+        if backend == "onnx":
+            try:
+                from optimum.onnxruntime import ORTModelForTokenClassification
+                from transformers import AutoTokenizer
+            except ImportError:
+                sys.stderr.write(
+                    "[PrivacyFilter] optimum[onnxruntime] not installed. "
+                    "Run: pip install hush-engine[privacy-filter-onnx]\n"
+                )
+                return
+            onnx_file = os.environ.get(
+                "HUSH_PRIVACY_FILTER_ONNX_FILE", _DEFAULT_ONNX_FILE
+            )
+            tokenizer = AutoTokenizer.from_pretrained(resolved_model, revision=revision)
+            ort_model = ORTModelForTokenClassification.from_pretrained(
+                resolved_model, file_name=onnx_file, revision=revision
+            )
+            _privacy_filter_pipeline = pipeline(
+                task="token-classification",
+                model=ort_model,
+                tokenizer=tokenizer,
+                aggregation_strategy="simple",
+            )
+        else:
+            # aggregation_strategy="simple" collapses BIOES token tags into
+            # whole spans and is what the HF model card example uses.
+            _privacy_filter_pipeline = pipeline(
+                task="token-classification",
+                model=resolved_model,
+                revision=revision,
+                aggregation_strategy="simple",
+                device=-1,  # CPU; transformers auto-upgrades to MPS/CUDA if available elsewhere
+            )
         PRIVACY_FILTER_AVAILABLE = True
-        sys.stderr.write(f"[PrivacyFilter] Loaded {model_id}\n")
+        rev_tag = f", rev={revision[:7]}" if revision else ""
+        sys.stderr.write(
+            f"[PrivacyFilter] Loaded {resolved_model} (backend={backend}{rev_tag})\n"
+        )
     except Exception as e:
-        sys.stderr.write(f"[PrivacyFilter] Load failed ({model_id}): {e}\n")
+        sys.stderr.write(f"[PrivacyFilter] Load failed ({resolved_model}): {e}\n")
 
 
 def is_privacy_filter_available() -> bool:

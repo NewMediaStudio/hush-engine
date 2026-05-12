@@ -185,6 +185,23 @@ Two gating modes:
 
 Privacy Filter covers 8 span categories: `private_person`, `private_email`, `private_phone`, `private_address`, `private_url`, `private_date`, `account_number`, `secret`. The 6 non-PERSON categories register as a Presidio recognizer that feeds into Hush's standard entity-type pipeline. To load weights from disk instead of HuggingFace Hub, set `HUSH_PRIVACY_FILTER_MODEL=/path/to/dir`.
 
+### Supply-chain pinning (1.12.1+)
+
+The loader pins `revision=7ffa9a043d54d1be65afb281eddf0ffbe629385b` when fetching the canonical `openai/privacy-filter` repo, so a future compromise of the upstream Hub repo cannot land on Hush users via an unattended `pip install`. Override with `HUSH_PRIVACY_FILTER_REVISION=<sha>` (or empty string to disable). Local checkpoints loaded via `HUSH_PRIVACY_FILTER_MODEL` bypass the pin.
+
+### ONNX backend (1.12.1+)
+
+For edge/CPU-only deployments where the torch wheel is too heavy, swap to the ONNX runtime path:
+
+```bash
+pip install hush-engine[privacy-filter-onnx]
+export HUSH_PRIVACY_FILTER_BACKEND=onnx
+# Optional: pick a different quantization. Defaults to onnx/model_quantized.onnx.
+export HUSH_PRIVACY_FILTER_ONNX_FILE=onnx/model_q4f16.onnx
+```
+
+OpenAI publishes five ONNX variants in the repo: `model.onnx` (full), `model_fp16.onnx`, `model_q4.onnx`, `model_q4f16.onnx`, and `model_quantized.onnx`. The same files power the browser deployment path through [Transformers.js](https://huggingface.co/docs/transformers.js).
+
 ### Cascade modes (1.12.0+)
 
 `privacy_filter_mode` replaces the `authoritative` boolean with five options. Default is `off`, so 1.11.x configs keep working unchanged.

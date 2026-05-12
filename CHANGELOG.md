@@ -5,6 +5,33 @@ All notable changes to hush-engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-05-12
+
+### Added
+
+- **Pinned HuggingFace revision** for the OpenAI Privacy Filter add-on. The
+  loader now passes `revision=7ffa9a043d54d1be65afb281eddf0ffbe629385b`
+  (current HEAD of `openai/privacy-filter` on 2026-05-12) when fetching the
+  canonical Hub model. Supply-chain hardening: a malicious typosquat
+  (`Open-OSS/privacy-filter`) hit HF's trending list with 244K downloads
+  before HiddenLayer reported it and the repo was removed. Pinning a
+  known-good SHA closes the door on a future compromise of the upstream
+  repo itself. Override with `HUSH_PRIVACY_FILTER_REVISION=<sha>` or set to
+  empty string to disable.
+- **ONNX backend** for the Privacy Filter add-on. New
+  `[privacy-filter-onnx]` extra installs `optimum[onnxruntime]` instead of
+  torch. Set `HUSH_PRIVACY_FILTER_BACKEND=onnx` to load the model through
+  `ORTModelForTokenClassification`. The ONNX file is selectable via
+  `HUSH_PRIVACY_FILTER_ONNX_FILE` (default `onnx/model_quantized.onnx`;
+  upstream also ships `model_fp16.onnx`, `model_q4.onnx`, `model_q4f16.onnx`).
+  Targets edge/CPU-only deployments where the torch wheel is too heavy.
+
+### Backward compatibility
+
+- Default behavior unchanged. `[privacy-filter]` users get the torch path
+  and the pinned revision automatically. Local checkpoints loaded via
+  `HUSH_PRIVACY_FILTER_MODEL=/path/...` bypass the revision pin.
+
 ## [1.12.0] - 2026-04-23
 
 ### Added

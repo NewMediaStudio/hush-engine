@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hush-engine"
-version = "1.12.0"
+version = "1.12.1"
 description = "Local-first PII detection engine using Presidio and Apple Vision OCR"
 readme = "README.md"
 license = {text = "AGPL-3.0-or-later"}
@@ -82,6 +82,15 @@ accurate = [
 privacy-filter = [
     "transformers>=4.40.0",
     "torch>=2.0.0",
+]
+# Privacy Filter via ONNX Runtime instead of torch. Pulls the quantized
+# weights (~600MB for q4, ~1.5GB for fp16) and runs through optimum's
+# ORTModelForTokenClassification. Suitable for edge/CPU-only deployments
+# where the torch wheel is too heavy. Enable with
+# `HUSH_PRIVACY_FILTER_BACKEND=onnx`.
+privacy-filter-onnx = [
+    "transformers>=4.40.0",
+    "optimum[onnxruntime]>=1.20.0",
 ]
 # Everything (excluding the GPL names extra — add it explicitly if you want it)
 full = [
